@@ -17,3 +17,13 @@ export const LoginUser = async (values) => {
         return error;
     }
 };
+
+export const UserInfo = async () => {
+    try {
+        const response = await axiosInstance.get("/users/user");
+        return response.data;
+    } catch (error) {
+        return error
+        
+    }
+}
