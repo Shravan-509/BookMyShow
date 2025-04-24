@@ -11,8 +11,8 @@
 
 ## To Read:
 
-1. OAuth 2.0
-   
-    a. Sample using Google email (https://www.npmjs.com/package/@react-oauth/google)
-   
-    b. https://clerk.com/blog/oauth2-react-user-authorization
+    1. OAuth 2.0
+    
+        a. Sample using Google email (https://www.npmjs.com/package/@react-oauth/google)
+    
+        b. https://clerk.com/blog/oauth2-react-user-authorization

@@ -3,13 +3,18 @@ import '@ant-design/v5-patch-for-react-19';
 import { Button, Checkbox, Form, Input, message } from 'antd';
 import { Link, useNavigate } from 'react-router-dom';
 import { LoginUser } from '../api/user';
+import { useDispatch } from 'react-redux';
+import { hideLoading, showLoading } from '../redux/loaderSlice';
 
 const Login = () => {
     const navigate = useNavigate();
+    const dispatch = useDispatch();
+
 
     const onFinish = async (values) => {
         try 
         {
+            dispatch(showLoading());
             const res = await LoginUser(values);
             if(res?.success)
             {
@@ -24,6 +29,8 @@ const Login = () => {
         } 
         catch (error) {
             message.error(error);
+        } finally{
+            dispatch(hideLoading())
         }
     }
       
@@ -60,7 +67,7 @@ const Login = () => {
                             className="d-block"
                             rules={[{ required: true, message: 'Please input your password!' }]}
                         >
-                            <Input id='password' type='password' placeholder='Enter your Password' />
+                            <Input.Password id='password' placeholder='Enter your Password' />
                         </Form.Item>
 
                         <Form.Item name="remember" valuePropName="checked" label={null}>

@@ -6,7 +6,8 @@ const validateJWT = (req, res, next) => {
         const decode = jwt.verify(access_token, process.env.SECRET_KEY);
         req.body = {
             email : decode?.email,
-            userId: decode?.userId
+            userId: decode?.userId,
+            ...req.body
         }
         next();
     } catch (error) {
