@@ -56,10 +56,10 @@
 .d-block {
   display: block;
 }
-input,
+ input,
 select {
   min-height: 45px;
-}
+} 
 button {
   min-height: 45px;
   font-size: 1rem;
@@ -79,7 +79,7 @@ button {
 .mt-3 {
   margin-top: 1rem;
 }
-.me-3 {
+.mr-3 {
   margin-right: 1rem;
 }
 .gap-10 {
@@ -94,11 +94,14 @@ button {
 .fs-12 {
   font-size: 12px;
 }
-.ant-select-selector {
-  height: 45px !important;
-}
-.ant-select-selection-item {
-  padding-top: 5px !important;
+.custom-select .ant-select-selector {
+  min-height: 45px;
+  align-items: center !important;
+  padding-top: 4px !important;
+} 
+.custom-select .ant-select-selection-item {
+  line-height: 24px;
+  padding-top: 2px;
 }
 table th {
   white-space: nowrap;

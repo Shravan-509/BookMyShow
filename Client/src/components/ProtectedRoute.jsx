@@ -1,8 +1,7 @@
-import { Layout, Menu } from 'antd'
-import { Content, Footer, Header } from 'antd/es/layout/layout'
 import React, { useEffect } from 'react';
-import { HomeOutlined, LogoutOutlined, MacCommandFilled, ProfileOutlined, UserOutlined } from '@ant-design/icons';
-import { message } from 'antd';
+import { Layout, Menu, message } from 'antd'
+import { Content, Footer, Header } from 'antd/es/layout/layout'
+import { EditOutlined, HomeOutlined, LogoutOutlined, ProfileOutlined, UserOutlined } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { hideLoading, showLoading } from '../redux/loaderSlice';
@@ -36,6 +35,7 @@ const ProtectedRoute = ({ children}) => {
             }
             else{
                 message.warning(response?.message)
+                localStorage.removeItem("access_token");
             }      
         
         } catch (error) {
@@ -57,30 +57,43 @@ const ProtectedRoute = ({ children}) => {
           icon: <HomeOutlined />,
         },
         {
+            key: 'roleProfile',
+            label: (
+                <span 
+                    onClick={()=> { 
+                       if(user.role === "admin"){
+                            navigate("/admin");
+                       }
+                       else if(user.role === "partner"){
+                            navigate("/partner");
+                       }
+                       else{
+                        navigate("/profile");
+                       } 
+                    }}
+                >
+                    {user?.role === "admin" && "Movie Management"}
+                    {user?.role === "partner" && "Theatre Management"}
+                    {user?.role === "user" && "My Bookings"}
+                </span>
+            ),
+            icon: <ProfileOutlined/>,
+        },
+        {
             key: 'profile',
             label: `${ user ? user.name: " "}`,
             icon: <UserOutlined/>,
             children: [
                 {
-                    key: 'roleProfile',
+                    key: 'Update Profile',
                     label: (
-                        <span 
-                            onClick={()=> { 
-                               if(user.role === "admin"){
-                                    navigate("/admin");
-                               }
-                               else if(user.role === "partner"){
-                                    navigate("/partner");
-                               }
-                               else{
-                                navigate("/profile");
-                               } 
-                            }}
+                        <Link 
+                            to="/update"
                         >
-                            My Profile
-                        </span>
+                            Update Profile
+                        </Link>
                     ),
-                    icon: <ProfileOutlined/>,
+                    icon: <EditOutlined/>,
                 },
                 {
                     key: 'logout',

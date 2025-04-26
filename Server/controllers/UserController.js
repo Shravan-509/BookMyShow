@@ -1,11 +1,11 @@
-const userModel = require('../models/userSchema');
+const User = require('../models/userSchema');
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
 
 const registerUser = async (req, res, next) => {
     try {
-        const userExists = await userModel.findOne({email: req?.body?.email});
+        const userExists = await User.findOne({email: req?.body?.email});
 
         if(userExists)
         {
@@ -20,7 +20,7 @@ const registerUser = async (req, res, next) => {
         const hashedPassword = await bcrypt.hash(req?.body?.password, salt);
         req.body.password = hashedPassword;
 
-        const newUser = new userModel(req?.body);
+        const newUser = new User(req?.body);
         await newUser.save();
         return res.status(201).json({
             success: true,
@@ -37,7 +37,7 @@ const loginUser = async (req, res, next) => {
     try {
         const userEmail = req?.body.email;
         const userPassword = req?.body?.password;
-        const user = await userModel.findOne({email : userEmail});
+        const user = await User.findOne({email : userEmail});
         if(!user)
         {
             return res.status(404).send({
@@ -85,7 +85,7 @@ const loginUser = async (req, res, next) => {
 
 const userInfo = async (req, res, next) => {
     try {
-        const user = await userModel.findById(req.body.userId).select("-password");
+        const user = await User.findById(req.body.userId).select("-password");
         res.send({
             success: true,
             message: "User Details Fetched Successfully",
@@ -100,7 +100,7 @@ const userInfo = async (req, res, next) => {
 const deleteUser = async(req, res, next) => {
     try {
         const userEmail = req?.body.email;
-        const user = await userModel.findOneAndDelete({email : userEmail});
+        const user = await User.findOneAndDelete({email : userEmail});
         if(!user)
         {
             return res.status(404).send({

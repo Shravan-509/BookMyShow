@@ -1,21 +1,22 @@
-const movieModel = require("../models/movieSchema");
+const Movie = require("../models/movieSchema");
 
 const addMovie = async(req, res, next) => {
     try {
+        const {movieName} = req?.body;
         //handle Duplicate Entries
-        const movie = await movieModel.findOne({ movieName : req?.body.movieName});
+        const movie = await Movie.findOne({ movieName : movieName});
         if(movie)
         {
             return res.send({
                     success: false,
-                    message: "Movie already exists"
+                    message: `${movieName} Movie already exists`
                 });
         }
-        const newMovie = new movieModel(req?.body);
+        const newMovie = new Movie(req?.body);
         await newMovie.save();
         return res.send({
                 success: true,
-                message: "Movie has been added"
+                message: `${movieName} Movie has been added`
             });
     } catch (error) {
         res.status(400);
@@ -26,7 +27,7 @@ const addMovie = async(req, res, next) => {
 const getMovies = async(req, res, next) => {
     try 
     {
-        const movies = await movieModel.find();
+        const movies = await Movie.find();
         return res.send({
                 success: true,
                 message: "All movies has been fetched",
@@ -40,7 +41,8 @@ const getMovies = async(req, res, next) => {
 const updateMovie = async(req, res, next) => {
     try 
     {
-        const updatedMovie = await movieModel.findByIdAndUpdate(
+        const {movieName} = req?.body;
+        const updatedMovie = await Movie.findByIdAndUpdate(
             req?.params?.id, 
             req?.body, 
             { new: true }
@@ -49,12 +51,12 @@ const updateMovie = async(req, res, next) => {
         {
             return res.send({
                     success: false,
-                    message: "Movie not found",
+                    message: `${movieName} Movie not found`,
                 });
         }
         return res.send({
             success: true,
-            message: "The Movie has been updated",
+            message: `${movieName} Movie has been updated`,
             data: updatedMovie
         });
         
@@ -66,7 +68,7 @@ const updateMovie = async(req, res, next) => {
 const deleteMovie = async(req, res, next) => {
     try
     {
-        const deletedMovie = await movieModel.findByIdAndDelete(req?.params?.id);
+        const deletedMovie = await Movie.findByIdAndDelete(req?.params?.id);
         if(!deletedMovie)
         {
             return res.send({

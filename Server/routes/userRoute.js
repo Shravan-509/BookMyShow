@@ -6,6 +6,6 @@ router.post("/register", registerUser);
 router.post("/login", loginUser);
 
 router.get("/user", validateJWT, userInfo);
-router.delete("/user", deleteUser);
+router.delete("/user", validateJWT, deleteUser);
 
 module.exports = router;

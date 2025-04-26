@@ -6,8 +6,8 @@ import './App.css';
 import { useSelector } from 'react-redux';
 import { Flex, Spin } from 'antd';
 import Profile from './pages/Profile';
-import Admin from './pages/Admin';
-import Partner from './pages/Partner';
+import Admin from './pages/Admin/Admin';
+import Partner from './pages/Partner/Partner';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {

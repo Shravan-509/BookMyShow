@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Checkbox, Form, Input, message } from 'antd';
+import { Button, Checkbox, Form, Input, message, Radio } from 'antd';
 import { Link, useNavigate } from 'react-router-dom';
 import { RegisterUser } from '../api/user';
 
@@ -32,7 +32,7 @@ const Register = () => {
                 <section>
                     <Form
                         name="basic"
-                        labelCol={{ span: 8 }}
+                        labelCol={{ span: 12 }}
                         className="d-block"
                         onFinish={onFinish}
                         autoComplete="off"
@@ -64,9 +64,24 @@ const Register = () => {
                             className="d-block"
                             rules={[{ required: true, message: 'Please input your password!' }]}
                         >
-                            <Input id='password' type='password' placeholder='Enter your Password' />
+                            <Input.Password id='password' placeholder='Enter your Password' />
                         </Form.Item>
 
+                        <Form.Item
+                            label="Register as a Partner"
+                            htmlFor='role'
+                            name={'role'}
+                            className='d-block text-center'
+                            initialValue={false}
+                            rules={[{ required: true, message: "Please select an option!"}]}
+                        >
+                            <div className='d-flex justify-content-start'>
+                                <Radio.Group name="radiogroup" className='flex-start'>
+                                    <Radio value={"partner"}>Yes</Radio>
+                                    <Radio value={"user"}>No</Radio>
+                                </Radio.Group>
+                            </div>
+                        </Form.Item>
                         <Form.Item>
                             <Button 
                                 type="primary"

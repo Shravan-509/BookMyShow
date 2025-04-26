@@ -10,7 +10,6 @@ const Login = () => {
     const navigate = useNavigate();
     const dispatch = useDispatch();
 
-
     const onFinish = async (values) => {
         try 
         {
@@ -34,7 +33,6 @@ const Login = () => {
         }
     }
       
-
     return(
         <div className='App-header'>
             <main className='main-area mw-500 text-center px-3'>
