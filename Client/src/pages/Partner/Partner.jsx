@@ -1,8 +1,7 @@
 import React from 'react';
-import { Tabs, Typography } from 'antd';
+import { Tabs } from 'antd';
 import TheatreList from './TheatreList';
-
-const { Title } = Typography;
+import Title from 'antd/es/typography/Title';
 
 const Partner = () => {
   const items=[

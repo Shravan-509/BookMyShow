@@ -52,7 +52,7 @@ const TheatreForm = ({
             dispatch(hideLoading());
         }
     }
-    console.log(formType);
+
   return (
     <div>
         <Modal 
@@ -61,6 +61,7 @@ const TheatreForm = ({
             open={isModalOpen}
             onCancel={handleCancel}
             width={800}
+            footer={null}
         >
             <Form layout='vertical' initialValues = {selectedTheatre} onFinish={onFinish}>
                 <Row gutter={{xs: 6, sm: 10, md: 12, lg: 16}}>

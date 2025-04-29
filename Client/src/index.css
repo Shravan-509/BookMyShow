@@ -94,14 +94,18 @@ button {
 .fs-12 {
   font-size: 12px;
 }
+.custom-select {
+  min-height: 45px; /* outside container min-height, not the selector */
+}
 .custom-select .ant-select-selector {
-  min-height: 45px;
+  padding: 6px 11px !important; /* control inside padding */
+  display: flex !important;
   align-items: center !important;
-  padding-top: 4px !important;
+  min-height: auto !important; /* REMOVE fixed height */
 } 
 .custom-select .ant-select-selection-item {
-  line-height: 24px;
-  padding-top: 2px;
+  line-height: 22px;
+  padding: 0;
 }
 table th {
   white-space: nowrap;

@@ -1,9 +1,8 @@
 import React from 'react'
 import MovieList from './MovieList'
 import TheatreList from './TheatreList'
-import { Typography, Tabs } from 'antd'
-
-const { Title } = Typography;
+import { Tabs } from 'antd'
+import Title from 'antd/es/typography/Title'
 
 const Admin = () => {
   const tabItems = [

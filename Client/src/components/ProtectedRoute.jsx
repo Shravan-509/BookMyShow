@@ -81,7 +81,7 @@ const ProtectedRoute = ({ children}) => {
         },
         {
             key: 'profile',
-            label: `${ user ? user.name: " "}`,
+            label: `Hi, ${ user ? user.name: " "}`,
             icon: <UserOutlined/>,
             children: [
                 {

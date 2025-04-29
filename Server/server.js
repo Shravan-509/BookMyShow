@@ -5,6 +5,7 @@ const connectDB = require('./config/db');
 const userRoute = require('./routes/userRoute');
 const movieRoute = require("./routes/movieRoute");
 const theatreRoute = require("./routes/theatreRoute");
+const showRoute = require("./routes/showRoute");
 const errorHandler = require('./middlewares/errorHandler');
 
 const { validateJWT } = require("./middlewares/authorization");
@@ -17,6 +18,7 @@ connectDB();
 app.use("/bms/v1/users", userRoute);
 app.use("/bms/v1/movies", validateJWT, movieRoute);
 app.use("/bms/v1/theatres", validateJWT, theatreRoute)
+app.use("/bms/v1/shows", validateJWT, showRoute)
 
 app.use(errorHandler);
 

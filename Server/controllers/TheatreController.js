@@ -1,4 +1,5 @@
 const Theatre = require("../models/theatreSchema");
+const User = require('../models/userSchema');
 
 const addTheatre = async(req, res, next) => {
     try {
@@ -41,7 +42,7 @@ const updateTheatre = async(req, res, next) => {
         res.send({
             success: true,
             message: `${name} Theatre has been updated!`,
-            data: updateTheatre
+            data: updatedTheatre
         })
 
     } catch (error) {
@@ -72,9 +73,36 @@ const deleteTheatre = async(req, res, next) => {
     }
 };
 
+// getTheatresByOwner & getTheatresForAdmin merged to one dynamic API to get Theatres info
 const getTheatres = async(req, res, next) => {
     try {
-        const theatres = await Theatre.find().populate({
+        console
+        // Fetch user info from DB
+        const user = await User.findById(req.body.userId);
+        if(!user)
+        {
+            return res.send({
+                success: false,
+                message: "User not found!",
+            })
+        }
+
+        let query = {};
+        // Check user's role
+        if(user.role === "admin"){
+            query = {};
+        }
+        else if(user.role === "partner")
+        {
+            query = {owner : user._id};
+        }
+        else
+        {
+            return res.status(403).json({ message: "Access denied" });
+        }
+
+        //Fetch theatres based on query (Admin, Partner)
+        const theatres = await Theatre.find(query).populate({
             path: "owner",
             select: "-password"  // exclude password field
           });
@@ -91,25 +119,9 @@ const getTheatres = async(req, res, next) => {
     }
 };
 
-const getTheatresByOwner = async(req, res, next) => {
-    try {
-        const theatres = await Theatre.find({owner: req?.body.userId});
-        return res.send({
-                success: true,
-                message: "All Theatres has been fetched!",
-                data: theatres
-            })
-        
-    } catch (error) {
-        res.status(400);
-        next(error)
-    }
-};
-
 module.exports = {
     addTheatre, 
     getTheatres, 
     updateTheatre, 
-    deleteTheatre,
-    getTheatresByOwner
+    deleteTheatre
 };

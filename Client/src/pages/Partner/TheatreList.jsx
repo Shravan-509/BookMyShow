@@ -4,14 +4,16 @@ import { Button, message, Table, Tag, Tooltip } from 'antd';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import { hideLoading, showLoading } from '../../redux/loaderSlice';
 
-import { getTheatresByOwner } from '../../api/theatre';
+import { getTheatres } from '../../api/theatre';
 import TheatreForm from './TheatreForm';
 import DeleteTheatre from './DeleteTheatre';
+import MovieShows from './MovieShows';
 
 const TheatreList = () => {
     const [theatres, setTheatres] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isShowModalOpen, setIsShowModalOpen] = useState(false);
     const [selectedTheatre, setSelectedTheatre] = useState(null);
     const [formType, setFormType] = useState("add");
 
@@ -84,6 +86,15 @@ const TheatreList = () => {
                                 <DeleteOutlined/>
                             </Button>
                         </Tooltip>
+                        {data.isActive && 
+                            <Button 
+                                onClick={() => {
+                                    setIsShowModalOpen(true);
+                                    setSelectedTheatre(data);
+                                }}
+                            >
+                                + Shows
+                            </Button>}
                     </div>
                 )
             }
@@ -95,7 +106,7 @@ const TheatreList = () => {
     const getData = async () => {
         try {
             dispatch(showLoading());
-            const response = await getTheatresByOwner();
+            const response = await getTheatres();
             if(response?.success){
                 setTheatres(response?.data);
             }
@@ -148,6 +159,15 @@ const TheatreList = () => {
                     selectedTheatre={selectedTheatre}
                     setSelectedTheatre={setSelectedTheatre}
                 />
+        }
+        {
+            isShowModalOpen && 
+            <MovieShows
+                isShowModalOpen={isShowModalOpen} 
+                setIsShowModalOpen={setIsShowModalOpen}
+                selectedTheatre={selectedTheatre}
+                setSelectedTheatre={setSelectedTheatre}
+            />
         }
         
     </div>

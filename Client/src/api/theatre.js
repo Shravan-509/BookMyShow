@@ -10,15 +10,6 @@ export const addTheatre = async (payload) => {
     }
 };
 
-export const getTheatresByOwner = async () => {
-    try {
-        const response = await axiosInstance.get("/theatres");
-        return response?.data;
-    } catch (error) {
-        return error;
-    }
-};
-
 export const updateTheatre = async (id, payload) => {
     try {
         const response = await axiosInstance.patch(`/theatres/${id}`, payload);
@@ -37,7 +28,8 @@ export const deleteTheatre = async (id) => {
     }
 };
 
-export const getTheatresForAdmin = async () => {
+// getTheatresByOwner & getTheatresForAdmin merged to one dynamic to get Theatres info
+export const getTheatres = async () => {
     try {
         const response = await axiosInstance.get("/theatres");
         return response?.data;
