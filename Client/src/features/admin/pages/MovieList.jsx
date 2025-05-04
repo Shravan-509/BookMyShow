@@ -4,8 +4,8 @@ import moment from 'moment';
 import {useDispatch} from "react-redux";
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 
-import { hideLoading, showLoading } from '../../redux/loaderSlice';
-import { getMovies } from '../../api/movie';
+import { hideLoading, showLoading } from '../../../redux/slices/loaderSlice';
+import { getMovies } from '../../../api/movie';
 import MovieForm from './MovieForm';
 import DeleteMovie from './DeleteMovie';
 
@@ -52,7 +52,8 @@ const MovieList = () => {
                         src={data?.poster}
                         alt="Movie Poster"
                         style={{objectFite: "cover", borderRadius: 4 }}
-                        width="60"
+                        width="80"
+                        
                     />
                 )
             }
@@ -104,9 +105,9 @@ const MovieList = () => {
             key: "actions",
             render : (text, data) => {
                 return(
-                    <div className= "d-flex gap-10">
+                    <div className= "flex gap-3">
                         <Tooltip title="Edit Movie">
-                            <Button
+                            <Button size='large'
                                 onClick={() => {
                                     setIsModalOpen(true);
                                     setSelectedMovie(data);
@@ -117,7 +118,7 @@ const MovieList = () => {
                             </Button>
                         </Tooltip>
                         <Tooltip  title={"Delete Movie"}>
-                            <Button danger
+                            <Button danger size='large'
                                 onClick={() => {
                                     setIsDeleteModalOpen(true);
                                     setSelectedMovie(data);
@@ -163,8 +164,8 @@ const MovieList = () => {
 
   return (
    <div style={{ borderRadius: "8px", padding: "5px" }}>
-        <div className='d-flex justify-content-end mb-3'> 
-            <Button type="primary"
+        <div className='flex justify-end mb-4'> 
+            <Button type="primary" size='large'
                 onClick={() => {
                     setIsModalOpen(!isModalOpen);
                     setFormType("add");

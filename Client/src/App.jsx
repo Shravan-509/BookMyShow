@@ -1,41 +1,30 @@
-import {BrowserRouter, Routes, Route} from 'react-router-dom';
-import Home from './pages/Home';
-import Login from './pages/Login';
-import Register from './pages/Register';
+import {Routes, Route} from 'react-router-dom';
+import Home from './features/home/pages/Home';
 import './App.css';
-import { useSelector } from 'react-redux';
-import { Flex, Spin } from 'antd';
-import Profile from './pages/Profile';
-import Admin from './pages/Admin/Admin';
-import Partner from './pages/Partner/Partner';
+import Profile from './features/user/pages/Profile';
+import Admin from './features/admin/pages/Admin';
+import Partner from './features/partner/pages/Partner';
 import ProtectedRoute from './components/ProtectedRoute';
+import AuthTabs from './features/auth/pages/AuthTabs';
+import { useDispatch } from 'react-redux';
+import { fetchUser } from './redux/actions/authSlice';
+import { useEffect } from 'react';
 
 function App() {
-  const {loading} = useSelector((state) => state.loader)
+  const dispatch = useDispatch();
+  useEffect(() => {
+    dispatch(fetchUser());
+  }, [dispatch]);
+  
   return (
-   <>
-   {
-    loading && (
-      <div className='loader-container'>
-        {/* <div className='loader'></div> */}
-          <Flex align="center" gap="middle">
-            <Spin size="large" />
-          </Flex>
-      </div>
-      
-    )
-   }
-    <BrowserRouter>
+    
       <Routes>
-        <Route path ="/" element={<ProtectedRoute><Home /></ProtectedRoute>}/>
+        <Route path ="/home" element={<ProtectedRoute><Home /></ProtectedRoute>}/>
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
         <Route path="/partner" element={<ProtectedRoute><Partner /></ProtectedRoute>} />
-        <Route path ="/login" element={<Login />}/>
-        <Route path ="/register" element={<Register />}/>
+        <Route path ="/" element={<AuthTabs />}/>
       </Routes>
-   </BrowserRouter>
-   </>
   )
 }
 

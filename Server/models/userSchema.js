@@ -13,6 +13,12 @@ const userSchema = new mongoose.Schema(
             required: true,
             unique: true,
         },
+        phone:
+        {
+            type: Number,
+            required: true,
+            unique: true,
+        },
         password:
         {
             type: String,
@@ -29,6 +35,16 @@ const userSchema = new mongoose.Schema(
             enum: ["admin", "partner", "user"],
             required: true,
             default: "user"
+        },
+        isVerified :
+        {
+            type: Boolean,
+            default: false
+        },
+        twoFactorEnabled:
+        {
+            type: Boolean,
+            default: true
         }
     },
     {

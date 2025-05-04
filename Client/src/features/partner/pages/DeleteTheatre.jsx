@@ -1,8 +1,8 @@
 import React from 'react'
 import { useDispatch } from 'react-redux';
-import { hideLoading, showLoading } from '../../redux/loaderSlice';
+import { hideLoading, showLoading } from '../../../redux/slices/loaderSlice';
 import { message, Modal } from 'antd';
-import { deleteTheatre } from '../../api/theatre';
+import { deleteTheatre } from '../../../api/theatre';
 
 const DeleteTheatre = ({ isDeleteModalOpen,
     setIsDeleteModalOpen,

@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { Button, Col, Form, Input, message, Modal, Popconfirm, Row, Select, Table, Tooltip } from "antd";
+import { Button, Col, Form, Input, InputNumber, message, Modal, Popconfirm, Row, Select, Table, Tooltip } from "antd";
 import Title from "antd/es/typography/Title";
 import moment from "moment";
 import { EditOutlined, DeleteOutlined, ArrowLeftOutlined } from "@ant-design/icons";
 import { useDispatch } from "react-redux";
-import { hideLoading, showLoading } from "../../redux/loaderSlice";
-import { addShow, deleteShow, getShowsByTheatre, updateShow } from "../../api/show";
-import { getMovies } from "../../api/movie";
+import { hideLoading, showLoading } from "../../../redux/slices/loaderSlice";
+import { addShow, deleteShow, getShowsByTheatre, updateShow } from "../../../api/show";
+import { getMovies } from "../../../api/movie";
 
 const MovieShows = ({
     isShowModalOpen,
@@ -19,7 +19,6 @@ const MovieShows = ({
     const [shows, setShows] = useState([]);
     const [movies, setMovies] = useState([]);
     const [selectedShow, setSelectedShow] = useState(null);
-    const [isDeleteShowModalOpen, setIsDeleteShowModalOpen] = useState(false);
 
     const dispatch = useDispatch();
 
@@ -168,9 +167,9 @@ const MovieShows = ({
             key: "actions",
             render : (text, data) => {
                 return(
-                    <div className= "d-flex align-items-center gap-10">
+                    <div className= "flex items-center gap-3">
                         <Tooltip title="Edit Show">
-                            <Button
+                            <Button size="large"
                                 onClick={() => {
                                     setView("edit");
                                     setSelectedShow({
@@ -190,7 +189,7 @@ const MovieShows = ({
                             cancelText="No"
                         >
                             <Tooltip  title={"Delete Show"}>
-                                <Button danger>
+                                <Button size="large" danger>
                                     <DeleteOutlined/>
                                 </Button>
                             </Tooltip>
@@ -210,7 +209,7 @@ const MovieShows = ({
         width={1200}
         footer={null}
     >
-        <div className="d-flex justify-content-between mb-3">
+        <div className="flex justify-between mb-4">
             <Title level={4}>
                 {
                     view === "table" 
@@ -222,7 +221,7 @@ const MovieShows = ({
             </Title>
             {
                 view === "table" && 
-                <Button 
+                <Button size="large"
                     type="primary"
                     onClick={() => {
                             setView("add");
@@ -252,10 +251,10 @@ const MovieShows = ({
                                 label="Show Name"
                                 name="name"
                                 htmlFor="name"
-                                className="d-block"
-                                rules={[{required: true, message: "Show Name is required!"}]}
+                                className="block"
+                                rules={[{required: true, message: "Show Name is required"}]}
                             >
-                                <Input id="name" type="text" placeholder="Enter the Show Name"></Input>
+                                <Input size="large" id="name" type="text" placeholder="Show Name"></Input>
 
                             </Form.Item>
                         </Col>
@@ -264,10 +263,10 @@ const MovieShows = ({
                                 label="Show Date"
                                 name="date"
                                 htmlFor="date"
-                                className="d-block"
-                                rules={[{required: true, message: "Show Date is required!"}]}
+                                className="block"
+                                rules={[{required: true, message: "Show Date is required"}]}
                             >
-                                <Input id="date" type="date" placeholder="Enter the Show Date"></Input>
+                                <Input id="date" type="date" size="large" placeholder="Show Date"></Input>
                             </Form.Item>
                         </Col>
                         <Col span={8}>
@@ -275,10 +274,10 @@ const MovieShows = ({
                                 label="Show Timing"
                                 htmlFor="time"
                                 name="time"
-                                className="d-block"
-                                rules={[{required: true, message: "Show Time is required!"}]}
+                                className="block"
+                                rules={[{required: true, message: "Show Time is required"}]}
                             >
-                                <Input id="time" type="time" placeholder="Enter the Show Time"></Input>
+                                <Input id="time" type="time" size="large" placeholder="Show Time"></Input>
                             </Form.Item>
                         </Col>
                     </Row>
@@ -288,12 +287,13 @@ const MovieShows = ({
                                 label="Select the Movie"
                                 name="movie"
                                 htmlFor="movie"
-                                className="d-block"
-                                rules={[{required: true, message: "Movie is required!"}]}
+                                className="block"
+                                rules={[{required: true, message: "Movie is required"}]}
                             >
                                <Select
                                 id= "movie"
                                 name= "movie"
+                                size="large"
                                 className="custom-select"
                                 placeholder= "Select Movie"
                                 options={movies.map((movie) => ({
@@ -310,10 +310,10 @@ const MovieShows = ({
                                 label="Ticket Price"
                                 name="ticketPrice"
                                 htmlFor="ticketPrice"
-                                className="d-block"
-                                rules={[{required: true, message: "Ticket Price is required!"}]}
+                                className="block"
+                                rules={[{required: true, message: "Ticket Price is required"}]}
                             >
-                                <Input id="ticketPrice" type="number" placeholder="Enter the Ticket Price"></Input>
+                                <InputNumber min={20} style={{ width: '100%' }}  suffix="Rs" id="ticketPrice" size="large" placeholder="Ticket Price"/>
                             </Form.Item>
                         </Col>
                         <Col span={8}>
@@ -321,16 +321,16 @@ const MovieShows = ({
                                 label="Total Seats"
                                 htmlFor="totalSeats"
                                 name="totalSeats"
-                                className="d-block"
-                                rules={[{required: true, message: "Total Seats are required!"}]}
+                                className="block"
+                                rules={[{required: true, message: "Total Seats are required"}]}
                             >
-                                <Input id="totalSeats" type="Number" placeholder="Enter the total number of Seats"></Input>
+                                <InputNumber min={10} style={{ width: '100%' }} id="totalSeats" size="large" placeholder="Total number of Seats"/>
                             </Form.Item>
                         </Col>
                     </Row>
                    
-                    <div className="d-flex gap-10">
-                        <Button
+                    <div className="flex gap-3">
+                        <Button size="large"
                             block
                             onClick={() => 
                                 {
@@ -342,7 +342,7 @@ const MovieShows = ({
                         >
                             <ArrowLeftOutlined/> Go Back
                         </Button>
-                        <Button 
+                        <Button size="large"
                                 block
                                 type="primary"
                                 htmlType="submit"

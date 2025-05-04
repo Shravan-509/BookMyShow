@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { message, Tag, Tooltip, Table, Button } from 'antd';
 import { useDispatch } from 'react-redux';
-import { getTheatres, updateTheatre } from '../../api/theatre';
-import { hideLoading, showLoading } from "../../redux/loaderSlice";
+import { getTheatres, updateTheatre } from '../../../api/theatre';
+import { hideLoading, showLoading } from "../../../redux/slices/loaderSlice";
 
 const TheatreList = () => {
   const [theatres, setTheatres] = useState([]);
@@ -60,12 +60,12 @@ const TheatreList = () => {
           dataIndex: "action",
           render : (text, data) => {
               return(
-                      <div className='d-flex align-items-center gap-10'>
+                      <div className='flex align-items-center gap-3'>
                         {
                           data.isActive ? (
-                            <Button onClick={() =>  handleStatusChange(data)}>Block</Button> 
+                            <Button size="large" onClick={() =>  handleStatusChange(data)}>Block</Button> 
                           ) : (
-                            <Button onClick={() =>  handleStatusChange(data)}>Approve</Button> 
+                            <Button size="large" onClick={() =>  handleStatusChange(data)}>Approve</Button> 
                           )
                         }
                       </div>  

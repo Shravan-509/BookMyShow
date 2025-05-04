@@ -1,26 +1,18 @@
 import { axiosInstance } from ".";
 
-export const RegisterUser = async (values) => {
-    try {
-        const response = await axiosInstance.post("/users/register", values);
-        return response.data;
-    } catch (error) {
-        return error;
-    }
-};
-
-export const LoginUser = async (values) => {
-    try {
-        const response = await axiosInstance.post("/users/login", values);
-        return response.data;
-    } catch (error) {
-        return error;
-    }
-};
-
 export const UserInfo = async () => {
     try {
-        const response = await axiosInstance.get("/users/user");
+        const response = await axiosInstance.get("/users");
+        return response.data;
+    } catch (error) {
+        return error
+        
+    }
+}
+
+export const UserLogout = async () => {
+    try {
+        const response = await axiosInstance.post("/users/logout");
         return response.data;
     } catch (error) {
         return error

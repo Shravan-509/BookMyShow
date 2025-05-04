@@ -2,8 +2,8 @@ import { Button, Col, Form, Input, message, Modal, Row, Select } from 'antd'
 import TextArea from 'antd/es/input/TextArea'
 import React from 'react'
 import { useDispatch } from 'react-redux';
-import { hideLoading, showLoading } from '../../redux/loaderSlice';
-import { addMovie, updateMovie } from '../../api/movie';
+import { hideLoading, showLoading } from '../../../redux/slices/loaderSlice';
+import { addMovie, updateMovie } from '../../../api/movie';
 
 const MovieForm = ({
     isModalOpen, 
@@ -68,9 +68,9 @@ const MovieForm = ({
                         <Form.Item
                             label="Movie Name"
                             name="movieName"
-                            rules={[{required: true, message: "Movie name is required!"}]}
+                            rules={[{required: true, message: "Movie name is required"}]}
                         >
-                            <Input type='text' placeholder="Enter the movie name"></Input>
+                            <Input type='text' placeholder="Movie Name" size='large'></Input>
 
                         </Form.Item>
                     </Col>
@@ -78,9 +78,9 @@ const MovieForm = ({
                         <Form.Item
                             label="Description"
                             name="description"
-                            rules={[{required: true, message: "Description is required!"}]}
+                            rules={[{required: true, message: "Description is required"}]}
                         >
-                            <TextArea rows='4' placeholder="Enter the Description"></TextArea>
+                            <TextArea rows='4' placeholder="Description" size='large'></TextArea>
                         </Form.Item>
                     </Col>
                     <Col span={24}>
@@ -89,18 +89,18 @@ const MovieForm = ({
                                 <Form.Item
                                     label="Movie Duration (in min)"
                                     name="duration"
-                                    rules={[{required: true, message: "Movie Duration is required!"}]}
+                                    rules={[{required: true, message: "Movie Duration is required"}]}
                                 >
-                                    <Input type='number' placeholder="Enter the Movie Duration"></Input>
+                                    <Input type='number' placeholder="Movie Duration" size='large'></Input>
                                 </Form.Item>
                             </Col>
                             <Col span={12}>
                                 <Form.Item
                                     label="Release Date"
                                     name="releaseDate"
-                                    rules={[{required: true, message: "Movie Release Date is required!"}]}
+                                    rules={[{required: true, message: "Movie Release Date is required"}]}
                                 >
-                                    <Input type='date'></Input>
+                                    <Input type='date' size='large'></Input>
                                 </Form.Item>
                             </Col>
                         </Row>
@@ -111,7 +111,7 @@ const MovieForm = ({
                                 <Form.Item
                                     label="Select Movie Language"
                                     name="language"
-                                    rules={[{required: true, message: "Movie Language is required!"}]}
+                                    rules={[{required: true, message: "Movie Language is required"}]}
                                 >
                                     <Select 
                                         placeholder="Select Language"
@@ -128,6 +128,7 @@ const MovieForm = ({
                                             {value: "Punjabi", label: "Punjabi"},
                                             {value: "Bengali", label: "Bengali"}  
                                         ]}
+                                        size='large'
                                     >
                                     </Select>
                                 </Form.Item>
@@ -136,7 +137,7 @@ const MovieForm = ({
                                 <Form.Item
                                     label="Select Movie Genre"
                                     name="genre"
-                                    rules={[{required: true, message: "Movie Genre is required!"}]}
+                                    rules={[{required: true, message: "Movie Genre is required"}]}
                                 >
                                     <Select 
                                         placeholder="Select Genre"
@@ -164,6 +165,7 @@ const MovieForm = ({
                                             {value: "War", label: "War"},
                                             {value: "Western", label: "Western"}
                                         ]}
+                                        size='large' 
                                     >
                                     </Select>
                                 </Form.Item>
@@ -174,9 +176,9 @@ const MovieForm = ({
                         <Form.Item
                             label="Poster URL"
                             name="poster"
-                            rules={[{required: true, message: "Movie Poster is required!"}]}
+                            rules={[{required: true, message: "Movie Poster is required"}]}
                         >
-                                <Input type='text' placeholder='Enter the poster URL'></Input>
+                                <Input type='text' placeholder='Poster URL' size='large'></Input>
                             
                         </Form.Item>
                             
@@ -187,14 +189,16 @@ const MovieForm = ({
                         block
                         type='primary'
                         htmlType='submit'
+                        size='large'
                         style={{fontSize: "1rem", fontWeight: "600"}}
                     >
                         Submit
                     </Button>
                     <Button
                         block
-                        className='mt-3'
+                        className='mt-4'
                        onClick={handleCancel}
+                       size='large'
                     >
                         Cancel
                     </Button>

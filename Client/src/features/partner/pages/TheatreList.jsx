@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react';
 import {useDispatch} from "react-redux";
 import { Button, message, Table, Tag, Tooltip } from 'antd';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
-import { hideLoading, showLoading } from '../../redux/loaderSlice';
+import { hideLoading, showLoading } from '../../../redux/slices/loaderSlice';
 
-import { getTheatres } from '../../api/theatre';
+import { getTheatres } from '../../../api/theatre';
 import TheatreForm from './TheatreForm';
 import DeleteTheatre from './DeleteTheatre';
 import MovieShows from './MovieShows';
@@ -64,9 +64,9 @@ const TheatreList = () => {
             key: "actions",
             render : (text, data) => {
                 return(
-                    <div className= "d-flex gap-10">
+                    <div className= "flex gap-3">
                         <Tooltip title="Edit Theatre">
-                            <Button
+                            <Button size="large"
                                 onClick={() => {
                                     setIsModalOpen(true);
                                     setSelectedTheatre(data);
@@ -77,7 +77,7 @@ const TheatreList = () => {
                             </Button>
                         </Tooltip>
                         <Tooltip  title={"Delete Theatre"}>
-                            <Button danger
+                            <Button danger size="large"
                                 onClick={() => {
                                     setIsDeleteModalOpen(true);
                                     setSelectedTheatre(data);
@@ -87,7 +87,7 @@ const TheatreList = () => {
                             </Button>
                         </Tooltip>
                         {data.isActive && 
-                            <Button 
+                            <Button size="large"
                                 onClick={() => {
                                     setIsShowModalOpen(true);
                                     setSelectedTheatre(data);
@@ -128,8 +128,8 @@ const TheatreList = () => {
     }, [])
   return (
     <div style={{ borderRadius: "8px", padding: "5px" }}>
-        <div className='d-flex justify-content-end mb-3'> 
-            <Button type="primary"
+        <div className='flex justify-end mb-4'> 
+            <Button type="primary" size="large"
                 onClick={() => {
                     setIsModalOpen(true);
                     setFormType("add");

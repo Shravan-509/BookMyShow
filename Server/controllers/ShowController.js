@@ -126,7 +126,7 @@ const getAllTheatresByMovie = async(req, res, next) => {
     try
     {
         const {movie, date} = req.body;
-        const shows = await Show.find({movie, date}).populate(theatre);
+        const shows = await Show.find({movie, date}).populate("theatre");
         if(!shows)
         {
             return res.send({

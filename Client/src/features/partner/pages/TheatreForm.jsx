@@ -2,8 +2,8 @@ import React from 'react';
 import { Button, Col, Form, Input, message, Modal, Row, Select } from 'antd'
 import TextArea from 'antd/es/input/TextArea'
 import { useDispatch, useSelector } from 'react-redux';
-import { hideLoading, showLoading } from '../../redux/loaderSlice';
-import { addTheatre, updateTheatre } from '../../api/theatre';
+import { hideLoading, showLoading } from '../../../redux/slices/loaderSlice';
+import { addTheatre, updateTheatre } from '../../../api/theatre';
 
 const TheatreForm = ({
     isModalOpen, 
@@ -70,9 +70,9 @@ const TheatreForm = ({
                             label="Theatre Name"
                             name="name"
                             htmlFor='name'
-                            rules={[{required: true, message: "Theatre name is required!"}]}
+                            rules={[{required: true, message: "Theatre name is required"}]}
                         >
-                            <Input id='name' type='text' placeholder="Enter the theatre name"></Input>
+                            <Input size="large" id='name' type='text' placeholder="Theatre name"></Input>
 
                         </Form.Item>
                     </Col>
@@ -81,9 +81,9 @@ const TheatreForm = ({
                             label="Theatre Address"
                             name="address"
                             htmlFor='address'
-                            rules={[{required: true, message: "Theatre Address is required!"}]}
+                            rules={[{required: true, message: "Theatre Address is required"}]}
                         >
-                            <TextArea id="address" rows='3' placeholder="Enter Theatre Address"></TextArea>
+                            <TextArea size="large" id="address" rows='3' placeholder="Theatre Address"></TextArea>
                         </Form.Item>
                     </Col>
                     <Col span={24}>
@@ -93,9 +93,12 @@ const TheatreForm = ({
                                     label="Email"
                                      htmlFor='address'
                                     name="email"
-                                    rules={[{required: true, message: "Email is required!"}]}
+                                    rules={[
+                                        { required: true, message: 'Please enter your email' },
+                                        { type: "email", message: "Please enter a valid email" }
+                                    ]}
                                 >
-                                    <Input id="email" type='email' placeholder="Enter the Email"></Input>
+                                    <Input id="email" type='email' size="large" placeholder="Email"></Input>
                                 </Form.Item>
                             </Col>
                             <Col span={12}>
@@ -103,9 +106,12 @@ const TheatreForm = ({
                                     label="Phone Number"
                                     htmlFor='phone'
                                     name="phone"
-                                    rules={[{required: true, message: "Phone Number is required!"}]}
+                                   rules={[
+                                        { required: true, message: "Please enter your phone number" },
+                                        { pattern: /^[6-9]\d{9}$/, message: "Please enter a valid 10-digit phone number" },
+                                    ]}
                                 >
-                                    <Input id="phone" type='number'></Input>
+                                    <Input id="phone" placeholder="Phone Number" size="large"></Input>
                                 </Form.Item>
                             </Col>
                         </Row>
@@ -116,14 +122,16 @@ const TheatreForm = ({
                         block
                         type='primary'
                         htmlType='submit'
+                        size="large"
                         style={{fontSize: "1rem", fontWeight: "600"}}
                     >
                         Submit
                     </Button>
                     <Button
                         block
-                        className='mt-3'
-                       onClick={handleCancel}
+                        className='mt-4'
+                        size="large"
+                        onClick={handleCancel}
                     >
                         Cancel
                     </Button>
