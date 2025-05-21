@@ -7,10 +7,16 @@ const jwt = require("jsonwebtoken");
 const userInfo = async (req, res, next) => {
     try {
         const user = await User.findById(req.body.userId).select("-password");
+        if (!user) {
+            return res.status(404).json({ 
+                success: false,
+                message: "User not found" 
+            })
+          }
         res.send({
             success: true,
             message: "User Details Fetched Successfully",
-            data: user
+            user
         })
         
     } catch (error) {
@@ -41,17 +47,4 @@ const deleteUser = async(req, res, next) => {
 
 }
 
-const logoutUser = async(req, res, next) => {
-    try {
-        res.clearCookie('access_token');
-        return res.status(200).send({
-            success: true,
-            message: "You've Successfully Logged out"
-        })
-        
-    } catch (error) {
-        next(error);
-    }
-}
-
-module.exports = {userInfo, deleteUser, logoutUser}
+module.exports = {userInfo, deleteUser}

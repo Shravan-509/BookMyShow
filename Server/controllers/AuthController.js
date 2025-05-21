@@ -62,9 +62,8 @@ const register = async (req, res, next) => {
         return res.status(201).json({
             success: true,
             message: "User registered Successfully, Please Verify your email",
-            data : {
-                userId: newUser._id
-            }
+            userId: newUser._id
+            
         })
 
     } catch (error) {
@@ -157,9 +156,7 @@ const login = async (req, res, next) => {
                 { 
                     success: true,
                     message: "Your account is not verified. Please verify your email to continue.",
-                    data:{
-                        code: "UNVERIFIED_ACCOUNT"
-                    }
+                    code: "UNVERIFIED_ACCOUNT"
                 }
             )
         }
@@ -176,10 +173,8 @@ const login = async (req, res, next) => {
             return res.send({
                 success: true,
                 message: "Please enter the verification code sent to your email",
-                data: {
-                    requiresTwoFactor: true,
-                    userId: user._id,
-                }
+                requiresTwoFactor: true,
+                userId: user._id,
             })
         }
 
@@ -203,7 +198,17 @@ const login = async (req, res, next) => {
 
         return res.status(200).send({
             success: true,
-            message: "You've Successfully Logged In"
+            message: "You've Successfully Logged In",
+            access_token,
+            user:{
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                phone: user.phone,
+                isVerified: user.isVerified,
+                twoFactorEnabled: user.twoFactorEnabled,
+                role: user.role
+            }            
         })
 
     } catch (error) {
@@ -317,6 +322,20 @@ const reverifyEmail = async(req, res, next) => {
     }
 }
 
+
+const logoutUser = async(req, res, next) => {
+    try {
+        res.clearCookie('access_token');
+        return res.status(200).send({
+            success: true,
+            message: "You've Successfully Logged out"
+        })
+        
+    } catch (error) {
+        next(error);
+    }
+}
+
 module.exports = {
     register, 
     verifyEmail, 
@@ -324,5 +343,6 @@ module.exports = {
     reverifyEmail, 
     login, 
     verify2FA, 
-    resend2FA
+    resend2FA,
+    logoutUser
 }

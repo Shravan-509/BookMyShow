@@ -1,19 +1,75 @@
-import {Routes, Route} from 'react-router-dom';
+
+import { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import {Routes, Route, Navigate} from 'react-router-dom';
+import { Spin } from 'antd';
+import Cookies from "js-cookie"
+import { authStatusChecked, checkAuthStatus, selectAuth, selectUser } from './redux/slices/authSlice';
 import Home from './features/home/pages/Home';
-import './App.css';
+import MainLayout from './components/MainLayout';
 import Profile from './features/user/pages/Profile';
 import Admin from './features/admin/pages/Admin';
 import Partner from './features/partner/pages/Partner';
-import ProtectedRoute from './components/ProtectedRoute';
 import AuthTabs from './features/auth/pages/AuthTabs';
-import { useDispatch } from 'react-redux';
-import { fetchUser } from './redux/actions/authSlice';
-import { useEffect } from 'react';
+import './App.css';
+
+// Protected Route Component
+const ProtectedRoute = ({children}) => {
+  const user = useSelector(selectUser);
+  const {isAuthenticated, checkingAuth} = useSelector(selectAuth);
+
+  if(checkingAuth) { return null;
+    // return (
+    //   <div className='loader-container'>
+    //       <Spin size="large" />
+    //   </div>
+    // )
+  }
+
+  if(!isAuthenticated)
+  {
+    return <Navigate to="/" replace/>
+  }
+  
+  return <MainLayout>{children}</MainLayout>;
+}
+
+// Public Route component (redirects to dashboard if authenticated)
+const PublicRoute = ({children}) => {
+  const {isAuthenticated, checkingAuth} = useSelector(selectAuth);
+
+  if(checkingAuth) 
+  {
+    return (
+      <div className='loader-container'>
+          <Spin size="large" />
+      </div>
+    )
+  }
+
+  if(isAuthenticated)
+  {
+    return <Navigate to="/home" replace/>
+  }
+  return children;
+}
 
 function App() {
   const dispatch = useDispatch();
+  
+  // Check authentication status on initial load
   useEffect(() => {
-    dispatch(fetchUser());
+    // const token = Cookies.get("access_token");
+    // if(token)
+    // {
+      dispatch(checkAuthStatus());
+    // }
+    // else 
+    // {
+    //   // If no token, mark auth check as complete
+    //   dispatch(authStatusChecked({ isAuthenticated: false, user: null, token: null }))
+    // }
+    
   }, [dispatch]);
   
   return (
@@ -23,7 +79,8 @@ function App() {
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
         <Route path="/partner" element={<ProtectedRoute><Partner /></ProtectedRoute>} />
-        <Route path ="/" element={<AuthTabs />}/>
+        <Route path ="/" element={<PublicRoute><AuthTabs /></PublicRoute>}/>
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
   )
 }

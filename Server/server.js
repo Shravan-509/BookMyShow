@@ -14,7 +14,6 @@ const showRoute = require("./routes/showRoute");
 const errorHandler = require('./middlewares/errorHandler');
 const { validateJWT } = require("./middlewares/authorization");
 
-const PORT = process.env.PORT;
 const app = express();
 
 //Rate limiter
@@ -36,7 +35,7 @@ app.use(cors({
     credentials: true
 }));
 
-// app.use(limiter);
+app.use(limiter);
 app.use("/bms/v1/auth", authRoute);
 app.use("/bms/v1/users", validateJWT, userRoute);
 app.use("/bms/v1/movies", validateJWT, movieRoute);
@@ -45,6 +44,6 @@ app.use("/bms/v1/shows", validateJWT, showRoute)
 
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-    console.log(`Server is running on ${PORT}`)
+app.listen(process.env.PORT, () => {
+    console.log(`Server is running on ${process.env.PORT}`)
 })

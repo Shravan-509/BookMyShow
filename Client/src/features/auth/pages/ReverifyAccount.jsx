@@ -1,61 +1,37 @@
-import { ExclamationCircleOutlined, MailOutlined } from '@ant-design/icons'
-import { Button, Form, Input, message, Modal } from 'antd'
 import React from 'react'
+import { ExclamationCircleOutlined, MailOutlined } from '@ant-design/icons'
+import { Button, Form, Input, Modal } from 'antd'
 import { useDispatch, useSelector } from 'react-redux';
-import { hideLoading, showLoading } from '../../../redux/slices/loaderSlice';
-import { ReverifyEmail } from '../../../api/auth';
+import { 
+  reverifyAccountRequest,
+  selectShowReverifyAccountModal, 
+  selectVerificationEmail, 
+  selectVerificationLoading,
+  setShowReverifyAccountModal
+} from '../../../redux/slices/verificationSlice';
 
-const ReverifyAccount = ({
-    showReverifyAccountModal,
-    setShowReverifyAccountModal,
-    verificationEmail,
-    setVerificationEmail,
-    setTempUserId,
-    setShowEmailVerificationModal,
-    setResendDisabled,
-    setCountDown
-}) => {
+const ReverifyAccount = () => {
     const [reverifyForm] = Form.useForm();
-    const {loading} = useSelector((state) => state.loader);
     const dispatch = useDispatch();
+    const isOpen = useSelector(selectShowReverifyAccountModal);
+    const verificationEmail = useSelector(selectVerificationEmail);
+    const loading = useSelector(selectVerificationLoading);
 
-    const submitReverifyRequest = async (values) => {
-      try 
-      {
-        dispatch(showLoading());
-        
-         // Call reverify API
-        const res = await ReverifyEmail({email: values.email});
-        
-        if(res?.success)
-          {
-              message.success(res?.message);
-              
-              // Show email verification screen
-              setVerificationEmail(values.email)
-              setTempUserId(res.data.userId)
-              setShowReverifyAccountModal(false);
-              setShowEmailVerificationModal(true);
-        
-              // Start countdown for resend button
-              setResendDisabled(true)
-              setCountDown(60)
-          }
+    const submitReverifyRequest = (values) => {
+      dispatch(reverifyAccountRequest({ email: values.email }))
+    }
 
-      } catch (error) {
-        message.error(error.message || "Reverification request failed. Please try again.")
-      } finally {
-        dispatch(hideLoading())
-      }
+    const handleClose = () => {
+      dispatch(setShowReverifyAccountModal(false));
     }
 
   return (
     <Modal
       title="Verify Your Account"
-      open={showReverifyAccountModal}
+      open={isOpen}
       footer={null}
       closable={true}
-      onCancel={() => setShowReverifyAccountModal(false)}
+      onCancel={handleClose}
       centered
       className="verification-modal"
     >
@@ -69,7 +45,7 @@ const ReverifyAccount = ({
         <Form form={reverifyForm} onFinish={submitReverifyRequest} layout="vertical">
           <Form.Item
             name="email"
-            initialValue={verificationEmail}
+            initialValue={{email : verificationEmail}}
             rules={[
               { required: true, message: "Please enter your email" },
               { type: "email", message: "Please enter a valid email" },

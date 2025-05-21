@@ -1,67 +1,43 @@
+import React from 'react'
 import { ArrowLeftOutlined, MailOutlined } from '@ant-design/icons'
-import { Button, Modal, Form, Input, message } from 'antd'
-import React, { useState } from 'react'
+import { Button, Modal, Form, Input } from 'antd'
 import { useDispatch, useSelector } from 'react-redux'
-import { VerifyEmail } from '../../../api/auth'
-import { hideLoading, showLoading } from '../../../redux/slices/loaderSlice'
+import {
+  selectShowEmailVerificationModal, 
+  selectVerificationEmail, 
+  selectVerificationLoading, 
+  setShowEmailVerificationModal, 
+  resendCodeRequest,
+  selectCountdown, 
+  selectResendDisabled, 
+  verifyEmailRequest
+} from "../../../redux/slices/verificationSlice";
 
-const EmailVerification = ({
-    verificationEmail,
-    showEmailVerificationModal, 
-    setShowEmailVerificationModal, 
-    tempUserId,
-    setActiveTab,
-    signupForm,
-    resendDisabled,
-    countDown
-}) => {
+const EmailVerification = () => {
       const [verifyEmailForm] = Form.useForm();
-      const {loading} = useSelector((state) => state.loader);
       const dispatch = useDispatch();
-    
-      const handleResendVerificationCode = async (type) => {
+      const isOpen = useSelector(selectShowEmailVerificationModal);
+      const verificationEmail = useSelector(selectVerificationEmail);
+      const loading = useSelector(selectVerificationLoading);
+      const resendDisabled = useSelector(selectResendDisabled);
+      const countdown = useSelector(selectCountdown);
+
+      const handleVerifyEmail = (values) => {
+       dispatch(verifyEmailRequest({ code: values.code }))
       }
-    
-      const handleVerifyEmail = async (values) => {
-        try {
-            dispatch(showLoading());
-            
-            const payload = {
-                userId : tempUserId,
-                code: values.code
-            }
 
-            const res = await VerifyEmail(payload);
-            if(res?.success)
-            {
-                message.success(res?.message);
-                
-                // Delay transition to let toast show
-                setTimeout(() => {
-                  setShowEmailVerificationModal(false); 
-                  signupForm.resetFields();
-                  verifyEmailForm.resetFields(); 
-                }, 1000);   
-                setActiveTab("login");
+      const handleClose = () => {
+        dispatch(setShowEmailVerificationModal(false));
+      }
 
-            }
-            else
-            {     
-                message.warning(res?.response?.data?.message);
-            }
-
-        } catch (error) {
-          message.error(error);
-        }finally{
-            dispatch(hideLoading()); 
-        }
-    
+      const handleResendVerificationCode = () => {
+        dispatch(resendCodeRequest({ type: "email" }))
       }
 
   return (
     <Modal
       title="Email Verification"
-      open={showEmailVerificationModal}
+      open={isOpen}
       footer={null}
       closable={false}
       centered
@@ -82,19 +58,26 @@ const EmailVerification = ({
           </Form.Item>
 
           <Form.Item>
-            <Button type="primary" htmlType="submit" className="auth-button" loading={loading} block size="large">
+            <Button 
+              type="primary" 
+              htmlType="submit" 
+              className="auth-button" 
+              loading={loading} 
+              block 
+              size="large"
+            >
               Verify Email
             </Button>
           </Form.Item>
         </Form>
 
         <div className="verification-actions">
-          <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => setShowEmailVerificationModal(false)}>
+          <Button type="text" icon={<ArrowLeftOutlined />} onClick={handleClose}>
             Back
           </Button>
 
-          <Button type="link" disabled={resendDisabled} onClick={() => handleResendVerificationCode("email")}>
-            {resendDisabled ? `Resend code in ${countDown}s` : "Resend code"}
+          <Button type="link" disabled={resendDisabled} onClick={handleResendVerificationCode}>
+            {resendDisabled ? `Resend code in ${countdown}s` : "Resend code"}
           </Button>
         </div>
       </div>

@@ -1,67 +1,37 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Button, Checkbox, Form, Input, message, Radio, Space } from 'antd';
 import { LockOutlined, MailOutlined, PhoneOutlined, UserOutlined } from '@ant-design/icons';
 import { useDispatch, useSelector } from 'react-redux';
-import { hideLoading, showLoading } from '../../../redux/slices/loaderSlice';
 import EmailVerification from './EmailVerification';
-import { RegisterUser } from '../../../api/auth';
+import { selectAuthLoading, signupRequest } from '../../../redux/slices/authSlice';
+import { selectActiveTab } from '../../../redux/slices/uiSlice';
 
-const Register = ({
-    verificationEmail,
-    setVerificationEmail, 
-    showEmailVerificationModal,
-    setShowEmailVerificationModal,
-    activeTab, 
-    setActiveTab,
-    countDown,
-    setCountDown,
-    tempUserId,
-    setTempUserId,
-    resendDisabled,
-    setResendDisabled,
-}) => {
+const Register = () => {
     const [signupForm] = Form.useForm();
    
-    const {loading} = useSelector((state) => state.loader);
+    const loading = useSelector(selectAuthLoading);
+    const activeTab = useSelector(selectActiveTab)
     const dispatch = useDispatch();
     
-    const onFinish = async (values) => {
-        try {
-            dispatch(showLoading());
-            const registerRes = await RegisterUser(values);
-            if(registerRes?.success)
-            {
-                message.success(registerRes?.message);
-                // setActiveTab("login");
-                // Show Email Verification Screen
-                setVerificationEmail(values.email);
-                setTempUserId(registerRes?.data.userId);
-                setShowEmailVerificationModal(true);
+    const handleSignup = (values) => {
+        dispatch(signupRequest
+            ({
+                name: values.name,
+                email: values.email,
+                phone: values.phone,
+                password: values.password,
+                role: values.role
 
-                //Start countDown for resend button
-                setResendDisabled(true);
-                setCountDown(60);
-            }
-            else
-            {
-                message.warning(registerRes?.response?.data?.message);
-            }
-         
-        } 
-        catch (error) {
-            message.error(error);
-           
-        }finally{
-            dispatch(hideLoading());
-        }
-      };
+            })
+        )
+    }
 
     return(
         <>
             <Form
                 form={signupForm}
                 name="register"
-                onFinish={onFinish}
+                onFinish={handleSignup}
                 autoComplete="off"
                 layout='vertical'
                 requiredMark={false}
@@ -159,16 +129,7 @@ const Register = ({
                 </Form.Item>
             </Form>
 
-            <EmailVerification
-                verificationEmail= {verificationEmail}
-                showEmailVerificationModal={showEmailVerificationModal}
-                setShowEmailVerificationModal={setShowEmailVerificationModal}
-                tempUserId = {tempUserId}
-                setActiveTab = {setActiveTab}
-                signupForm={signupForm}
-                resendDisabled = {resendDisabled}
-                countDown= {countDown}
-            />
+            <EmailVerification />
         </>
     )
 };

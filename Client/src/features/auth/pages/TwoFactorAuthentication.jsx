@@ -1,68 +1,48 @@
+import React from 'react'
 import { ArrowLeftOutlined, KeyOutlined } from '@ant-design/icons'
 import { Button, Modal, Form, Input, message } from 'antd'
-import React, { useState } from 'react'
-import { Verify2FA } from '../../../api/auth';
 import { useNavigate } from 'react-router-dom';
-import { hideLoading, showLoading } from '../../../redux/slices/loaderSlice';
 import { useDispatch, useSelector } from 'react-redux';
-
-const TwoFactorAuthentication = ({
-  verificationEmail,
-  showTwoFactorAuthModal,
+import { 
+  resendCodeRequest,
+  selectCountdown,
+  selectResendDisabled,
+  selectShowTwoFactorAuthModal, 
+  selectVerificationEmail,
+  selectVerificationLoading,
   setShowTwoFactorAuthModal,
-  tempUserId,
-  loginForm,
-  resendDisabled,
-  countDown
-}) => {
+  verifyTwoFactorRequest
+} from '../../../redux/slices/verificationSlice';
+
+const TwoFactorAuthentication = () => {
   const [twoFactorForm] = Form.useForm();
-  
-  const {loading} = useSelector((state) => state.loader);
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const handleResendVerificationCode = async (type) => {
+
+  const isOpen = useSelector(selectShowTwoFactorAuthModal);
+  
+  const verificationEmail = useSelector(selectVerificationEmail);
+  const loading = useSelector(selectVerificationLoading);
+  const resendDisabled = useSelector(selectResendDisabled);
+  const countdown = useSelector(selectCountdown);
+
+  console.log(isOpen,verificationEmail, loading, resendDisabled, countdown )
+  const handleVerifyTwoFactor = (values) => {
+    dispatch(verifyTwoFactorRequest({ code: values.code }))
   }
 
-  const handleVerifyTwoFactor = async (values) => {
-    try 
-    {
-      dispatch(showLoading());
-      
-      const payload = {
-          userId : tempUserId,
-          code: values.code
-      }
-      const res = await Verify2FA(payload);
-      if(res?.success)
-      {
-          message.success(res?.message);
-          
-          // Delay transition to let toast show
-          await new Promise((resolve) => setTimeout(resolve, 1000))
-          
-          setShowTwoFactorAuthModal(false); 
-          loginForm.resetFields();
-          twoFactorForm.resetFields(); 
-          // localStorage.setItem("access_token", res?.access_token);
-          navigate("/home"), { replace: true };
-                    
-      }
-      else
-      {     
-          message.warning(res?.response?.data?.message);
-      }
+  const handleClose = () => {
+    dispatch(setShowTwoFactorAuthModal(false));
+  }
 
-    } catch (error) {
-      message.error(error);
-    } finally{
-     dispatch(hideLoading());
-    }
+  const handleResendVerificationCode = () => {
+    dispatch(resendCodeRequest({ type: "2fa" }))
   }
 
   return (
     <Modal
       title="Two-Factor Authentication"
-      open={showTwoFactorAuthModal}
+      open={isOpen}
       footer={null}
       closable={false}
       centered
@@ -90,12 +70,12 @@ const TwoFactorAuthentication = ({
         </Form>
 
         <div className="verification-actions">
-          <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => setShowTwoFactorAuthModal(false)}>
+          <Button type="text" icon={<ArrowLeftOutlined />} onClick={handleClose}>
             Back
           </Button>
 
-          <Button type="link" disabled={resendDisabled} onClick={() => handleResendVerificationCode("2fa")}>
-            {resendDisabled ? `Resend code in ${countDown}s` : "Resend code"}
+          <Button type="link" disabled={resendDisabled} onClick={handleResendVerificationCode}>
+            {resendDisabled ? `Resend code in ${countdown}s` : "Resend code"}
           </Button>
         </div>
       </div>
