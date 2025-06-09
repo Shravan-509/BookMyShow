@@ -28,7 +28,7 @@ const Personalnformation = ({userData, saving}) => {
                 label="Phone Number"
                 rules={[
                     { required: true, message: "Please enter your phone number" },
-                    { pattern: /^\d{10}$/, message: "Please enter a valid 10-digit phone number" },
+                    { pattern: /^[6-9]\d{9}$/, message: "Please enter a valid 10-digit phone number" },
                 ]}
             >
             <Input prefix={<PhoneOutlined />} placeholder="Phone Number" size="large"/>
@@ -40,7 +40,7 @@ const Personalnformation = ({userData, saving}) => {
                     htmlType="submit"
                     icon={<SaveOutlined />}
                     loading={saving}
-                    style={{ backgroundColor: "#e5293e", borderColor: "#e5293e" }}
+                    className='!bg-[#f84464] hover:!bg-[#dc3558]'
                 >
                     Save Changes
                 </Button>

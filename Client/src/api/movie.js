@@ -35,3 +35,12 @@ export const addMovie = async (payload) => {
         return error;
     }
 };
+
+export const getMovieById = async (id) => {
+    try {
+        const response = await axiosInstance.get(`/movies/${id}`);
+        return response?.data;
+    } catch (error) {
+        return error;
+    }
+};

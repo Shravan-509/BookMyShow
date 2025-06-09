@@ -16,13 +16,17 @@ import Personalnformation from "./Personal_Information"
 import PasswordChange from "./PasswordChange"
 import EmailChange from "./EmailChange"
 import Security from "./Security"
+import { useAuth } from "../../../hooks/useAuth"
+import { useSelector } from "react-redux"
+import { selectAuthLoading } from "../../../redux/slices/authSlice"
 
 const { Header, Sider, Content } = Layout
 const { Title, Text } = Typography
 const { TabPane } = Tabs
 
 const Profile = () => {
-  const [loading, setLoading] = useState(true)
+  const { user } = useAuth();    
+  const loading = useSelector(selectAuthLoading);
   const [saving, setSaving] = useState(false)
   const [userData, setUserData] = useState(null)
  
@@ -35,7 +39,7 @@ const Profile = () => {
       key: "1",
       label: "Personal Information",
       children:  <Personalnformation
-                    userData={userData}
+                    userData={user}
                     saving={saving}
                   />
     },
@@ -43,7 +47,7 @@ const Profile = () => {
       key: "2",
       label: "Change Password",
       children: <PasswordChange 
-                  userData={userData}
+                  userData={user}
                   saving={saving}
                 />
     },
@@ -51,14 +55,14 @@ const Profile = () => {
       key: "3",
       label: "Change Email",
       children: <EmailChange 
-                  userData={userData}
+                  userData={user}
                   saving={saving}
                 />
     },
     {
       key: "4",
       label: "Security",
-      children: <Security userData={userData}/>
+      children: <Security userData={user}/>
     }
   ]
 
@@ -78,9 +82,9 @@ const Profile = () => {
           />
           <div style={{ marginLeft: 16 }}>
             <Title level={3} style={{ margin: 0 }}>
-              {userData?.name || "Shravan Kumar Atti"}
+              {user?.name}
             </Title>
-            <Text type="secondary">{userData?.email || "shravan.atti@gmail.com"}</Text>
+            <Text type="secondary">{user?.email}</Text>
           </div>
         </div>
 

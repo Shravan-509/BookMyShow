@@ -127,6 +127,7 @@ const getAllTheatresByMovie = async(req, res, next) => {
     {
         const {movie, date} = req.body;
         const shows = await Show.find({movie, date}).populate("theatre");
+        
         if(!shows)
         {
             return res.send({
@@ -136,6 +137,20 @@ const getAllTheatresByMovie = async(req, res, next) => {
 
         }
         let uniqueTheatres = [];
+        shows.forEach((show) => {
+            let isTheatre = uniqueTheatres.find((theatre) => theatre._id === show.theatre._id);
+
+            if(!isTheatre)
+            {
+                let showsOfThisTheatre = shows.filter(
+                            (showObj) => showObj.theatre._id === show.theatre._id
+                );
+                uniqueTheatres.push({
+                    ...show.theatre._doc,
+                    shows: showsOfThisTheatre
+                })
+            }
+        })
         
         return res.send({
             success: true,

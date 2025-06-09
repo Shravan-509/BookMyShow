@@ -34,7 +34,7 @@ const EmailChange = ({userData, saving}) => {
                 htmlType="submit"
                 icon={<EditOutlined />}
                 loading={saving}
-                style={{ backgroundColor: "#e5293e", borderColor: "#e5293e" }}
+                className='!bg-[#f84464] hover:!bg-[#dc3558]'
             >
                 Request Email Change
             </Button>

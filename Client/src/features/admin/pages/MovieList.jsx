@@ -165,7 +165,10 @@ const MovieList = () => {
   return (
    <div style={{ borderRadius: "8px", padding: "5px" }}>
         <div className='flex justify-end mb-4'> 
-            <Button type="primary" size='large'
+            <Button 
+                type="primary" 
+                size='large'
+                className='!bg-[#f84464] hover:!bg-[#dc3558]'
                 onClick={() => {
                     setIsModalOpen(!isModalOpen);
                     setFormType("add");

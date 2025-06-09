@@ -164,7 +164,7 @@ function* handleCountdown(){
             yield delay(1000)
         }
     } catch (error) {
-        console.error("Countedoen error:". error)
+        console.error("Countdown error:" + error)
     }
 }
 

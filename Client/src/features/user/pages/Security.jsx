@@ -21,10 +21,10 @@ const Security = ({userData}) => {
                 </div>
                 <Button
                     type="primary"
-                    style={{
-                        backgroundColor: userData?.twoFactorEnabled ? "#52c41a" : "#e5293e",
-                        borderColor: userData?.twoFactorEnabled ? "#52c41a" : "#e5293e",
-                    }}
+                    className={`${userData?.twoFactorEnabled ? 
+                                    '!bg-[#2b2b2b] hover:!bg-[#444]' : 
+                                    '!bg-[#f84464] hover:!bg-[#dc3558]'}`
+                            }
                 >
                     { userData?.twoFactorEnabled ? "Disable" : "Enable"}
                 </Button>

@@ -76,7 +76,6 @@ const deleteTheatre = async(req, res, next) => {
 // getTheatresByOwner & getTheatresForAdmin merged to one dynamic API to get Theatres info
 const getTheatres = async(req, res, next) => {
     try {
-        console
         // Fetch user info from DB
         const user = await User.findById(req.body.userId);
         if(!user)

@@ -90,6 +90,7 @@ const MovieShows = ({
             message.error(error);
         }finally{
             dispatch(hideLoading());
+            setSelectedShow(null);
         }
     }
 
@@ -221,8 +222,10 @@ const MovieShows = ({
             </Title>
             {
                 view === "table" && 
-                <Button size="large"
+                <Button 
+                    size="large"
                     type="primary"
+                    className='!bg-[#f84464] hover:!bg-[#dc3558]'
                     onClick={() => {
                             setView("add");
                         }
@@ -346,7 +349,7 @@ const MovieShows = ({
                                 block
                                 type="primary"
                                 htmlType="submit"
-                                style={{fontSize: "1rem", fontWeight: "600"}}
+                                className='!bg-[#f84464] hover:!bg-[#dc3558] !text-base'
                             >
                                 {view === "add" ? "Add Show" : "Update Show"}
                         </Button>

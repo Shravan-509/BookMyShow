@@ -87,14 +87,17 @@ const TheatreList = () => {
                             </Button>
                         </Tooltip>
                         {data.isActive && 
-                            <Button size="large"
-                                onClick={() => {
-                                    setIsShowModalOpen(true);
-                                    setSelectedTheatre(data);
-                                }}
-                            >
-                                + Shows
-                            </Button>}
+                            <Tooltip  title={"Add Shows"}>
+                                <Button size="large"
+                                    onClick={() => {
+                                        setIsShowModalOpen(true);
+                                        setSelectedTheatre(data);
+                                    }}
+                                >
+                                    + Shows
+                                </Button>
+                            </Tooltip>
+                        }
                     </div>
                 )
             }
@@ -129,7 +132,10 @@ const TheatreList = () => {
   return (
     <div style={{ borderRadius: "8px", padding: "5px" }}>
         <div className='flex justify-end mb-4'> 
-            <Button type="primary" size="large"
+            <Button 
+            type="primary" 
+            size="large"
+            className='!bg-[#f84464] hover:!bg-[#dc3558]'
                 onClick={() => {
                     setIsModalOpen(true);
                     setFormType("add");

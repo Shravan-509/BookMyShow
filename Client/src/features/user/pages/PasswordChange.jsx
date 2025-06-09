@@ -55,7 +55,7 @@ const PasswordChange = ({userData, saving}) => {
                     htmlType="submit"
                     icon={<LockOutlined />}
                     loading={saving}
-                    style={{ backgroundColor: "#e5293e", borderColor: "#e5293e" }}
+                    className='!bg-[#f84464] hover:!bg-[#dc3558]'
                 >
                     Update Password
                 </Button>

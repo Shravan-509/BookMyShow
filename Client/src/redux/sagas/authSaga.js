@@ -95,7 +95,7 @@ function* handleCheckAuthStatus() {
 function* handleLogin(action) {
     try{
         const data = yield call(loginApi, action.payload);
-        console.log(data)
+        
         if(data.requiresTwoFactor)
         {
             // Show 2FA verification screen
@@ -166,7 +166,6 @@ function* handleLogout(action) {
     catch(error)
     {
         message.error("Logout failed. Please try again.")
-        console.error("Logout error:", error)
     }
 }
 

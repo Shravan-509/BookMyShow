@@ -25,8 +25,7 @@ const TwoFactorAuthentication = () => {
   const loading = useSelector(selectVerificationLoading);
   const resendDisabled = useSelector(selectResendDisabled);
   const countdown = useSelector(selectCountdown);
-
-  console.log(isOpen,verificationEmail, loading, resendDisabled, countdown )
+  
   const handleVerifyTwoFactor = (values) => {
     dispatch(verifyTwoFactorRequest({ code: values.code }))
   }

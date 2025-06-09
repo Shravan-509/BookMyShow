@@ -123,6 +123,7 @@ const TheatreForm = ({
                         type='primary'
                         htmlType='submit'
                         size="large"
+                        className='!bg-[#f84464] hover:!bg-[#dc3558]'
                         style={{fontSize: "1rem", fontWeight: "600"}}
                     >
                         Submit

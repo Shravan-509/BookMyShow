@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { Col, Input, message, Row, Card, Carousel, Button } from "antd";
-import { LeftOutlined, RightOutlined } from "@ant-design/icons";
+import { LeftOutlined, RightOutlined, SearchOutlined } from "@ant-design/icons";
 import { hideLoading, showLoading } from "../../../redux/slices/loaderSlice";
 import { getMovies } from "../../../api/movie";
 import Title from "antd/es/typography/Title";
@@ -57,7 +57,12 @@ const Home = () => {
           <Input.Search 
             placeholder="Type here to search for movies"
             onChange={handleSearch}
-            enterButton
+            enterButton= {
+              <Button
+                icon={<SearchOutlined className="!text-white" />}
+                className="!bg-[#f84464] hover:!bg-[#dc3558] !text-white !border-none"
+              />
+            }
             size="large"
             allowClear
           />

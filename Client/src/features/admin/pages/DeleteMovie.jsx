@@ -51,6 +51,12 @@ const DeleteMovie = ({
         open={isDeleteModalOpen}
         onOk={handleOk}
         onCancel={handleCancel}
+        okButtonProps={{
+            className: '!bg-[#f84464] hover:!bg-[#dc3558] !text-white'
+        }}
+        cancelButtonProps={{
+            className: 'hover:!border-[#f84464] !text-gray-600 hover:!text-black'
+        }}   
     >
         <p className='pt-3 fs-18'>
             Are you sure, you want to delete this movie <strong>{selectedMovie.movieName}</strong> ?

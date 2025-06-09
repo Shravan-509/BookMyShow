@@ -1,32 +1,17 @@
-import React, { useEffect, useState } from 'react';
-import { Layout, Menu, Spin, theme, Button, Drawer, Divider } from 'antd'
+import React, { useState } from 'react';
+import { Layout, Menu, Spin, theme, Button, Drawer, Divider, Typography } from 'antd'
 import { Content, Footer, Header } from 'antd/es/layout/layout'
-import { EditOutlined, HomeOutlined, LogoutOutlined, MenuOutlined, ProfileOutlined, UserOutlined } from '@ant-design/icons';
+import { HomeOutlined, LogoutOutlined, MenuOutlined, ProfileOutlined, ShoppingOutlined, UserOutlined } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import Cookies from "js-cookie"
-import { checkAuthStatus, selectAuthLoading} from '../redux/slices/authSlice';
+import { useSelector } from 'react-redux';
+import { selectAuthLoading} from '../redux/slices/authSlice';
 import Logo from "../assets/bookmyshow_light.svg";
 import {useAuth} from "../hooks/useAuth"
-
+const {Text} = Typography;
 
 const MainLayout = ({ children}) => {
-    const  {user, logout} = useAuth();
-    // const dispatch = useDispatch();
-
-    // useEffect(() => {
-    //     const token = Cookies.get("access_token");
-    //     if(token && !user)
-    //     {
-    //         dispatch(checkAuthStatus());
-    //     }
-    // }, [dispatch, user]);
-
-    
+    const {user, logout} = useAuth();    
     const loading = useSelector(selectAuthLoading);
-
-    console.log(user);
-
     const [openDrawer, setOpenDrawer] = useState(false);
 
     const showDrawer = () => setOpenDrawer(true);
@@ -63,7 +48,7 @@ const MainLayout = ({ children}) => {
                         }
                         else
                         {
-                            navigate("/profile", { replace: true });
+                            navigate("/my-profile/purchase-history", { replace: true });
                         } 
                     }}
                 >
@@ -88,39 +73,29 @@ const MainLayout = ({ children}) => {
             icon: <UserOutlined />,
             label: (
                 <Link 
-                    to="/profile"
+                    to="/my-profile/edit"
+                    onClick={closeDrawer}
                 >
-                    View Profile
+                    Edit Profile
                 </Link>
             ),
             
         },
         {
             key: '2',
-            icon: <EditOutlined />,
+            icon: <ShoppingOutlined />,
             label: (
                 <Link 
-                    to="/update"
+                    to="/my-profile/purchase-history"
+                    onClick={closeDrawer}
                 >
-                    Update Profile
+                    Your Orders
                 </Link>
             ),
         },
         {
             type: 'divider',
-        },
-        {
-            key: '3',
-            label: (
-                <Button type="primary" danger block 
-                    onClick={logout} 
-                    icon={<LogoutOutlined/>}
-                    style={{ marginTop: '0.5rem' }}
-                >
-                    Logout
-                </Button>
-            )
-        },
+        }
       ]
     
   return (
@@ -142,22 +117,26 @@ const MainLayout = ({ children}) => {
                     top: 0,
                     padding: "0 24px"
                 }}>
-                <img 
-                    src={Logo} 
-                    alt="BookMyShow Logo" 
-                    style={{ height: '40px', marginRight: '10px' }} 
-                />
-                {/* <Title level={3} style={{ marginTop: "10px", color: "white"}}>
-                    BookMyShow
-                </Title> */}
+                    <Link 
+                        to="/home"
+                        onClick={closeDrawer}
+                    >
+                        <img 
+                            src={Logo} 
+                            alt="BookMyShow Logo" 
+                            style={{ height: '40px', marginRight: '10px' }} 
+                        />
+                    </Link>
                 <Menu 
                     theme="dark" 
                     mode="horizontal" 
                     items={navItems} 
-                    style={{ background: '#1F2533', flex: 1, minWidth: 0, justifyContent: "flex-end"}} 
+                    className='custom-nav-menu'
                     defaultSelectedKeys={['home']}
                 />
-                
+                {/* <Text className='!text-white ml-4'>
+                    <UserOutlined/> Hi, { user ? user.name: " "}
+                </Text> */}
                 <Button 
                     icon={<MenuOutlined />} 
                     type="text" 
@@ -168,6 +147,7 @@ const MainLayout = ({ children}) => {
             <Content style={{ flex: 1, padding: 24, borderRadius: borderRadiusLG }}>
                 {children}
             </Content>
+            
             <Footer 
                 style={{ 
                     textAlign: 'center',
@@ -221,10 +201,6 @@ const MainLayout = ({ children}) => {
                 open={openDrawer}
                 style={{ background: '#f5f5f5'}}
                 >
-                    {/* <Button type="link" block>View Profile</Button>
-                    <Button type="link" block>Update Info</Button>
-                    <Divider />
-                    <Button type="primary" danger block onClick={() => handleLogout()}>Logout</Button> */}
                 <Menu
                     mode="vertical"
                     style={{
@@ -233,6 +209,15 @@ const MainLayout = ({ children}) => {
                     }}
                     items={drawerItems}
                 />
+                <Button type="primary"
+                    block
+                    className="!bg-[#f84464] hover:!bg-[#dc3558] !text-white !border-none"
+                    onClick={logout} 
+                    icon={<LogoutOutlined/>}
+                    style={{ marginTop: '0.5rem' }}
+                >
+                    Logout
+                </Button>
             </Drawer>
         </Layout>
     </>

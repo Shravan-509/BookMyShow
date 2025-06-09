@@ -4,14 +4,13 @@ import tailwindcss from '@tailwindcss/vite'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(),  tailwindcss()],
+  plugins: [react(), tailwindcss()],
   server: {
     proxy :{
       "/bms/v1" : {
         target : "http://localhost:3000",
         changeOrigin: true,
-        secure: false,
-        rewrite: (path) => path.replace(/^\/bms\/v1/, ''),
+        secure: false
       },
     },
   },

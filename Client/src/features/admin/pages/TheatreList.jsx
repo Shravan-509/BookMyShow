@@ -63,9 +63,21 @@ const TheatreList = () => {
                       <div className='flex align-items-center gap-3'>
                         {
                           data.isActive ? (
-                            <Button size="large" onClick={() =>  handleStatusChange(data)}>Block</Button> 
+                            <Button 
+                              onClick={() =>  handleStatusChange(data)}
+                              className= 'hover:!border-[#f84464] !text-gray-600 hover:!text-black'
+                        
+                            >
+                              Block
+                            </Button> 
                           ) : (
-                            <Button size="large" onClick={() =>  handleStatusChange(data)}>Approve</Button> 
+                            <Button 
+                              onClick={() =>  handleStatusChange(data)}
+                              className= 'hover:!border-[#f84464] !text-gray-600 hover:!text-black'
+                        
+                            >
+                                Approve
+                            </Button> 
                           )
                         }
                       </div>  
