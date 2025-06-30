@@ -1,12 +1,14 @@
-import React, { useEffect, useState } from 'react';
-import { message, Tag, Tooltip, Table, Button } from 'antd';
-import { useDispatch } from 'react-redux';
-import { getTheatres, updateTheatre } from '../../../api/theatre';
-import { hideLoading, showLoading } from "../../../redux/slices/loaderSlice";
+import React, { useEffect } from 'react';
+import { Tag, Tooltip, Table, Button, Spin } from 'antd';
+import { useDispatch, useSelector } from 'react-redux';
+import { getTheatresRequest, selectTheatre, selectTheatreError, selectTheatreLoading, updateTheatreRequest } from '../../../redux/slices/theatreSlice';
+import { notify } from '../../../utils/notificationUtils';
 
 const TheatreList = () => {
-  const [theatres, setTheatres] = useState([]);
   const dispatch = useDispatch();
+  const loading = useSelector(selectTheatreLoading);
+  const theatreError = useSelector(selectTheatreError)
+  const theatres = useSelector(selectTheatre);
 
   const columns= [
       {
@@ -94,53 +96,29 @@ const TheatreList = () => {
   ]
 
   useEffect(() => {
-    getData();
-  }, [])
+    dispatch(getTheatresRequest())
+  }, [dispatch])
 
-  const getData = async () => {
-      try {
-          dispatch(showLoading());
-          const response = await getTheatres();
-          if(response?.success){
-              setTheatres(response?.data);
-          }
-          else
-          {
-              message.warning(response?.message);
-          }
-
-      } catch (error) {
-          message.error(error);
-          
-      }finally{
-          dispatch(hideLoading());
-      }
-  }
-
-  const handleStatusChange = async(theatre) => {
-    try {
-      dispatch(showLoading());
+  const handleStatusChange = (theatre) => {
+     
       const updatedTheatre = {
         ...theatre,
         isActive: !theatre.isActive
       }
-      const response = await updateTheatre(theatre._id, updatedTheatre);
-      if(response?.success){
-         message.success(response.message)
-         getData();
-      }
-      else
-      {
-          message.warning(response?.message);
-      }
-
-    } catch (error) {
-      message.error(error);
-      
-    }finally{
-        dispatch(hideLoading());
-    }
+      dispatch(updateTheatreRequest({id:theatre._id, theatre: updatedTheatre}));
   }
+  
+  if (loading) {
+        return (
+          <div className="loader-container">
+            <Spin size='large'/>
+          </div>
+        )
+    }
+
+    if(theatreError){
+        notify("error", "Sorry, something went wrong", theatreError);
+    }
 
 return (
     <div style={{ borderRadius: "8px", padding: "5px" }}>

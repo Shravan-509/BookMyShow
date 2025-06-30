@@ -1,56 +1,40 @@
 import React from 'react';
-import { Button, Col, Form, Input, message, Modal, Row, Select } from 'antd'
+import { Button, Col, Form, Input, Modal, Row } from 'antd'
 import TextArea from 'antd/es/input/TextArea'
-import { useDispatch, useSelector } from 'react-redux';
-import { hideLoading, showLoading } from '../../../redux/slices/loaderSlice';
-import { addTheatre, updateTheatre } from '../../../api/theatre';
+import { useDispatch } from 'react-redux';
+import { addTheatreRequest, updateTheatreRequest } from '../../../redux/slices/theatreSlice';
+import { useAuth } from '../../../hooks/useAuth';
 
 const TheatreForm = ({
     isModalOpen, 
     setIsModalOpen, 
-    fetchTheatreData, 
     formType, 
     selectedTheatre, 
     setSelectedTheatre
 }) => {
    
     const dispatch = useDispatch();
-    const {user} = useSelector((state) => state.user);
+    const {user} = useAuth();
    
     const handleCancel = () => {
         setIsModalOpen(false);
         setSelectedTheatre(null);
     };
 
-    const onFinish = async (values) => {
-        try {
-            dispatch(showLoading());
-            let response = null;
-            if(formType === "edit")
-            {
-                response = await updateTheatre(selectedTheatre._id, values);
-            }
-            else
-            {
-                response = await addTheatre({... values, owner: user._id});
-            }
-            if(response?.success)
-            {
-                message.success(response.message);
-                fetchTheatreData();
-            }
-            else
-            {
-                message.warning(response?.message)
-            }
-        } catch (error) {
-            message.error(error);
+    const onFinish = (values) => {
+    
+        if(formType === "edit")
+        {
+            dispatch(updateTheatreRequest({id: selectedTheatre._id, theatre: values}))
+            // response = await updateTheatre(selectedTheatre._id, values);
         }
-        finally{
-            setIsModalOpen(false);
-            setSelectedTheatre(null);
-            dispatch(hideLoading());
+        else
+        {
+            dispatch(addTheatreRequest({... values, owner: user._id}))
+            // response = await addTheatre({... values, owner: user._id});
         }
+        setIsModalOpen(false);
+        setSelectedTheatre(null);
     }
 
   return (

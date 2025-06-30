@@ -1,41 +1,20 @@
 import React from 'react'
 import { useDispatch } from 'react-redux';
-import { hideLoading, showLoading } from '../../../redux/slices/loaderSlice';
-import { message, Modal } from 'antd';
-import { deleteTheatre } from '../../../api/theatre';
+import { Modal } from 'antd';
+import { deleteTheatreRequest } from '../../../redux/slices/theatreSlice';
 
 const DeleteTheatre = ({ isDeleteModalOpen,
     setIsDeleteModalOpen,
-    fetchTheatreData,
     selectedTheatre,
     setSelectedTheatre
   }) => {
 
 const dispatch = useDispatch();
 
-const handleOk = async () => {
-    try {
-        dispatch(showLoading());
-        const theatreId = selectedTheatre._id;
-        const response = await deleteTheatre(theatreId);
-        if(response?.success)
-        {
-            message.success(response.message);
-            fetchTheatreData();
-        }
-        else{
-            message.warning(response.message);
-        }
-        
-    } catch (error) {
-        message.error(error);
-        
-    }finally{
-        setIsDeleteModalOpen(false);
-        setSelectedTheatre(null);
-        dispatch(hideLoading());
-    }
-
+const handleOk = () => {
+    dispatch(deleteTheatreRequest(selectedTheatre._id))   
+    setIsDeleteModalOpen(false);
+    setSelectedTheatre(null);  
 }
 
 const handleCancel = () => {

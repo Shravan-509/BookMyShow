@@ -1,16 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import {useDispatch} from "react-redux";
-import { Button, message, Table, Tag, Tooltip } from 'antd';
+import {useDispatch, useSelector} from "react-redux";
+import { Button, Spin, Table, Tag, Tooltip } from 'antd';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
-import { hideLoading, showLoading } from '../../../redux/slices/loaderSlice';
-
-import { getTheatres } from '../../../api/theatre';
 import TheatreForm from './TheatreForm';
 import DeleteTheatre from './DeleteTheatre';
 import MovieShows from './MovieShows';
+import { getTheatresRequest, selectTheatre, selectTheatreError, selectTheatreLoading } from '../../../redux/slices/theatreSlice';
+import { notify } from '../../../utils/notificationUtils';
 
 const TheatreList = () => {
-    const [theatres, setTheatres] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isShowModalOpen, setIsShowModalOpen] = useState(false);
@@ -18,6 +16,9 @@ const TheatreList = () => {
     const [formType, setFormType] = useState("add");
 
     const dispatch = useDispatch();
+    const loading = useSelector(selectTheatreLoading);
+    const theatreError = useSelector(selectTheatreError)
+    const theatres = useSelector(selectTheatre);
 
     const columns= [
         {
@@ -110,29 +111,22 @@ const TheatreList = () => {
         }
     ]
 
-    const getData = async () => {
-        try {
-            dispatch(showLoading());
-            const response = await getTheatres();
-            if(response?.success){
-                setTheatres(response?.data);
-            }
-            else
-            {
-                message.warning(response?.message);
-            }
+    useEffect(() => {
+        dispatch(getTheatresRequest());
+    }, [dispatch])
 
-        } catch (error) {
-            message.error(error);
-            
-        }finally{
-            dispatch(hideLoading());
-        }
+    if (loading) {
+        return (
+          <div className="loader-container">
+            <Spin size='large'/>
+          </div>
+        )
     }
 
-    useEffect(() => {
-        getData();
-    }, [])
+    if(theatreError){
+        notify("error", "Sorry, something went wrong", theatreError);
+    }
+
   return (
     <div style={{ borderRadius: "8px", padding: "5px" }}>
         <div className='flex justify-end mb-4'> 
@@ -158,7 +152,6 @@ const TheatreList = () => {
                 <TheatreForm 
                     isModalOpen={isModalOpen} 
                     setIsModalOpen={setIsModalOpen}
-                    fetchTheatreData = {getData}
                     formType= {formType}
                     selectedTheatre={selectedTheatre}
                     setSelectedTheatre={setSelectedTheatre}
@@ -169,7 +162,6 @@ const TheatreList = () => {
                 <DeleteTheatre
                     isDeleteModalOpen={isDeleteModalOpen} 
                     setIsDeleteModalOpen={setIsDeleteModalOpen}
-                    fetchTheatreData = {getData}
                     selectedTheatre={selectedTheatre}
                     setSelectedTheatre={setSelectedTheatre}
                 />
