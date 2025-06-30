@@ -1,21 +1,23 @@
 import React, { useEffect, useState } from 'react';
-import { Button, message, Table, Tag, Tooltip } from 'antd'
+import { Button, Spin, Table, Tag, Tooltip } from 'antd'
 import moment from 'moment';
-import {useDispatch} from "react-redux";
+import {useDispatch, useSelector} from "react-redux";
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
-
-import { hideLoading, showLoading } from '../../../redux/slices/loaderSlice';
-import { getMovies } from '../../../api/movie';
 import MovieForm from './MovieForm';
 import DeleteMovie from './DeleteMovie';
+import { getMoviesRequest, selectMovie, selectMovieError, selectMovieLoading } from '../../../redux/slices/movieSlice';
+import { notify } from '../../../utils/notificationUtils';
 
 const MovieList = () => {
-    const [movies, setMovies] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [selectedMovie, setSelectedMovie] = useState(null);
     const [formType, setFormType] = useState("add");
     const dispatch = useDispatch();
+
+    const loading = useSelector(selectMovieLoading);
+    const movieError = useSelector(selectMovieError)
+    const movies = useSelector(selectMovie);
 
     const renderTagGroup = (items, max = 3, color = "blue") => {
         if (items.length <= max) {
@@ -56,13 +58,15 @@ const MovieList = () => {
                         
                     />
                 )
-            }
+            },
+            responsive: ['xs', 'sm', 'md', 'lg', 'xl']
         },
         {
             title: "Movie Name",
             key : "movieName",
             dataIndex: "movieName",
-             render : (text) => <strong>{text}</strong>
+            render : (text) => <strong>{text}</strong>,
+            responsive: ['xs', 'sm', 'md', 'lg', 'xl']
         },
         {
             title: "Description",
@@ -72,25 +76,29 @@ const MovieList = () => {
                 <Tooltip title={description}>
                   <span>{description.length > 50 ? description.slice(0, 50) + "..." : description}</span>
                 </Tooltip>
-              )
+              ),
+            responsive: ['md', 'lg', 'xl']
         },
         {
             title: "Duration",
             key : "duration",
             dataIndex: "duration",
-            render : (text) => `${text} Min`
+            render : (text) => `${text} Min`,
+            responsive: ['xs', 'sm', 'md', 'lg', 'xl']
         },
         {
             title: "Genre",
             key : "genre",
             dataIndex: "genre",
             render: (genres) => renderTagGroup(genres, 3, "geekblue"),
+            responsive: ['md', 'lg', 'xl']
         },
         {
             title: "Language",
             key : "language",
             dataIndex: "language",
             render: (langs) => renderTagGroup(langs, 3, "volcano"),
+            responsive: ['xs', 'sm', 'md', 'lg', 'xl']
         },
         {
             title: "Release Date",
@@ -98,7 +106,8 @@ const MovieList = () => {
             dataIndex: "releaseDate",
             render : (text, data) => {
                 return moment(data.releaseDate).format("DD-MM-YYYY")
-            }
+            },
+            responsive: ['xs', 'sm', 'md', 'lg', 'xl']
         },
         {
             title : "Actions",
@@ -129,38 +138,27 @@ const MovieList = () => {
                         </Tooltip>
                     </div>
                 )
-            }
+            },
+            responsive: ['xs', 'sm', 'md', 'lg', 'xl']
         }
     ]
 
-    const getData = async() => {
-        try {
-            dispatch(showLoading())
-            const response = await getMovies();
-            if(response?.success)
-            {
-                const formattedData = response.data.map(movie => ({
-                    ...movie,
-                    releaseDate: moment(movie.releaseDate).format("YYYY-MM-DD")
-                  }));
-                setMovies(formattedData);
-            }
-            else
-            {
-                message.warning(response?.message);
-            }
-            
-        } catch (error) {
-            message.error(error)
-        }
-        finally{
-            dispatch(hideLoading())
-        }
+    useEffect(() => {
+        // Fetch all the movies
+        dispatch(getMoviesRequest());
+    }, [dispatch])
+
+    if (loading) {
+        return (
+          <div className="loader-container">
+            <Spin size='large'/>
+          </div>
+        )
     }
 
-    useEffect(() => {
-        getData();
-    }, [])
+    if(movieError){
+        notify("error", "Sorry, something went wrong", movieError);
+    }
 
   return (
    <div style={{ borderRadius: "8px", padding: "5px" }}>
@@ -177,13 +175,17 @@ const MovieList = () => {
                 Add Movie
             </Button>
         </div>
-        <Table columns={tableHeadings} dataSource={movies}/>
+        <Table 
+            columns={tableHeadings} 
+            dataSource={movies}
+            scroll={{ x: 600 }}
+            rowKey={(record) => record._id}
+        />
         {
             isModalOpen && 
                 <MovieForm 
                     isModalOpen={isModalOpen} 
                     setIsModalOpen={setIsModalOpen}
-                    fetchMovieData = {getData}
                     formType= {formType}
                     selectedMovie={selectedMovie}
                     setSelectedMovie={setSelectedMovie}
@@ -195,7 +197,6 @@ const MovieList = () => {
                 <DeleteMovie 
                     isDeleteModalOpen={isDeleteModalOpen} 
                     setIsDeleteModalOpen={setIsDeleteModalOpen}
-                    fetchMovieData = {getData}
                     selectedMovie={selectedMovie}
                     setSelectedMovie={setSelectedMovie}
                 />

@@ -1,14 +1,12 @@
-import { Button, Col, Form, Input, message, Modal, Row, Select } from 'antd'
-import TextArea from 'antd/es/input/TextArea'
-import React from 'react'
+import React from 'react';
+import { Button, Col, Form, Input, Modal, Row, Select } from 'antd';
+import TextArea from 'antd/es/input/TextArea';
 import { useDispatch } from 'react-redux';
-import { hideLoading, showLoading } from '../../../redux/slices/loaderSlice';
-import { addMovie, updateMovie } from '../../../api/movie';
+import { addMovieRequest, updateMovieRequest } from '../../../redux/slices/movieSlice';
 
 const MovieForm = ({
     isModalOpen, 
     setIsModalOpen, 
-    fetchMovieData, 
     formType, 
     selectedMovie, 
     setSelectedMovie
@@ -21,35 +19,18 @@ const MovieForm = ({
         setSelectedMovie(null);
     };
 
-    const onFinish = async (values) => {
-        try {
-            dispatch(showLoading());
-            let response = null;
-            if(formType === "edit")
-            {
-                response = await updateMovie(selectedMovie._id, values);
-            }
-            else
-            {
-                response = await addMovie(values);
-            }
-            if(response?.success)
-            {
-                message.success(response.message);
-                fetchMovieData();
-            }
-            else
-            {
-                message.warning(response?.message)
-            }
-        } catch (error) {
-            message.error(error);
+    const onFinish = (values) => {
+        if(formType === "edit")
+        {
+            dispatch(updateMovieRequest({id: selectedMovie._id, movie: values}))
         }
-        finally{
-            setIsModalOpen(false);
-            setSelectedMovie(null);
-            dispatch(hideLoading());
+        else
+        {
+            dispatch(addMovieRequest(values));
         }
+    
+        setIsModalOpen(false);
+        setSelectedMovie(null);
     }
 
   return (

@@ -1,45 +1,27 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { Col, Input, message, Row, Card, Carousel, Button } from "antd";
-import { LeftOutlined, RightOutlined, SearchOutlined } from "@ant-design/icons";
-import { hideLoading, showLoading } from "../../../redux/slices/loaderSlice";
-import { getMovies } from "../../../api/movie";
+import { Col, Input, message, Row, Card, Button, Result, Spin } from "antd";
+import { SearchOutlined } from "@ant-design/icons";
 import Title from "antd/es/typography/Title";
 import moment from "moment";
 import Meta from "antd/es/card/Meta";
+import { getMoviesRequest, selectMovie, selectMovieError, selectMovieLoading } from "../../../redux/slices/movieSlice";
+import { notify } from "../../../utils/notificationUtils";
 
 const Home = () => {
-  const [movies, setMovies] = useState([]);
+  // const [movies, setMovies] = useState([]);
   const [searchText, setSearchText] = useState("");
   const dispatch = useDispatch();
   const navigate = useNavigate();
- 
-    
-  const getData = async () => {
-    try {
-      dispatch(showLoading());
-      const response = await getMovies();
-      
-      if(response?.success)
-      {
-        setMovies(response?.data);
-      }
-      else{
-        message.warning(response?.message)
-      }
-      
-    } catch (error) {
-      message.error(error);
-      
-    } finally{
-      dispatch(hideLoading())
-    }
-  }
+
+  const loading = useSelector(selectMovieLoading);
+  const movieError = useSelector(selectMovieError)
+  const movies = useSelector(selectMovie);
 
   useEffect(() => {
-    getData();
-  }, [])
+    dispatch(getMoviesRequest());
+  }, [dispatch])
 
   const handleSearch = (event) => {
     setSearchText(event.target.value);
@@ -49,7 +31,18 @@ const Home = () => {
     movies?.filter((movie) =>
       movie.movieName.toLowerCase().includes(searchText.toLowerCase())) || [];
   
+  if (loading) {
+        return (
+          <div className="loader-container">
+            <Spin size='large'/>
+          </div>
+        )
+    }
 
+    if(movieError){
+        notify("error", "Sorry, something went wrong", movieError);
+    }
+  
   return (
     <>
       <Row justify="center" style={{ padding: "20px 15px" }}>

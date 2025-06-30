@@ -80,7 +80,7 @@ const verificationSlice = createSlice({
         },
 
          // UI state actions
-         setVerificationEmail : (state, action) => {
+        setVerificationEmail : (state, action) => {
             state.verificationEmail = action.payload
         },
         setTempUserId: (state, action) => {
@@ -110,7 +110,6 @@ const verificationSlice = createSlice({
         setCountdownTimer: (state, action) => {
            state.countdownTimer = action.payload
         },
-
 
         //Reset verification State
         resetVerificationState: (state) => {

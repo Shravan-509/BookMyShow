@@ -1,71 +1,126 @@
 import {createSlice} from "@reduxjs/toolkit";
-import { getMovies, addMovie, updateMovie, deleteMovie } from "../actions/movieActions";
+
+const initialState = {
+    loading: false,
+    error: null,
+    movie: [],
+    selectedMovie: null,   
+};
 
 const movieSlice = createSlice({
     name : "movie",
-    initialState: {
-        movie : null,
-        loading: true,
-        error: null
-    },
+    initialState,
     reducers: {
-    },
-    extraReducers: (builder) => {
-        builder
-        .addCase(getMovies.pending, (state) => {
-            state.loading = true;
+        getMoviesRequest: (state, action) => {
+            state.loading = true
+            state.error = null
+        },
+        getMoviesSuccess: (state, action) => {
+            state.loading = false
+            state.movie = action.payload
+            state.error = null
+        },
+         getMoviesFailure: (state, action) => {
+            state.loading = false
+            state.movie= null
+            state.error = action.payload 
+        },
+
+        addMovieRequest: (state, action) => {
+            state.loading = true
+            state.error = null
+        },
+        addMovieSuccess: (state, action) => {
+            state.loading = false
+            state.movie = action.payload
+            state.error = null
+        },
+        addMovieFailure: (state, action) => {
+            state.loading = false
+            state.movie = []
+            state.error = action.payload
+        },
+
+        updateMovieRequest: (state, action) => {
+            state.loading = true
+            state.error = null
+        },
+        updateMovieSuccess: (state, action) => {
+            state.loading = false
+            state.movie = action.payload
+            state.error = null
+        },
+        updateMovieFailure: (state, action) => {
+            state.loading = false
+            state.movie = []
+            state.error = action.payload
+        },
+
+        
+        deleteMovieRequest: (state, action) => {
+            state.loading = true
+            state.error = null
+        },
+        deleteMovieSuccess: (state, action) => {
+            state.loading = false
+            state.movie = action.payload
+            state.error = null
+        },
+        deleteMovieFailure: (state, action) => {
+            state.loading = false
+            state.movie = []
+            state.error = action.payload
+        },
+
+        getMovieByIdRequest: (state, action) => {
+            state.loading = true
+            state.error = null
+        },
+        getMovieByIdSuccess: (state, action) => {
+            state.loading = false
+            state.selectedMovie = action.payload
+            state.error = null
+        },
+        getMovieByIdFailure: (state, action) => {
+            state.loading = false
+            state.selectedMovie = null
+            state.error = action.payload
+        },
+
+        resetMovieState: (state) => {
+            state.loading = false;
             state.error = null;
-        })
-        .addCase(getMovies.fulfilled, (state, action) => {
-            state.loading = false;
-            state.movie = action.payload;
-        })
-        .addCase(getMovies.rejected, (state, action) => {
-            state.movie = null,
-            state.loading = false;
-            state.error = action.payload;
-        })
-        .addCase(addMovie.pending, (state) => {
-            state.loading = true;
-            state.error = null;
-        })
-        .addCase(addMovie.fulfilled, (state, action) => {
-            state.loading = false;
-            state.movie = action.payload;
-        })
-        .addCase(addMovie.rejected, (state, action) => {
-            state.movie = null,
-            state.loading = false;
-            state.error = action.payload;
-        })
-        .addCase(updateMovie.pending, (state) => {
-            state.loading = true;
-            state.error = null;
-        })
-        .addCase(updateMovie.fulfilled, (state, action) => {
-            state.loading = false;
-            state.movie = action.payload;
-        })
-        .addCase(updateMovie.rejected, (state, action) => {
-            state.movie = null,
-            state.loading = false;
-            state.error = action.payload;
-        })
-        .addCase(deleteMovie.pending, (state) => {
-            state.loading = true;
-            state.error = null;
-        })
-        .addCase(deleteMovie.fulfilled, (state, action) => {
-            state.loading = false;
-            state.movie = action.payload;
-        })
-        .addCase(deleteMovie.rejected, (state, action) => {
-            state.movie = null,
-            state.loading = false;
-            state.error = action.payload;
-        })
+            state.movie = [];
+            state.selectedMovie = []
+        }
     }
 });
 
-// export const {logout} = authSlice.actions;
+
+//Export actions
+export const {
+    getMoviesRequest,
+    getMoviesSuccess, 
+    getMoviesFailure,
+    addMovieRequest, 
+    addMovieSuccess,
+    addMovieFailure,
+    updateMovieRequest,
+    updateMovieSuccess,
+    updateMovieFailure,
+    deleteMovieRequest,
+    deleteMovieSuccess,
+    deleteMovieFailure,
+    getMovieByIdRequest,
+    getMovieByIdSuccess,
+    getMovieByIdFailure,
+    resetMovieState
+} = movieSlice.actions;
+
+// Export selectors
+export const selectMovieLoading = (state) => state.movie.loading
+export const selectMovieError = (state) => state.movie.resetLoading
+export const selectMovie = (state) => state.movie.movie
+export const selectSelectedMovie = (state) => state.movie.selectedMovie
+
 export default movieSlice.reducer;

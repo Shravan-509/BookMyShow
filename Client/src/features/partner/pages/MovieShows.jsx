@@ -237,7 +237,7 @@ const MovieShows = ({
         </div>
 
         {
-            view === "table" && <Table dataSource={shows} columns={columns}/>
+            view === "table" && <Table dataSource={shows} columns={columns} scroll={{ x: 600 }}/>
         }
 
         {

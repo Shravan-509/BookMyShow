@@ -24,7 +24,8 @@ const TheatreList = () => {
             title: "Name",
             key : "name",
             dataIndex: "name",
-            render : (text) => <strong>{text}</strong>
+            render : (text) => <strong>{text}</strong>,
+            responsive: ['xs', 'sm', 'md', 'lg', 'xl']
         },
         {
             title: "Address",
@@ -34,17 +35,20 @@ const TheatreList = () => {
                 <Tooltip title={address}>
                   <span>{address.length > 50 ? address.slice(0, 50) + "..." : address}</span>
                 </Tooltip>
-              )
+              ),
+            responsive: ['md', 'lg', 'xl'],
         },
         {
             title: "Phone Number",
             key : "phone",
-            dataIndex: "phone"
+            dataIndex: "phone",
+            responsive: ['lg', 'xl'],
         },
         {
             title: "Email",
             key : "email",
-            dataIndex: "email"
+            dataIndex: "email",
+            responsive: ['lg', 'xl'],
         },
         {
             title: "Status",
@@ -57,7 +61,8 @@ const TheatreList = () => {
                 else{
                     return <Tag key={'pending'} color='red'>Pending / Blocked</Tag>
                 }
-            }
+            },
+            responsive: ['xs', 'sm', 'md', 'lg', 'xl']
         },
         {
             title : "Actions",
@@ -100,10 +105,9 @@ const TheatreList = () => {
                         }
                     </div>
                 )
-            }
+            },
+            responsive: ['xs', 'sm', 'md', 'lg', 'xl']
         }
-
-
     ]
 
     const getData = async () => {
@@ -133,18 +137,22 @@ const TheatreList = () => {
     <div style={{ borderRadius: "8px", padding: "5px" }}>
         <div className='flex justify-end mb-4'> 
             <Button 
-            type="primary" 
-            size="large"
-            className='!bg-[#f84464] hover:!bg-[#dc3558]'
-                onClick={() => {
-                    setIsModalOpen(true);
-                    setFormType("add");
-                }}
+                type="primary" 
+                size="large"
+                className='!bg-[#f84464] hover:!bg-[#dc3558]'
+                    onClick={() => {
+                        setIsModalOpen(true);
+                        setFormType("add");
+                    }}
             >
                 Add Theatre
             </Button>
         </div>
-        <Table dataSource={theatres} columns={columns}/>
+        <Table 
+            dataSource={theatres} 
+            columns={columns}
+            scroll={{ x: 600 }}
+        />
         {
             isModalOpen && 
                 <TheatreForm 

@@ -1,42 +1,22 @@
-import { message, Modal } from 'antd'
+import { Modal } from 'antd'
 import React from 'react'
-import { useDispatch } from 'react-redux'
-import { hideLoading, showLoading } from '../../../redux/slices/loaderSlice';
-import { deleteMovie } from '../../../api/movie';
+import { useDispatch } from 'react-redux';
+import { deleteMovieRequest } from '../../../redux/slices/movieSlice';
 
 const DeleteMovie = ({
     isDeleteModalOpen,
     setIsDeleteModalOpen,
-    fetchMovieData,
     selectedMovie,
     setSelectedMovie
 }) => {
 
     const dispatch = useDispatch();
 
-    const handleOk = async () => {
-        try {
-            dispatch(showLoading());
-            const movieId = selectedMovie._id;
-            const response = await deleteMovie(movieId);
-            if(response?.success)
-            {
-                message.success(response.message);
-                fetchMovieData();
-            }
-            else{
-                message.warning(response.message);
-            }
-            
-        } catch (error) {
-            message.error(error);
-            
-        }finally{
-            setIsDeleteModalOpen(false);
-            setSelectedMovie(null);
-            dispatch(hideLoading());
-        }
-
+    const handleOk = () => {   
+        dispatch(deleteMovieRequest(selectedMovie._id))   
+        
+        setIsDeleteModalOpen(false);
+        setSelectedMovie(null);
     }
 
     const handleCancel = () => {

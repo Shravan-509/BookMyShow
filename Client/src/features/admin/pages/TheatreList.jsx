@@ -13,7 +13,8 @@ const TheatreList = () => {
           title: "Name",
           key : "name",
           dataIndex: "name",
-          render : (text) => <strong>{text}</strong>
+          render : (text) => <strong>{text}</strong>,
+          responsive: ['xs', 'sm', 'md', 'lg', 'xl']
       },
       {
           title: "Address",
@@ -23,23 +24,27 @@ const TheatreList = () => {
               <Tooltip title={address}>
                 <span>{address.length > 50 ? address.slice(0, 50) + "..." : address}</span>
               </Tooltip>
-            )
+            ),
+          responsive: ['md', 'lg', 'xl']
       },
       {
         title: "Owner",
         key: "owner",
         dataIndex: "owner",
-        render : (text, data) => {return data.owner && data.owner.name }
+        render : (text, data) => {return data.owner && data.owner.name },
+        responsive: ['xs', 'sm', 'md', 'lg', 'xl']
       },
       {
           title: "Phone Number",
           key : "phone",
-          dataIndex: "phone"
+          dataIndex: "phone",
+          responsive: ['xs', 'sm', 'md', 'lg', 'xl']
       },
       {
           title: "Email",
           key : "email",
-          dataIndex: "email"
+          dataIndex: "email",
+          responsive: ['md', 'lg', 'xl']
       },
       {
           title: "Status",
@@ -52,7 +57,8 @@ const TheatreList = () => {
               else{
                   return <Tag key={'pending'} color='red'>Pending / Blocked</Tag>
               }
-          }
+          },
+          responsive: ['xs', 'sm', 'md', 'lg', 'xl']
       },
       {
           title : "Action",
@@ -82,7 +88,8 @@ const TheatreList = () => {
                         }
                       </div>  
               )
-          }
+          },
+          responsive: ['xs', 'sm', 'md', 'lg', 'xl']
       }
   ]
 
@@ -137,7 +144,11 @@ const TheatreList = () => {
 
 return (
     <div style={{ borderRadius: "8px", padding: "5px" }}>
-        <Table dataSource={theatres} columns={columns}/>      
+        <Table 
+          dataSource={theatres} 
+          columns={columns}
+          scroll={{ x: 600 }}
+        />      
     </div>
   )
 }
