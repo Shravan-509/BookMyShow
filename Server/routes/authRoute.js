@@ -6,7 +6,9 @@ const {
     verify2FA, 
     resend2FA, 
     reverifyEmail, 
-    logoutUser
+    logoutUser,
+    forgotPassword,
+    resetPassword
 } = require("../controllers/AuthController");
 const router = require("express").Router();
 
@@ -20,6 +22,9 @@ router.post("/verify-2fa", verify2FA);
 router.post("/resend-2fa", resend2FA);
 
 router.post("/logout", logoutUser);
+
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password", resetPassword);
 
 
 module.exports = router;

@@ -90,13 +90,45 @@ const sendVerificationEmail = async(email, code, type) => {
         // Get Email HTML from template
         const html = await getEmailTemplate(templateName, metaData);
 
-        await transporter.sendMail({
+        const result = await transporter.sendMail({
             from: `"BookMyShow" <${process.env.EMAIL_USER}>`,
             to: email,
             subject,
             html,
-        }) 
+        })
+
+        // console.log(`${templateName} email sent : ${result.messageId}`);
+        return result;
         
+    } catch (error) {
+        console.error(`Error sending email: ${error.message}`);
+        throw error;        
+    }  
+}
+
+const sendPasswordResetEmail = async({to, name, resetUrl}) => {
+    try {
+        let templateName = "password-reset";
+        let subject = "Password Reset Request";
+        
+        //Prepare metadta for template
+        const metaData = {
+            name: name,
+            resetUrl: resetUrl,
+            year: new Date().getFullYear().toString()
+        }
+
+        // Get Email HTML from template
+        const html = await getEmailTemplate(templateName, metaData);
+
+        const result = await transporter.sendMail({
+            from: `"BookMyShow" <${process.env.EMAIL_USER}>`,
+            to,
+            subject,
+            html,
+        }) 
+        console.log("Password reset email sent:", result.messageId);
+        return result;
     } catch (error) {
         console.error(`Error sending email: ${error.message}`);
         throw error;        
@@ -106,5 +138,6 @@ const sendVerificationEmail = async(email, code, type) => {
 module.exports= {
     createVerification,
     generateVerificationCode,
-    sendVerificationEmail
+    sendVerificationEmail,
+    sendPasswordResetEmail
 }

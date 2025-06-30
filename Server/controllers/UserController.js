@@ -20,6 +20,7 @@ const userInfo = async (req, res, next) => {
         })
         
     } catch (error) {
+        res.status(400);
         next(error);
     }
 }
@@ -42,6 +43,7 @@ const deleteUser = async(req, res, next) => {
         })
         
     } catch (error) {
+        res.status(400);
         next(error);
     }
 

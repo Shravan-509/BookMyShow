@@ -18,6 +18,7 @@ import {
 import { setActiveTab } from "../slices/uiSlice";
 import { message } from "antd";
 import { checkAuthStatus, loginSuccess } from "../slices/authSlice";
+import { notify } from "../../utils/notificationUtils";
 
 //API Calls
 const verifyEmailApi = async (payload) => {
@@ -50,7 +51,7 @@ const reverifyAccountApi = async (payload) => {
     }
 };
 
-const resendCodeAi = async (type, payload) => {
+const resendCodeApi = async (type, payload) => {
     try {
         const endpoint = type === "email" ? "/auth/resend-verification" : "/auth/resend-2fa"
         const response = await axiosInstance.post(endpoint, payload);
@@ -65,21 +66,26 @@ const resendCodeAi = async (type, payload) => {
 function* handleVerifyEmail(action) {
     try {
         const tempUserId = yield select((state) => state.verification.tempUserId);
-        const data = yield call(verifyEmailApi, {
+        const response = yield call(verifyEmailApi, {
             userId: tempUserId,
             code: action.payload.code
-        })
+        });
 
-        yield put(verifyEmailSuccess());
+        if(response.success)
+        {
+            yield put(verifyEmailSuccess());
+            yield put(setActiveTab("login")); //Reset and go back to login
+            notify("success", "Email verified successfully");
+        }
+        else
+        {
+            yield put(verifyEmailFailure(response.message));
+            notify("warning", "Email Verification Failure", response.message);
+        }
 
-        //Reset and go nback to login
-        yield put(setActiveTab("login"));
-
-        //Show success message
-        message.success("Email verified successfully!")
     } catch (error) {
         yield put(verifyEmailFailure(error.message));
-        message.error(error.message || "Verification failed. Please try again.")
+        notify("error", "Error in Email Verification. Please try again.", error?.message);  
     }
 }
 
@@ -91,20 +97,29 @@ function* handleVerifyTwoFactor(action) {
             code: action.payload.code
         })
 
-        yield put(verifyTwoFactorSuccess());
+        if(data.success)
+        {
+            yield put(verifyTwoFactorSuccess());
 
-        //Store the token and update the Auth status
-        yield put(loginSuccess({ token: data.token, user: null}));
+            //Store the token and update the Auth status
+            yield put(loginSuccess({ token: data.token, user: null}));
 
-         // ✅ Immediately validate and populate user
-         yield put(checkAuthStatus()); 
+            // ✅ Immediately validate and populate user
+            yield put(checkAuthStatus()); 
 
-        //Show success message
-        message.success("Login successful!")
+            //Show success message
+            notify("success", "Login successful!");
+        }
+        else
+        {
+            yield put(verifyTwoFactorFailure(data.message));
+            notify("warning", "Two-Factor Authentication Failure", data.message);
+        }
+
     } catch (error) {
         yield put(verifyTwoFactorFailure(error.message));
-        message.error(error.message || "Verification failed. Please try again.")
-    }
+        notify("error", "Error in Two-Factor Authentication. Please try again.", error?.message); 
+    } 
 }
 
 function* handleReverifyAccount(action) {
@@ -114,19 +129,28 @@ function* handleReverifyAccount(action) {
            email: action.payload.email
         })
 
-        yield put(reverifyAccountSuccess({
-            email: action.payload.email,
-            userId: data.userId
-        }));
+        if(data.success)
+        {
+            yield put(reverifyAccountSuccess({
+                email: action.payload.email,
+                userId: data.userId
+            }));
 
-        //Start countdown for resend button
-        yield put(resendCodeRequest({ type: "email"}));
+            //Start countdown for resend button
+            yield put(resendCodeRequest({ type: "email"}));
 
-        //Show success message
-        message.success("Verification code sent to your email!")
+            //Show success message
+            notify("success", "Verification code sent to your email!");
+        }
+        else
+        {
+            yield put(reverifyAccountFailure(data.message));
+            notify("warning", "Reverification Failure", data.message);
+        }
+
     } catch (error) {
         yield put(reverifyAccountFailure(error.message));
-        message.error(error.message || "Reverification request failed. Please try again.")
+        notify("error", "Error in Reverification request. Please try again.", error?.message);
     }
 }
 
@@ -137,21 +161,30 @@ function* handleResendCode(action) {
         const tempUserId = yield select((state) => state.verification.tempUserId);
         const verificationEmail = yield select((state) => state.verification.verificationEmail);
         
-        yield call(resendCodeAi, type, {
+        const response = yield call(resendCodeApi, type, {
             userId: tempUserId,
             email: verificationEmail
         })
 
-        yield put(resendCodeSuccess())
+        if(response.success)
+        {
+            yield put(resendCodeSuccess())
 
-        //Start countdown 
-        yield fork(handleCountdown);
+            //Start countdown 
+            yield fork(handleCountdown);
 
-        //Show success message
-        message.success("Verification code resent to your email!")
+            //Show success message
+            notify("success", "Verification code resent to your email!");
+        }
+        else
+        {
+            yield put(resendCodeFailure(response.message));
+            notify("warning", "Code Resend Failure", response.message);
+        }
+        
     } catch (error) {
         yield put(resendCodeFailure(error.message));
-        message.error(error.message || "Failed to resend code. Please try again.")
+        notify("error", "Error in Code Resend. Please try again.", error?.message);
     }
 }
 
@@ -168,7 +201,6 @@ function* handleCountdown(){
     }
 }
 
-//watcher Saga
 // Watcher Saga
 export function* verificationSaga(){
     yield takeLatest(verifyEmailRequest.type, handleVerifyEmail)

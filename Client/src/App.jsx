@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {Routes, Route, Navigate} from 'react-router-dom';
 import { Spin } from 'antd';
-import Cookies from "js-cookie"
+import Cookies from "js-cookie";
 import { authStatusChecked, checkAuthStatus, selectAuth, selectUser } from './redux/slices/authSlice';
 import Home from './features/home/pages/Home';
 import MainLayout from './components/MainLayout';
@@ -14,6 +14,7 @@ import AuthTabs from './features/auth/pages/AuthTabs';
 import MovieDetails from './features/movies/pages/MovieDetails';
 import Booking from './features/movies/pages/SeatSelection';
 import OrderHistory from './features/movies/pages/Bookings';
+import ResetPassword from './features/auth/pages/ResetPassword';
 import './App.css';
 
 // Protected Route Component
@@ -86,6 +87,8 @@ function App() {
         <Route path="/movie/:id/:date" element={<ProtectedRoute><MovieDetails /></ProtectedRoute>} />
         <Route path="/booking/:id" element={<ProtectedRoute><Booking /></ProtectedRoute>} />
         <Route path ="/" element={<PublicRoute><AuthTabs /></PublicRoute>}/>
+         <Route path ="/no-auth/reset-password" element={<ResetPassword />}/>
+
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
   )

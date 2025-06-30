@@ -13,16 +13,14 @@ import {
     signupRequest, 
     signupSuccess 
 } from "../slices/authSlice";
-import { message } from "antd";
 import { setLoginError } from "../slices/uiSlice";
 import { 
     setShowEmailVerificationModal, 
     setShowTwoFactorAuthModal, 
     setTempUserId, 
-    setVerificationEmail, 
-    verifyTwoFactorFailure,
-    verifyTwoFactorSuccess
+    setVerificationEmail
 } from "../slices/verificationSlice";
+import { notify } from "../../utils/notificationUtils";
 
 
 // Account Login API calls
@@ -115,7 +113,7 @@ function* handleLogin(action) {
             yield put(checkAuthStatus()); 
 
             // Show success message
-            message.success("Login Successful!")
+            notify("success", "Login Successful!");
         }
         
     }
@@ -130,7 +128,7 @@ function* handleLogin(action) {
         else
         {
             yield put(loginFailure(error.message));
-            message.error(error.message || "Login failed. Please try again")
+            notify("error", "Login failed. Please try again", error.message);
         }
     }
 }
@@ -146,12 +144,12 @@ function* handleSignup(action) {
         yield put(setShowEmailVerificationModal(true))
 
         // Show success message
-        message.success("Verification code sent to your email!")
+        notify("success", "Verification code sent to your email!");
     }
     catch(error)
     {
         yield put(signupFailure(error.message));
-        message.error(error.message || "Signup failed. Please try again.")
+        notify("error", "Signup failed. Please try again", error.message);
     }
 }
 
@@ -161,11 +159,11 @@ function* handleLogout(action) {
         yield call(logoutApi);
 
         //show success message
-        message.success("Logged out Successfully")
+        notify("success", "Logged out Successfully");
     }
     catch(error)
     {
-        message.error("Logout failed. Please try again.")
+        notify("error", "Logout failed", error.message);
     }
 }
 

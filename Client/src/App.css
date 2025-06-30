@@ -644,3 +644,68 @@ table th {
 .ticket-divider::after {
   bottom: -30px;
 }
+
+
+/* Forgot password Modal */
+.forgot-password-modal .ant-modal-content {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.forgot-password-modal .ant-modal-close {
+  top: 16px;
+  right: 16px;
+}
+
+.forgot-password-modal .ant-modal-close:hover {
+  background-color: transparent;
+}
+
+.forgot-password-modal .ant-input-affix-wrapper {
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.forgot-password-modal .ant-input-affix-wrapper:hover,
+.forgot-password-modal .ant-input-affix-wrapper:focus,
+.forgot-password-modal .ant-input-affix-wrapper-focused {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.1);
+}
+
+.forgot-password-modal .ant-btn-primary {
+  background: linear-gradient(to right, #dc2626, #b91c1c);
+  border: none;
+  box-shadow: 0 4px 6px -1px rgba(220, 38, 38, 0.2), 0 2px 4px -1px rgba(220, 38, 38, 0.1);
+  transition: all 0.3s ease;
+}
+
+.forgot-password-modal .ant-btn-primary:hover {
+  background: linear-gradient(to right, #b91c1c, #991b1b);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 8px -1px rgba(220, 38, 38, 0.2), 0 3px 5px -1px rgba(220, 38, 38, 0.1);
+}
+
+/* Animation for success icon */
+@keyframes pulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7);
+  }
+
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 10px rgba(52, 211, 153, 0);
+  }
+
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0);
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s infinite;
+}

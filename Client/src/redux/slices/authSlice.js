@@ -60,6 +60,7 @@ const authSlice = createSlice({
             state.user = null
             state.token = null
             state.isAuthenticated = false
+            state.checkingAuth = false;
           },
 
         // Set User Data
@@ -71,6 +72,11 @@ const authSlice = createSlice({
         clearErrors: (state) => {
             state.error = null
         }
+    },
+    extraReducers: (builder) => {
+        builder.addCase("persist/REHYDRATE", (state) => {
+            state.checkingAuth = false; // 💡 mark auth check complete
+        });
     }
     
 });

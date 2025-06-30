@@ -1,7 +1,7 @@
 const User = require('../models/userSchema');
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const {createVerification, sendVerificationEmail} = require("../utils/email");
+const {createVerification, sendVerificationEmail, sendPasswordResetEmail} = require("../utils/email");
 const Verification = require('../models/verificationSchema');
 
 const register = async (req, res, next) => {
@@ -67,6 +67,7 @@ const register = async (req, res, next) => {
         })
 
     } catch (error) {
+        res.status(400);
         next(error);
     }
 };
@@ -102,6 +103,7 @@ const verifyEmail = async(req, res, next) => {
         })
 
     } catch (error) {
+        res.status(400);
         next(error);
     }
 }
@@ -122,6 +124,7 @@ const resendVerification = async(req, res, next) => {
        })
 
     } catch (error) {
+        res.status(400);
         next(error);
     }
 }
@@ -212,6 +215,7 @@ const login = async (req, res, next) => {
         })
 
     } catch (error) {
+        res.status(400);
         next(error);
     }
 }
@@ -263,6 +267,7 @@ const verify2FA = async(req, res, next) => {
         })
 
     } catch (error) {
+        res.status(400);        
         next(error);
     }
 }
@@ -283,6 +288,7 @@ const resend2FA = async(req, res, next) => {
        })
 
     } catch (error) {
+        res.status(400);
         next(error);
     }
 }
@@ -292,7 +298,6 @@ const reverifyEmail = async(req, res, next) => {
         const {email} = req?.body;
 
         //Find User by Email
-
         const user = await User.findOne({ email });
 
         if(!user)
@@ -318,6 +323,7 @@ const reverifyEmail = async(req, res, next) => {
         })
 
     } catch (error) {
+        res.status(400);
         next(error);
     }
 }
@@ -332,6 +338,139 @@ const logoutUser = async(req, res, next) => {
         })
         
     } catch (error) {
+        res.status(400);
+        next(error);
+    }
+}
+
+const forgotPassword = async(req, res, next) => {
+    try {
+        const {email} = req?.body;
+
+        if(email === undefined){
+            return res.status(200).send({
+                success: false,
+                message: "Please enter email"
+            })
+        }
+         //Find User by Email
+        const user = await User.findOne({ email : email.toLowerCase()});
+
+        if(!user)
+        {
+            return res.status(200).send({
+                success: false,
+                message: "If an account with that email exists, we have sent a password reset link."
+            })
+        }
+
+        //Generate reset token
+        const resetToken = jwt.sign({ userId: user._id, email: user.email }, 
+            process.env.JWT_SECRET, 
+            { 
+                expiresIn: "1h" 
+            }
+        );
+
+        //Generate Reset Token expiry & save in the database
+        const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000) // 1 hour from now
+
+        await User.updateOne(
+            {_id: user._id},
+            {
+                $set : {
+                    resetToken,
+                    resetTokenExpiry
+                }
+            }
+        );
+
+        // Generate reset url
+        const resetUrl = `${process.env.PUBLIC_APP_URL}/no-auth/reset-password?token=${resetToken}`;
+       
+         // Send Password Reset email
+        await sendPasswordResetEmail({to: user.email, name: user.name, resetUrl});
+
+         return res.status(200).json({
+            success: true,
+            message: "Password reset email sent successfully",
+        })
+
+    } catch (error) {
+        res.status(400);
+        next(error);
+    }
+}
+
+const resetPassword = async(req, res, next) => {
+    try {
+        const {token, newPassword} = req?.body;
+
+        if(!token || !newPassword){
+            return res.status(400).send({
+                success: false,
+                message: "Token and password are required"
+            })
+        }
+
+        if(newPassword.length < 8){
+            return res.status(400).send({
+                success: false,
+                message: "Password must be atleast 8 characters long"
+            })
+        }
+        
+        //Verify token
+        let decoded;
+       
+       try 
+       {
+            decoded = jwt.verify(token, process.env.JWT_SECRET);
+       } 
+       catch (error) {
+            res.status(400);
+            next(new Error("Invalid or expired token"));
+       }
+        
+        const user = await User.findOne({ 
+            _id: decoded.userId,
+            resetToken: token,
+            resetTokenExpiry : { $gt: new Date() }
+        });
+
+        if(!user)
+        {
+            return res.status(400).send({
+                success: false,
+                message: "Invalid or expired token"
+            })
+        }
+
+        // Hash new password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+        // Update user password and remove reset token
+        await User.updateOne(
+            { _id : user._id },
+            {
+                $set: {
+                    password : hashedPassword
+                },
+                $unset: {
+                    resetToken: "",
+                    resetTokenExpiry: ""
+                }
+            }
+        );
+
+         return res.status(200).json({
+            success: true,
+            message: "Password reset successfully",
+        })
+
+    } catch (error) {
+        res.status(400);
         next(error);
     }
 }
@@ -344,5 +483,7 @@ module.exports = {
     login, 
     verify2FA, 
     resend2FA,
-    logoutUser
+    logoutUser,
+    forgotPassword,
+    resetPassword
 }
