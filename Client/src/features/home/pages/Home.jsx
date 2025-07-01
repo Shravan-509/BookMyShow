@@ -8,10 +8,12 @@ import moment from "moment";
 import Meta from "antd/es/card/Meta";
 import { getMoviesRequest, selectMovie, selectMovieError, selectMovieLoading } from "../../../redux/slices/movieSlice";
 import { notify } from "../../../utils/notificationUtils";
+import { useAuth } from "../../../hooks/useAuth";
 
 const Home = () => {
   // const [movies, setMovies] = useState([]);
   const [searchText, setSearchText] = useState("");
+  const {user} = useAuth();  
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -88,7 +90,16 @@ const Home = () => {
                     style={{ height: 320, objectFit: "cover", borderTopLeftRadius: "8px", borderTopRightRadius: "8px"}}
                   />
                 }
-                onClick = {() => { navigate(`/movie/${movie._id}/${moment().format("YYYYMMDD")}`)}}
+                onClick = {() => { 
+                  if(user?.role === "user")
+                  {
+                    navigate(`/movie/${movie._id}/${moment().format("YYYYMMDD")}`)
+                  }
+                  else
+                  {
+                    message.warning("Only users can view movie details.");
+                  }                  
+                }}
               >
                 <Meta 
                   title={

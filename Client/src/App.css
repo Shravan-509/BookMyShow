@@ -709,3 +709,11 @@ table th {
 .animate-pulse {
   animation: pulse 2s infinite;
 }
+
+.ant-menu-item-selected[role='menuitem']:has(span[style*='cursor: default']) {
+  background-color: transparent !important;
+}
+
+.ant-menu-item[role='menuitem']:has(span[style*='cursor: default']):hover {
+  background-color: transparent !important;
+}

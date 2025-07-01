@@ -4,6 +4,7 @@ import { verificationSaga } from "./verificationSaga"
 import { forgotPasswordSaga } from "./forgotPasswordSaga"
 import { movieSaga } from "./movieSaga";
 import { theatreSaga } from "./theatreSaga";
+import { showSaga } from "./showSaga";
 
 // Root Saga that combines all sagas
 export function* rootSaga(){
@@ -12,6 +13,7 @@ export function* rootSaga(){
         fork(verificationSaga),
         fork(forgotPasswordSaga),
         fork(movieSaga),
-        fork(theatreSaga)
+        fork(theatreSaga),
+        fork(showSaga)
     ])
 }

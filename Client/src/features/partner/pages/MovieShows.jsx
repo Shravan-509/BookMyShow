@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Button, Col, Form, Input, InputNumber, message, Modal, Popconfirm, Row, Select, Table, Tooltip } from "antd";
+import { Button, Col, Form, Input, InputNumber, Modal, Popconfirm, Row, Select, Spin, Table, Tooltip } from "antd";
 import Title from "antd/es/typography/Title";
 import moment from "moment";
 import { EditOutlined, DeleteOutlined, ArrowLeftOutlined } from "@ant-design/icons";
-import { useDispatch } from "react-redux";
-import { hideLoading, showLoading } from "../../../redux/slices/loaderSlice";
-import { addShow, deleteShow, getShowsByTheatre, updateShow } from "../../../api/show";
-import { getMovies } from "../../../api/movie";
+import { useDispatch, useSelector } from "react-redux";
+import { addShowRequest, deleteShowRequest, getShowsByTheatreRequest, selectShow, selectShowError, selectShowLoading, updateShowRequest } from "../../../redux/slices/showSlice";
+import { getMoviesRequest, selectMovie } from "../../../redux/slices/movieSlice";
 
 const MovieShows = ({
     isShowModalOpen,
@@ -16,103 +15,48 @@ const MovieShows = ({
 }) => {
 
     const [view, setView] = useState("table");
-    const [shows, setShows] = useState([]);
-    const [movies, setMovies] = useState([]);
     const [selectedShow, setSelectedShow] = useState(null);
 
     const dispatch = useDispatch();
+    const loading = useSelector(selectShowLoading);
+    const showError = useSelector(selectShowError);
+    const shows = useSelector(selectShow);
+    const movies = useSelector(selectMovie);
 
     useEffect(() =>{
-        getData();
-    }, [])
+        dispatch(getShowsByTheatreRequest(selectedTheatre._id))
+    }, [dispatch])
 
-    const getData = async () => {
-        try {
-            dispatch(showLoading());
-
-            // Get Shows By Theatre Id
-            const showsResponse = await getShowsByTheatre(selectedTheatre._id);
-            if(showsResponse?.success)
-            {
-                setShows(showsResponse.data);
-            }
-            else
-            {
-                message.warning(showsResponse.message);
-            }
-
-            // Get All Movies to Add shows
-            const movieResponse = await getMovies();
-            if(movieResponse?.success)
-            {
-                setMovies(movieResponse.data);
-            }
-            else{
-                message.warning(showsResponse.message);
-            }
-            
-        } catch (error) {
-            message.error(error);
-        } finally{
-            dispatch(hideLoading());
+    useEffect(() => {
+        if (!loading && shows && (view === "add" || view === "edit")) 
+        {
+            setView("table");
+            setSelectedShow(null);
         }
-    }
+    }, [loading, shows]);
 
     const handleCancel= () => {
         setIsShowModalOpen(false);
         setSelectedTheatre(null);
     };
 
-    const onFinish = async (values) => {
-        try {
-            dispatch(showLoading());
-            let response;
-            if(view === "add")
-            {
-                response = await addShow({...values, theatre: selectedTheatre._id});
-            }
-            else if(view === "edit")
-            {
-                response = await updateShow(selectedShow._id, {...values, theatre: selectedTheatre._id})
-            }
-
-            if(response?.success)
-            {
-                getData();
-                message.success(response.message);
-                setView("table");
-            }
-            else{
-                message.warning(response.message);
-            }
-            
-        } catch (error) {
-            message.error(error);
-        }finally{
-            dispatch(hideLoading());
-            setSelectedShow(null);
+    const onFinish =  (values) => {
+        const show = {
+            ...values,
+            theatre: selectedTheatre._id
+        };
+        if(view === "add")
+        {
+            dispatch(addShowRequest(show))
+        }
+        else if(view === "edit")
+        {
+            dispatch(updateShowRequest({ id: selectedShow._id, show}));
         }
     }
 
-    const handleDelete = async (showId) => {
-        try {
-            dispatch(showLoading());
-            const response = await deleteShow(showId);
-            if(response?.success)
-            {
-                message.success(response.message);
-                getData();
-            }
-            else
-            {
-                message.warning(response.message);
-            }
-            
-        } catch (error) {
-            message.error(error);
-        }finally{
-            dispatch(hideLoading())
-        }
+    const handleDelete = (showId) => {
+        dispatch(deleteShowRequest({ showId: showId, theatreId: selectedTheatre._id }));
     }
 
     const columns= [
@@ -178,6 +122,7 @@ const MovieShows = ({
                                         date: moment(data.date).format("YYYY-MM-DD"),
                                         movie: data.movie._id
                                     });
+                                    dispatch(getMoviesRequest());
                                 }}
                             >
                                 <EditOutlined/>
@@ -200,6 +145,18 @@ const MovieShows = ({
             }
         }
     ]
+
+    if (loading) {
+        return (
+          <div className="loader-container">
+            <Spin size='large'/>
+          </div>
+        )
+    }
+
+    if(showError){
+        notify("error", "Sorry, something went wrong", showError);
+    }
 
   return (
     <Modal
@@ -228,6 +185,7 @@ const MovieShows = ({
                     className='!bg-[#f84464] hover:!bg-[#dc3558]'
                     onClick={() => {
                             setView("add");
+                            dispatch(getMoviesRequest());
                         }
                     } 
                 >

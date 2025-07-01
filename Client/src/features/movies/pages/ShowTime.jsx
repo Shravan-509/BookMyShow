@@ -1,14 +1,26 @@
 import { EnvironmentOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons'
-import { Button, Card, Col, Divider, Empty, Popover, Row, Typography } from 'antd'
+import { Button, Card, Col, Divider, Empty, Popover, Row, Spin, Typography } from 'antd'
 const { Title, Text } = Typography;
 import moment from 'moment'
-import React, { useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
+import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom'
+import { getTheatresWithShowsByMovieRequest, selectShow, selectShowError, selectShowLoading } from '../../../redux/slices/showSlice';
 
-const ShowTime = ({selectedDate, setSelectedDate, theatres}) => {
+const ShowTime = () => {
     const params = useParams();
+     const dispatch = useDispatch();
     const dateScrollRef = useRef(null);
     const navigate = useNavigate();
+    const [selectedDate, setSelectedDate] = useState(moment().format("YYYY-MM-DD"));
+
+    const showLoading = useSelector(selectShowLoading);
+    const showError = useSelector(selectShowError)
+    const theatres = useSelector(selectShow);
+
+    useEffect(() => {
+        dispatch(getTheatresWithShowsByMovieRequest({movie: params.id, date: selectedDate}))
+    }, [selectedDate])
 
     // Generate dates for the next 7 days
     const dates = Array.from({ length: 7 }, (_, i) => moment().add(i, "days"))
@@ -44,6 +56,18 @@ const ShowTime = ({selectedDate, setSelectedDate, theatres}) => {
     const handleDateSelect = (date) => {
         setSelectedDate(moment(date).format("YYYY-MM-DD"));
         navigate(`/movie/${params.id}/${moment(date).format("YYYYMMDD")}`)
+    }
+
+    if (showLoading) {
+        return (
+          <div className="loader-container">
+            <Spin size='large'/>
+          </div>
+        )
+    }
+
+    if(showError){
+        notify("error", "Sorry, something went wrong", showError);
     }
 
   return (
@@ -115,7 +139,7 @@ const ShowTime = ({selectedDate, setSelectedDate, theatres}) => {
                                     <Col xs={24} sm={16} md={12}>
                                         <div className="showtime-buttons-horizontal">
                                             {
-                                                theatre.shows
+                                                [...theatre.shows]
                                                 .sort((a, b) => moment(a.time, "HH:mm") - moment(b.time, "HH:mm"))
                                                 .map((singleShow, index) => 
                                                     (

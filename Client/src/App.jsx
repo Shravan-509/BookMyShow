@@ -19,7 +19,6 @@ import './App.css';
 
 // Protected Route Component
 const ProtectedRoute = ({children}) => {
-  const user = useSelector(selectUser);
   const {isAuthenticated, checkingAuth} = useSelector(selectAuth);
 
   if(checkingAuth) { 
@@ -59,6 +58,18 @@ const PublicRoute = ({children}) => {
   return children;
 }
 
+// User Route component (redirects to home if Admin/Partner)
+const UserRoute = ({ children }) => {
+  
+  const {user} = useSelector(selectAuth);
+  
+  if (!user || user.role !== "user") {
+    return <Navigate to="/home" replace />;
+  }
+
+  return children;
+};
+
 function App() {
   const dispatch = useDispatch();
   
@@ -81,14 +92,39 @@ function App() {
       <Routes>
         <Route path ="/home" element={<ProtectedRoute><Home /></ProtectedRoute>}/>
         <Route path="/my-profile/edit" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-        <Route path="/my-profile/purchase-history" element={<ProtectedRoute><OrderHistory /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
         <Route path="/partner" element={<ProtectedRoute><Partner /></ProtectedRoute>} />
-        <Route path="/movie/:id/:date" element={<ProtectedRoute><MovieDetails /></ProtectedRoute>} />
-        <Route path="/booking/:id" element={<ProtectedRoute><Booking /></ProtectedRoute>} />
+        <Route path="/movie/:id/:date" 
+            element={
+              <ProtectedRoute>
+                <UserRoute>
+                  <MovieDetails />
+                </UserRoute>
+              </ProtectedRoute>
+            }
+        />
+        <Route path="/booking/:id" 
+            element={
+              <ProtectedRoute>
+                <UserRoute>
+                  <Booking />
+                </UserRoute>
+              </ProtectedRoute>
+            } 
+        />
+        <Route path="/my-profile/purchase-history" 
+            element={
+              <ProtectedRoute>
+                <UserRoute>
+                  <OrderHistory />
+                </UserRoute>
+              </ProtectedRoute>
+            } 
+        />
+        
         <Route path ="/" element={<PublicRoute><AuthTabs /></PublicRoute>}/>
-         <Route path ="/no-auth/reset-password" element={<ResetPassword />}/>
-
+        <Route path ="/no-auth/reset-password" element={<ResetPassword />}/>
+        
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
   )

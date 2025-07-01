@@ -2,15 +2,14 @@ import React, { useEffect, useState } from "react"
 import moment from "moment"
 
 import { Link, useParams } from "react-router-dom"
-import { ArrowLeftOutlined, CalendarOutlined, ClockCircleOutlined, ExclamationCircleOutlined} from "@ant-design/icons"
-import { getShowsById } from "../../../api/show"
+import { ArrowLeftOutlined, CalendarOutlined, ClockCircleOutlined} from "@ant-design/icons"
 import { Button, Card, Col, Divider, Form, Input, InputNumber, message, Row, Skeleton, Space, Steps, Tag, Typography } from "antd"
 import { useDispatch, useSelector } from "react-redux"
-import { hideLoading, showLoading } from "../../../redux/slices/loaderSlice";
 import { SeatLayout } from "../../../components/SeatLayout"
 import { useAuth } from "../../../hooks/useAuth"
 import PaymentSummary from "./Checkout"
-const { Title ,Text, Paragraph } = Typography;
+import { getShowByIdRequest, selectSelectedShow, selectShowError, selectShowLoading } from "../../../redux/slices/showSlice"
+const { Title ,Text } = Typography;
 const { Step } = Steps
 
 const Booking = () => {
@@ -18,33 +17,17 @@ const Booking = () => {
     const params = useParams();
     const dispatch = useDispatch();
     const [contactForm] = Form.useForm()
-    const [show, setShow] = useState(null);
     const [currentStep, setCurrentStep] = useState(0);
     const [ticketCount, setTicketCount] = useState(2);
     const [selectedSeats, setSelectedSeats] = useState([]);
-    const {loading} = useSelector((state) => state.loader)
 
-    const getData = async () => {
-        try {
-            dispatch(showLoading());
-            const response = await getShowsById(params.id);
-            if(response.success)
-            {
-                setShow(response.data);
-            }
-            else{
-                message.warning(response.message)
-            }
-        } catch (error) {
-            message.error(error.message);
-        }finally{
-            dispatch(hideLoading());
-        }
-    }
+    const loading = useSelector(selectShowLoading);
+    const showError = useSelector(selectShowError);
+    const show = useSelector(selectSelectedShow);
 
     useEffect(() => {
-        getData(); 
-    }, [])
+        dispatch(getShowByIdRequest(params.id))
+    }, [dispatch])
 
     const handleTicketCount = (value) => {
         if(value)
@@ -128,11 +111,15 @@ const Booking = () => {
     )
   }
 
+    if(showError){
+        notify("error", "Sorry, something went wrong", showError);
+    }
+
   return (
     show && (
         <main className="min-h-screen p-6 md:p-12 bg-gray-50">
             <div className="max-w-4xl mx-auto">
-                <Link to={`/movie/${show.movie._id}/${moment().format("YYYYMMDD")}`}>
+                <Link to={`/movie/${show?.movie._id}/${moment().format("YYYYMMDD")}`}>
                     <ArrowLeftOutlined className="h-4 w-4 mr-2"/>
                     Back to Theatre
                 </Link>
@@ -141,15 +128,15 @@ const Booking = () => {
                     <Card >
                         <div className="flex flex-col justify-between items-start mb-6">
                             <Title level={3} className="!mb-1">
-                                {show.movie.movieName}
+                                {show?.movie.movieName}
                             </Title>
 
                             <Space direction="vertical" size={4} className="!mb-2">
                                 <Space size="middle" wrap>
-                                    <Text>{show.theatre.name}</Text>
+                                    <Text>{show?.theatre.name}</Text>
                                     <Tag color="blue" className="!flex !gap-1">
-                                        <CalendarOutlined/>{moment(show.date).format("ddd, DD MMM, YYYY")}
-                                        <ClockCircleOutlined/> {moment(show.time, "HH:mm").format("hh:mm A")}</Tag>
+                                        <CalendarOutlined/>{moment(show?.date).format("ddd, DD MMM, YYYY")}
+                                        <ClockCircleOutlined/> {moment(show?.time, "HH:mm").format("hh:mm A")}</Tag>
                                 </Space>
                             </Space>
                         </div>
@@ -175,8 +162,8 @@ const Booking = () => {
                                         <div className="overflow-x-auto max-w-full">
                                             <div className="min-w-[650px]">
                                                 <SeatLayout
-                                                    totalSeats={show.totalSeats}
-                                                    bookedSeats={show.bookedSeats}
+                                                    totalSeats={show?.totalSeats}
+                                                    bookedSeats={show?.bookedSeats}
                                                     selectedSeats={selectedSeats}
                                                     onSeatSelect={handleSeatSelection}
                                                 />
@@ -336,7 +323,6 @@ const Booking = () => {
                 </div>
             </div>
         </main>
-
     )
   )
 }

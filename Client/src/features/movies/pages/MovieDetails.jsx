@@ -5,9 +5,8 @@ import { Button, Card, Col, message, Rate, Result, Row, Space, Spin, Tabs, Tag, 
 import { CalendarOutlined, ClockCircleOutlined, InfoCircleOutlined, PlayCircleOutlined, TeamOutlined } from '@ant-design/icons';
 const { Title, Paragraph } = Typography;
 import moment from "moment";
-import { hideLoading, showLoading } from '../../../redux/slices/loaderSlice';
 import { formatDuration } from '../../../utils/format-duration';
-import { getAllTheatresByMovies } from '../../../api/show';
+
 import ShowTime from './ShowTime';
 import MovieSynopsis from "./MovieSynopsis";
 import { getMovieByIdRequest, selectMovieError, selectMovieLoading, selectSelectedMovie } from '../../../redux/slices/movieSlice';
@@ -16,39 +15,15 @@ import { notify } from '../../../utils/notificationUtils';
 const MovieInfo = () => {
     const params = useParams();
     const dispatch = useDispatch();
-    const [selectedDate, setSelectedDate] = useState(moment().format("YYYY-MM-DD"));
-    const [theatres, setTheatres] = useState([]);
     const [activeTab, setActiveTab] = useState("showTimes")
 
-    const loading = useSelector(selectMovieLoading);
+    const movieLoading = useSelector(selectMovieLoading);
     const movieError = useSelector(selectMovieError)
     const movie = useSelector(selectSelectedMovie);
-
-    const getAllTheatres = async () => {
-        try {
-            dispatch(showLoading());
-            const response = await getAllTheatresByMovies({movie: params.id, date: selectedDate});
-            if(response.success){
-                setTheatres(response?.data);
-            }
-            else{
-                message.warning(response.message)
-            }
-            
-        } catch (error) {
-            message.error(error.message)
-        }finally{
-            dispatch(hideLoading());
-        }
-    }
 
     useEffect(() => {
         dispatch(getMovieByIdRequest(params.id))
     }, [dispatch])
-
-    useEffect(() => {
-        getAllTheatres();
-    }, [selectedDate])
 
     // Define tab items
     const items = [
@@ -58,11 +33,7 @@ const MovieInfo = () => {
                         <CalendarOutlined/>
                         Show Times
                     </span>,
-            children:<ShowTime
-                        selectedDate={selectedDate}
-                        setSelectedDate={setSelectedDate}
-                        theatres={theatres}
-                    />
+            children:<ShowTime />
         },
         {
             key: "about",

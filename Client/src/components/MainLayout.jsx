@@ -61,7 +61,11 @@ const MainLayout = ({ children}) => {
         },
         {
             key: 'profile',
-            label: `Hi, ${ user ? user.name: " "}`,
+            label: (
+                <span style={{ cursor: "default", color: "inherit" }}>
+                    Hi, {user ? user.name : ""}
+                </span>
+            ),
             icon: <UserOutlined/>
         }
           
@@ -81,18 +85,19 @@ const MainLayout = ({ children}) => {
             ),
             
         },
-        {
-            key: '2',
-            icon: <ShoppingOutlined />,
-            label: (
-                <Link 
-                    to="/my-profile/purchase-history"
-                    onClick={closeDrawer}
-                >
-                    Your Orders
-                </Link>
-            ),
-        },
+        ...(user?.role === "user" 
+            ? [
+                {
+                    key: '2',
+                    icon: <ShoppingOutlined />,
+                    label: (
+                        <Link to="/my-profile/purchase-history" onClick={closeDrawer}>
+                            Your Orders
+                        </Link>
+                    ),
+                },
+            ]
+            : []),
         {
             type: 'divider',
         }

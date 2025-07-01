@@ -86,7 +86,7 @@ const getShowById = async(req, res, next) => {
     
         return res.send({
                 success: true,
-                message: "All shows has been fetched",
+                message: "Show Details Fetched",
                 data: shows
             });
     } catch (error) {
@@ -122,7 +122,7 @@ const getAllShowsByTheatre = async(req, res, next) => {
 };
 
 // when User selects a movie
-const getAllTheatresByMovie = async(req, res, next) => {
+const getTheatresWithShowsByMovie = async(req, res, next) => {
     try
     {
         const {movie, date} = req.body;
@@ -170,5 +170,5 @@ module.exports = {
     updateShow,
     deleteShow,
     getAllShowsByTheatre,
-    getAllTheatresByMovie
+    getTheatresWithShowsByMovie
 }
