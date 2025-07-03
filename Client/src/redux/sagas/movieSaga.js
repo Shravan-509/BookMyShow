@@ -108,9 +108,10 @@ function* addMovieSaga(action) {
         if(response.success)
         {
             yield put(addMovieSuccess(response.message));
-            yield put(getMoviesRequest());
             // Show success message
             notify("success", response.message);
+
+            yield put(getMoviesRequest());
         }
         else
         {
@@ -131,9 +132,10 @@ function* updateMovieSaga(action) {
         if(response.success)
         {
             yield put(updateMovieSuccess(response.data));
-            yield put(getMoviesRequest());
             // Show success message
             notify("success", response.message);
+
+            yield put(getMoviesRequest());
         }
         else
         {
@@ -154,9 +156,10 @@ function* deleteMovieSaga(action) {
          if(response.success)
         {
             yield put(deleteMovieSuccess(response.data));
-            yield put(getMoviesRequest());
             // Show success message
             notify("success", response.message);
+
+            yield put(getMoviesRequest());
         }
         else
         {

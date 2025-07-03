@@ -66,7 +66,6 @@ function* getTheatresSaga() {
         if(response.success)
         {
             yield put(getTheatresSuccess(response.data));
-        
             // Show success message
             notify("success", response.message);
         }
@@ -90,9 +89,10 @@ function* addTheatreSaga(action) {
         if(response.success)
         {
             yield put(addTheatreSuccess(response.message));
-            yield put(getTheatresRequest());
             // Show success message
             notify("success", response.message);
+
+            yield put(getTheatresRequest());
         }
         else
         {
@@ -113,9 +113,10 @@ function* updateTheatreSaga(action) {
         if(response.success)
         {
             yield put(updateTheatreSuccess(response.data));
-            yield put(getTheatresRequest());
             // Show success message
             notify("success", response.message);
+
+            yield put(getTheatresRequest());
         }
         else
         {
@@ -136,9 +137,10 @@ function* deleteTheatreSaga(action) {
          if(response.success)
         {
             yield put(deleteTheatreSuccess(response.data));
-            yield put(getTheatresRequest());
             // Show success message
             notify("success", response.message);
+
+             yield put(getTheatresRequest());
         }
         else
         {
