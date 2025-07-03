@@ -33,7 +33,7 @@ app.use(cookieParser());
 connectDB();
 
 app.use(cors({
-    origin: 'http://localhost:5173',
+    origin: process.env.PUBLIC_APP_URL,
     credentials: true
 }));
 

@@ -1,5 +1,0 @@
-# Proxy API requests to your backend (e.g., on Render)
-/bms/v1/*  https://bookmyshow-sycx.onrender.com/bms/v1/:splat  200
-
-# Ensure React Router works on refresh
-/*  /index.html  200
