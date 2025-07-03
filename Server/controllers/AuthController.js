@@ -194,8 +194,8 @@ const login = async (req, res, next) => {
 
         res.cookie('access_token', access_token, {
             httpOnly: true,
-            secure: false, // true in production
-            sameSite: 'lax',
+            secure: process.env.NODE_ENV === "production",  // true only in production
+            sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
             maxAge: 24 * 60 * 60 * 1000 // 1 day
         })
 
@@ -256,8 +256,8 @@ const verify2FA = async(req, res, next) => {
 
         res.cookie('access_token', access_token, {
             httpOnly: true,
-            secure: false, // true in production
-            sameSite: 'lax',
+            secure: process.env.NODE_ENV === "production",  // true only in production
+            sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
             maxAge: 24 * 60 * 60 * 1000 // 1 day
         })
 

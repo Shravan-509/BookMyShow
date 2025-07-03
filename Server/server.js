@@ -18,11 +18,13 @@ const { validateJWT } = require("./middlewares/authorization");
 
 const app = express();
 
+const isProd = process.env.NODE_ENV === "production";
+
 //Rate limiter
 const limiter = rateLimit({
-    windowMs: 60 * 60 * 1000, // 15 minutes
-    max : 100, // Limit each IP to 100 requests per windowMs
-    message: "Too many requests from this IP, please try again after 15 minutes.",
+    windowMs: isProd ? 60 * 60 * 1000 : 15 * 60 * 1000, // 1 hour in prod, 15 min in dev
+    max : isProd ? 100 : 1000, // Limit each IP to 100 requests in Prod and 1000 in Dev
+    message: "Too many requests from this IP, please try again later",
     standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
     legacyHeaders: false,  // Disable the `X-RateLimit-*` headers
 
