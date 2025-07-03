@@ -155,7 +155,7 @@ const login = async (req, res, next) => {
 
         // Check if email is verified
         if (!user.isVerified) {
-            return res.status(200).send(
+            return res.status(401).send(
                 { 
                     success: true,
                     message: "Your account is not verified. Please verify your email to continue.",
