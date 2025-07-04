@@ -13,7 +13,8 @@ import {
     resendCodeRequest, 
     resendCodeFailure,
     resendCodeSuccess, 
-    decrementCountdown
+    decrementCountdown,
+    setResendCountdown
 } from "../slices/verificationSlice";
 import { setActiveTab } from "../slices/uiSlice";
 import { message } from "antd";
@@ -65,17 +66,38 @@ const resendCodeApi = async (type, payload) => {
 //Worker Sagas
 function* handleVerifyEmail(action) {
     try {
+        // Get both tempUserId from state and email/code from action
         const tempUserId = yield select((state) => state.verification.tempUserId);
-        const response = yield call(verifyEmailApi, {
-            userId: tempUserId,
-            code: action.payload.code
-        });
+        const verificationEmail = yield select((state) => state.verification.verificationEmail);
+
+        const { code, email } = action.payload;
+
+        //Prepare Verification data
+        const verificationData = { code }
+
+        // If we have tempUserId from current session, use it
+        if (tempUserId) 
+        {
+            verificationData.userId = tempUserId
+        }
+        // If we have email (either from action or state), use it
+        else if (email || verificationEmail) 
+        {
+            verificationData.email = email || verificationEmail
+        }
+        // If neither is available, this is an error
+        else 
+        {
+            throw new Error("Unable to verify: missing user identification. Please try the verification process again.")
+        }
+
+        const response = yield call(verifyEmailApi, verificationData);
 
         if(response.success)
         {
             yield put(verifyEmailSuccess());
             yield put(setActiveTab("login")); //Reset and go back to login
-            notify("success", "Email verified successfully");
+            notify("success", "Email verified successfully! You can now log in.");
         }
         else
         {
@@ -92,10 +114,28 @@ function* handleVerifyEmail(action) {
 function* handleVerifyTwoFactor(action) {
     try {
         const tempUserId = yield select((state) => state.verification.tempUserId);
-        const data = yield call(verifyTwoFactorApi, {
-            userId: tempUserId,
-            code: action.payload.code
-        })
+        const verificationEmail = yield select((state) => state.verification.verificationEmail)
+
+        const { code, email } = action.payload;
+
+        // Prepare verification data
+        const verificationData = { code }
+
+        // For 2FA, we should have tempUserId from the login flow
+        if (tempUserId) 
+        {
+            verificationData.userId = tempUserId;
+        }
+        else if (email || verificationEmail)
+        {
+            verificationData.email = email || verificationEmail;
+        } 
+        else 
+        {
+            throw new Error("Session expired. Please log in again.")
+        }
+
+        const data = yield call(verifyTwoFactorApi, verificationData);
 
         if(data.success)
         {
@@ -137,7 +177,8 @@ function* handleReverifyAccount(action) {
             }));
 
             //Start countdown for resend button
-            yield put(resendCodeRequest({ type: "email"}));
+            yield put(setResendCountdown(60));
+            yield fork(handleCountdown)
 
             //Show success message
             notify("success", "Verification code sent to your email!");
@@ -154,23 +195,42 @@ function* handleReverifyAccount(action) {
     }
 }
 
-
 function* handleResendCode(action) {
     try {
         const {type} = action.payload;
         const tempUserId = yield select((state) => state.verification.tempUserId);
         const verificationEmail = yield select((state) => state.verification.verificationEmail);
         
-        const response = yield call(resendCodeApi, type, {
-            userId: tempUserId,
-            email: verificationEmail
-        })
+        // Prepare resend data
+        let resendData = {}
+
+        if (tempUserId && verificationEmail) 
+        {
+            resendData = {
+                userId: tempUserId,
+                email: verificationEmail,
+            }
+        } 
+        else if (verificationEmail) 
+        {
+            // If no userId but we have email, backend can look up user
+            resendData = {
+                email: verificationEmail,
+            }
+        } 
+        else 
+        {
+            throw new Error("Unable to resend code: missing user information")
+        }
+
+        const response = yield call(resendCodeApi, type, resendData);
 
         if(response.success)
         {
             yield put(resendCodeSuccess())
 
             //Start countdown 
+            yield put(setResendCountdown(60))
             yield fork(handleCountdown);
 
             //Show success message

@@ -29,8 +29,11 @@ const loginApi = async (credentials) => {
         const response = await axiosInstance.post("/auth/login", credentials);
         return response.data;
     } catch (error) {
-        const message = error.response?.data?.message || 'Login failed';
-        throw new Error(message);
+        const data = error.response?.data || {};
+        // Create a custom error and attach code/message
+        const customError = new Error(data.message || 'Login failed');
+        customError.code = data.code;
+        throw customError;
     }
 };
 
@@ -119,8 +122,8 @@ function* handleLogin(action) {
     }
     catch(error)
     {
-        // Check iuf the erro is due to Unverified Account
-        if(error.message.includes("UNVERFIED_ACCOUNT"))
+        // Check if the error is due to Unverified Account
+        if(error.code === "UNVERIFIED_ACCOUNT")
         {
             yield put(setLoginError("Your account is not verified. Please verify your email to continue."))
             yield put(setVerificationEmail(action.payload.email))

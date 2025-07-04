@@ -47,7 +47,7 @@ const PaymentSummary = ({show, seats, handlePreviousStep}) => {
                 }
 
                 const options = {
-                    key: "rzp_test_UQZ8B4sElVIiYY", // Your Razorpay key
+                    key: "rzp_test_UQZ8B4sElVIiYY", // Razorpay key
                     amount: order_amount,
                     currency: "INR",
                     name: "BookMyShow",

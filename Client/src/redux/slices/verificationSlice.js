@@ -67,16 +67,39 @@ const verificationSlice = createSlice({
 
         // Resend Verification Code actions
         resendCodeRequest : (state, action) => {
+            state.loading = true
+            state.error = null
             state.resendDisabled = true
             state.countdown = 60
         },
         resendCodeSuccess: (state) => {
+            state.loading = false
            // Keep resendDisabled true until countdown finishes
         },
         resendCodeFailure: (state, action) => {
+            state.loading = false
             state.resendDisabled = false
             state.countdown = 0
             state.error = action.payload
+        },
+
+        // Countdown management
+        setResendCountdown: (state, action) => {
+            state.resendDisabled = true
+            state.countdown = action.payload
+        },
+        decrementCountdown: (state) => {
+            if (state.countdown > 0) 
+            {
+                state.countdown -= 1
+            }
+            if (state.countdown === 0)
+            {
+                state.resendDisabled = false
+            }
+        },
+        setCountdownTimer: (state, action) => {
+           state.countdownTimer = action.payload
         },
 
          // UI state actions
@@ -94,22 +117,7 @@ const verificationSlice = createSlice({
         },
         setShowReverifyAccountModal: (state, action) => {
             state.showReverifyAccountModal = action.payload
-        },
-
-        // Countdown actions
-        decrementCountdown: (state, action) => {
-            if(state.countdown > 0)
-            {
-                state.countdown -= 1
-            }
-            if(state.countdown === 0)
-            {
-                state.resendDisabled = false
-            }
-        },
-        setCountdownTimer: (state, action) => {
-           state.countdownTimer = action.payload
-        },
+        },       
 
         //Reset verification State
         resetVerificationState: (state) => {
@@ -142,7 +150,8 @@ export const {
     setShowReverifyAccountModal,
     decrementCountdown,
     setCountdownTimer,
-    resetVerificationState
+    resetVerificationState,
+    setResendCountdown, // New action
 } = verificationSlice.actions;
 
 // Export selectors

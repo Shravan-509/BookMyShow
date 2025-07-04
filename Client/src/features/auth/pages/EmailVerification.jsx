@@ -1,6 +1,6 @@
 import React from 'react'
 import { ArrowLeftOutlined, MailOutlined } from '@ant-design/icons'
-import { Button, Modal, Form, Input } from 'antd'
+import { Button, Modal, Form, Input, Typography } from 'antd'
 import { useDispatch, useSelector } from 'react-redux'
 import {
   selectShowEmailVerificationModal, 
@@ -12,6 +12,8 @@ import {
   selectResendDisabled, 
   verifyEmailRequest
 } from "../../../redux/slices/verificationSlice";
+
+const {Text} = Typography;
 
 const EmailVerification = () => {
       const [verifyEmailForm] = Form.useForm();
@@ -49,8 +51,11 @@ const EmailVerification = () => {
         </div>
         <h3>Verify Your Email</h3>
         <p>
-          We've sent a verification code to <strong>{verificationEmail}</strong>
+          We've sent a 6-digit verification code to <strong>{verificationEmail}</strong>
         </p>
+        <Text type="secondary" style={{ display: "block", textAlign: "center", marginBottom: 20 }}>
+          Please check your inbox and enter the code below
+        </Text>
 
         <Form form={verifyEmailForm} onFinish={handleVerifyEmail} layout="vertical">
           <Form.Item name="code" rules={[{ required: true, message: "Please enter the verification code" }]}>
@@ -73,13 +78,20 @@ const EmailVerification = () => {
 
         <div className="verification-actions">
           <Button type="text" icon={<ArrowLeftOutlined />} onClick={handleClose}>
-            Back
+            Back to Login
           </Button>
 
           <Button type="link" disabled={resendDisabled} onClick={handleResendVerificationCode}>
             {resendDisabled ? `Resend code in ${countdown}s` : "Resend code"}
           </Button>
         </div>
+
+        <div style={{ textAlign: "center", marginTop: 16 }}>
+          <Text type="secondary" style={{ fontSize: "12px" }}>
+            Didn't receive the code? Check your spam folder or click "Resend code"
+          </Text>
+        </div>
+
       </div>
     </Modal>
   )

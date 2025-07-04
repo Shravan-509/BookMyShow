@@ -74,25 +74,69 @@ const register = async (req, res, next) => {
 
 const verifyEmail = async(req, res, next) => {
     try {
-        const {userId, code} = req?.body;
+        const {userId, email, code} = req?.body;
         
-        //Find Verification Record
-        const verification = await Verification.findOne({
-            userId,
-            code,
-            type: { $in: ["email", "reverify"] },
-            expiresAt: {$gt: new Date()},
-        });
-        if(!verification)
+        // Validation
+        if (!code) 
+        {
+            return res.status(400).json({ 
+                    success: false,
+                    message: "Verification code is required" 
+                })
+        }
+
+        if (!userId && !email) 
+        {
+            return res.status(400).json({ 
+                success: false,
+                message: "Either user ID or email is required" 
+            })
+        }
+
+        let verification;
+        let user;
+
+        // If userId is provided, use it directly
+        if(userId)
+        {
+             //Find Verification Record
+            verification = await Verification.findOne({
+                userId,
+                code,
+                type: { $in: ["email", "reverify"] },
+                expiresAt: {$gt: new Date()},
+            });
+            if(verification){
+                user = await User.findById(userId);
+            }
+        }
+        // If only email is provided, find user first then verification
+        else if(email)
+        {
+            user = await User.findOne({ email });
+            if(user)
+            {
+                //Find Verification Record
+                verification = await Verification.findOne({
+                    userId: user._id,
+                    code,
+                    type: { $in: ["email", "reverify"] },
+                    expiresAt: {$gt: new Date()},
+                });
+            }
+        }
+       
+        // Check if verification was found
+        if(!verification || !user)
         {
             return res.status(404).send({
                 success: false,
-                message: "Invalid or expired verification code"
+                message: "Invalid or expired verification code. Please check your code or request a new one."
             })
         }
 
         //Update User
-        await User.findByIdAndUpdate( userId, {isVerified: true});
+        await User.findByIdAndUpdate( user._id, { isVerified: true });
 
         //Delete Verification record
         await Verification.deleteOne({ _id: verification._id });
@@ -100,6 +144,13 @@ const verifyEmail = async(req, res, next) => {
         return res.status(200).send({
             success: true,
             message: "Email Verified Successfully",
+            data: {
+                user: {
+                    id: user._id,
+                    email: user.email,
+                    isVerified: true,
+                }
+            }
         })
 
     } catch (error) {
@@ -110,15 +161,48 @@ const verifyEmail = async(req, res, next) => {
 
 const resendVerification = async(req, res, next) => {
     try {
-        const {userId, email} = req?.body;
+        let {userId, email} = req?.body;
+
+        // Validation
+        if (!email) {
+            return res.status(400).json({ success: false, message: "Email is required" })
+        }
+
+        // Find user by email if userId not provided
+        let user;
+        if (userId) 
+        {
+            user = await User.findById(userId);
+        } 
+        else 
+        {
+            user = await User.findOne({ email });
+        }
+
+        // Find user
+        if (!user) {
+            return res.status(404).json({   
+                    success: false,
+                    message: "No account found with this email address"
+            })
+        }
+
+        // Check if user is already verified
+        if (user.isVerified) 
+        {
+            return res.status(400).json({
+                success: false,
+                message: "Account is already verified" 
+            })
+        }
         
        // Create verification code
-       const code = await createVerification(userId, "email")
+       const code = await createVerification(user._id, "email")
 
        // Send verification email
        await sendVerificationEmail(email, code, "email");
 
-       return res.status(201).json({
+       return res.status(200).json({
            success: true,
            message: "Verification code sent successfully"
        })
@@ -222,17 +306,61 @@ const login = async (req, res, next) => {
 
 const verify2FA = async(req, res, next) => {
     try {
-        const {userId, code} = req?.body;
+        const { userId, email, code } = req?.body;
         
-        //Find Verification Record
-        const verification = await Verification.findOne({
-            userId,
-            code,
-            type : "2fa",
-            expiresAt: {$gt: new Date()},
-        });
+        // Validation
+        if (!code)
+        {
+            return res.status(400).json({ 
+                success: false,
+                message: "Verification code is required" 
+            })
+        }
 
-        if(!verification)
+        if (!userId && !email) 
+        {
+            return res.status(400).json({ 
+                success: false,
+                message: "Either user ID or email is required" 
+            })
+        }
+
+        let verification;
+        let user;
+
+        // If userId is provided, use it directly
+        if (userId) 
+        {
+            //Find Verification Record
+            verification = await Verification.findOne({
+                userId,
+                code,
+                type : "2fa",
+                expiresAt: {$gt: new Date()},
+            });
+
+            if (verification) 
+            {
+                user = await User.findById(userId)
+            }
+        }
+        // If only email is provided, find user first then verification
+        else if (email) 
+        {
+            user = await User.findOne({ email })
+
+            if (user) 
+            {
+                verification = await Verification.findOne({
+                    userId: user._id,
+                    code,
+                    type: "2fa",
+                    expiresAt: { $gt: new Date() },
+                })
+            }
+        }
+
+        if(!verification || !user)
         {
             return res.status(404).send({
                 success: false,
@@ -247,7 +375,7 @@ const verify2FA = async(req, res, next) => {
         const expiresIn = '1d';
         const access_token = jwt.sign(
             {
-                userId: userId, 
+                userId: user._id, 
                 // email: user.email
             }, 
             process.env.JWT_SECRET, 
@@ -276,13 +404,26 @@ const resend2FA = async(req, res, next) => {
     try {
         const {userId, email} = req?.body;
         
-       // Create verification code
-       const code = await createVerification(userId, "2fa")
+        // Validation
+        if (!userId || !email) 
+        {
+            return res.status(400).json({ success: false, message: "User ID and email are required" })
+        }
 
-       // Send verification email
+        // Find user
+        const user = await User.findById(userId)
+        if (!user) 
+        {
+            return res.status(404).json({ success: false, message: "User not found" })
+        }
+
+        // Create verification code
+        const code = await createVerification(userId, "2fa")
+
+       // Send 2FA email
        await sendVerificationEmail(email, code, "2fa");
 
-       return res.status(201).json({
+       return res.status(200).json({
            success: true,
            message: "Verification code sent successfully"
        })
@@ -297,6 +438,10 @@ const reverifyEmail = async(req, res, next) => {
     try {
         const {email} = req?.body;
 
+        if (!email) {
+            return res.status(400).json({  success: false, message: "Email is required" })
+        }
+
         //Find User by Email
         const user = await User.findOne({ email });
 
@@ -307,14 +452,20 @@ const reverifyEmail = async(req, res, next) => {
                 message: "No account found with this email address"
             })
         }
-        
-        // Create verification code
+
+        // Check if user is already verified
+        if (user.isVerified) 
+        {
+            return res.status(400).json({ success: false, message: "Account is already verified" })
+        }
+
+        // Create verification code with reverify
         const code = await createVerification(user._id, "reverify")
 
         // Send verification email
         await sendVerificationEmail(email, code, "reverify");
 
-        return res.status(201).json({
+        return res.status(200).json({
             success: true,
             message: "Verification code sent successfully, Please check your email",
             data : {
@@ -327,7 +478,6 @@ const reverifyEmail = async(req, res, next) => {
         next(error);
     }
 }
-
 
 const logoutUser = async(req, res, next) => {
     try {

@@ -14,11 +14,13 @@ import {
     } from '../../../redux/slices/uiSlice';
 import { loginRequest, selectAuthLoading } from '../../../redux/slices/authSlice';
 import { 
+    selectShowEmailVerificationModal,
         selectShowReverifyAccountModal, 
         selectShowTwoFactorAuthModal, 
         setShowReverifyAccountModal 
     } from '../../../redux/slices/verificationSlice';
 import { resetForgotPasswordState } from '../../../redux/slices/forgotPasswordSlice';
+import EmailVerification from './EmailVerification';
 
 const Login = () => {
     const dispatch = useDispatch();
@@ -29,6 +31,8 @@ const Login = () => {
     const isTwoFactorModalOpen = useSelector(selectShowTwoFactorAuthModal);
     const isReverifyAccountModalOpen = useSelector(selectShowReverifyAccountModal);
     const isForgotPasswordModalOpen = useSelector(selectShowForgotPasswordModal);
+
+    const isEmailVerificationModalOpen = useSelector(selectShowEmailVerificationModal);
    
     // Clean up forgot password state when login component mounts
     useEffect(() => {
@@ -159,9 +163,16 @@ const Login = () => {
                 </Button>
             </div>
 
+            <div className="auth-footer">
+                <Button type="link" onClick={handleReverifyAccount} className="reverify-link">
+                    Need to verify your account?
+                </Button>
+            </div>
+
             { isTwoFactorModalOpen && <TwoFactorAuthentication/> }
             { isReverifyAccountModalOpen && <ReverifyAccount/> }
             { isForgotPasswordModalOpen && <ForgotPassword/> }
+            {isEmailVerificationModalOpen && <EmailVerification/>}
         </>
     )
 };
