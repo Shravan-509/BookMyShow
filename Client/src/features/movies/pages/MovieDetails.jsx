@@ -103,7 +103,7 @@ const MovieInfo = () => {
                             {movie.title}
                         </Title>
 
-                        <Space size={16} style={{ marginBottom: 16 }}>
+                        <Space size={16} className="!mb-4">
                             <Rate disabled defaultValue={4.5} allowHalf style={{ fontSize: 16 }} />
                             <Typography style={{ color: "white" }}>4.5/5</Typography>
 
@@ -113,7 +113,7 @@ const MovieInfo = () => {
                             </span>
                         </Space>
 
-                        <div style={{ marginBottom: 16 }}>
+                        <div className="mb-4">
                             {movie.genre.map((g) => (
                             <Tag key={g} color="blue" style={{ marginRight: 8, marginBottom: 8 }}>
                                 {g}
@@ -121,7 +121,7 @@ const MovieInfo = () => {
                             ))}
                         </div>
 
-                        <div style={{ marginBottom: 16 }}>
+                        <div className="mb-4">
                             {movie.language.map((lang) => (
                             <Tag key={lang} color="volcano" style={{ marginRight: 8, marginBottom: 8 }}>
                                 {lang}

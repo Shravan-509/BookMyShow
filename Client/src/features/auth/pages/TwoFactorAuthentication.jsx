@@ -1,5 +1,5 @@
 import React from 'react'
-import { ArrowLeftOutlined, KeyOutlined } from '@ant-design/icons'
+import { ArrowLeftOutlined, LockOutlined } from '@ant-design/icons'
 import { Button, Modal, Form, Input, message } from 'antd'
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -48,9 +48,9 @@ const TwoFactorAuthentication = () => {
       className="verification-modal"
     >
       <div className="verification-content">
-        <div className="verification-icon">
-          <KeyOutlined />
-        </div>
+        <div className="w-24 h-24 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-md animate-pulse ring-2 ring-green-300">
+          <LockOutlined className="!text-5xl !text-green-600" />
+      </div>
         <h3>Enter Security Code</h3>
         <p>
           We've sent a security code to <strong>{verificationEmail}</strong>
