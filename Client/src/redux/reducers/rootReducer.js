@@ -8,6 +8,7 @@ import showReducer from "../slices/showSlice";
 import uiReducer from "../slices/uiSlice";
 import verificationReducer from "../slices/verificationSlice"
 import forgotPasswordReducer from "../slices/forgotPasswordSlice"
+import profileReducer from "../slices/profileSlice"
 
 const appReducer = combineReducers({
    loader: loaderReducer,
@@ -18,7 +19,8 @@ const appReducer = combineReducers({
     show: showReducer,
     ui: uiReducer,
     verification: verificationReducer,
-    forgotPassword : forgotPasswordReducer
+    forgotPassword : forgotPasswordReducer,
+    profile: profileReducer
 });
 
 const rootReducer = (state, action) => {

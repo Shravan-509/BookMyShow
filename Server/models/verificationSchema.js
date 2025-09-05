@@ -16,8 +16,12 @@ const verificationSchema = new mongoose.Schema(
         type:
         {
             type: String,
-            enum: ["email", "2fa", "reverify"],
+            enum: ["email", "2fa", "reverify", "email-change"],
             required: true
+        },
+         metadata: {
+            type: mongoose.Schema.Types.Mixed,
+            default: {},
         },
         expiresAt:
         {
@@ -30,4 +34,5 @@ const verificationSchema = new mongoose.Schema(
     }
 );
 
-module.exports = mongoose.model("verification", verificationSchema);
+const Verification = mongoose.model("verification", verificationSchema);
+module.exports = Verification;

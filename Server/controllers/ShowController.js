@@ -1,6 +1,4 @@
 const Show = require("../models/showSchema");
-const Movie = require("../models/movieSchema");
-const Theatre = require("../models/theatreSchema");
 
 const addShow = async(req, res, next) => {
     try {

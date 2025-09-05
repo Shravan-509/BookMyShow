@@ -47,7 +47,7 @@ const register = async (req, res, next) => {
             email,
             phone,
             password: hashedPassword,
-            isVerified: false,
+            emailVerified: false,
             twoFactorEnabled: true,
         });
 
@@ -136,7 +136,7 @@ const verifyEmail = async(req, res, next) => {
         }
 
         //Update User
-        await User.findByIdAndUpdate( user._id, { isVerified: true });
+        await User.findByIdAndUpdate( user._id, { emailVerified: true });
 
         //Delete Verification record
         await Verification.deleteOne({ _id: verification._id });
@@ -148,7 +148,7 @@ const verifyEmail = async(req, res, next) => {
                 user: {
                     id: user._id,
                     email: user.email,
-                    isVerified: true,
+                    emailVerified: true,
                 }
             }
         })
@@ -188,7 +188,7 @@ const resendVerification = async(req, res, next) => {
         }
 
         // Check if user is already verified
-        if (user.isVerified) 
+        if (user.emailVerified) 
         {
             return res.status(400).json({
                 success: false,
@@ -238,7 +238,7 @@ const login = async (req, res, next) => {
         }
 
         // Check if email is verified
-        if (!user.isVerified) {
+        if (!user.emailVerified) {
             return res.status(401).send(
                 { 
                     success: true,
@@ -292,7 +292,7 @@ const login = async (req, res, next) => {
                 name: user.name,
                 email: user.email,
                 phone: user.phone,
-                isVerified: user.isVerified,
+                emailVerified: user.emailVerified,
                 twoFactorEnabled: user.twoFactorEnabled,
                 role: user.role
             }            
@@ -454,7 +454,7 @@ const reverifyEmail = async(req, res, next) => {
         }
 
         // Check if user is already verified
-        if (user.isVerified) 
+        if (user.emailVerified) 
         {
             return res.status(400).json({ success: false, message: "Account is already verified" })
         }

@@ -7,7 +7,7 @@ import Cookies from "js-cookie";
 import { authStatusChecked, checkAuthStatus, selectAuth, selectUser } from './redux/slices/authSlice';
 import Home from './features/home/pages/Home';
 import MainLayout from './components/MainLayout';
-import Profile from './features/user/pages/Profile';
+import Profile from './features/profile/pages/Profile';
 import Admin from './features/admin/pages/Admin';
 import Partner from './features/partner/pages/Partner';
 import AuthTabs from './features/auth/pages/AuthTabs';

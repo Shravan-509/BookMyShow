@@ -80,6 +80,11 @@ const sendVerificationEmail = async(email, code, type) => {
             templateName = "reverification"
             subject = "Verify your BookMyShow account"
         }
+        if (type === "email-change") 
+        {
+            templateName = "email-change"
+            subject = "Verify your Email change request"
+        } 
         
         //Prepare metadta for template
         const metaData = {
@@ -106,6 +111,7 @@ const sendVerificationEmail = async(email, code, type) => {
     }  
 }
 
+// Send password reset email
 const sendPasswordResetEmail = async({to, name, resetUrl}) => {
     try {
         let templateName = "password-reset";
@@ -127,7 +133,7 @@ const sendPasswordResetEmail = async({to, name, resetUrl}) => {
             subject,
             html,
         }) 
-        console.log("Password reset email sent:", result.messageId);
+        // console.log("Password reset email sent:", result.messageId);
         return result;
     } catch (error) {
         console.error(`Error sending email: ${error.message}`);
@@ -135,9 +141,57 @@ const sendPasswordResetEmail = async({to, name, resetUrl}) => {
     }  
 }
 
+// Send security notification email
+const sendSecurityNotificationEmail = async (email, type, data = {}) => {
+  try {
+    let templateName
+    let subject
+    const metaData = {
+      year: new Date().getFullYear().toString(),
+      timestamp: new Date().toLocaleString(),
+      ipAddress: data.ipAddress || "Unknown",
+    }
+
+    if (type === "password-changed") 
+    {
+      templateName = "password-changed"
+      subject = "Password Changed - BookMyShow Account"
+    } 
+    else if (type === "email-changed") 
+    {
+      templateName = "email-changed"
+      subject = "Email Address Changed - BookMyShow Account"
+      metaData.oldEmail = data.oldEmail
+      metaData.newEmail = data.newEmail
+    } 
+    else if (type === "account-deleted") 
+    {
+      templateName = "account-deleted"
+      subject = "Account Deleted - BookMyShow"
+    }
+
+    // Get email HTML from template
+    const html = await getEmailTemplate(templateName, metaData)
+
+    const result = await transporter.sendMail({
+      from: `"BookMyShow Security" <${process.env.EMAIL_FROM}>`,
+      to: email,
+      subject,
+      html,
+    })
+
+    // console.log(`✅ Security notification email sent: ${type} to ${email}`)
+    return result;
+  } catch (error) {
+    console.error(`❌ Error sending security notification email: ${error.message}`)
+    // Don't throw error for security emails to avoid breaking the main flow
+  }
+}
+
 module.exports= {
     createVerification,
     generateVerificationCode,
     sendVerificationEmail,
-    sendPasswordResetEmail
+    sendPasswordResetEmail,
+    sendSecurityNotificationEmail
 }

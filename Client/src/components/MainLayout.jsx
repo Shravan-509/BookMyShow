@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Layout, Menu, Spin, theme, Button, Drawer, Divider, Typography } from 'antd'
+import { Layout, Menu, Spin, theme, Button, Drawer, Divider, Typography, Tooltip } from 'antd'
 import { Content, Footer, Header } from 'antd/es/layout/layout'
 import { HomeOutlined, LogoutOutlined, MenuOutlined, ProfileOutlined, ShoppingOutlined, UserOutlined } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
@@ -21,87 +21,107 @@ const MainLayout = ({ children}) => {
 
     const { token: { colorBgContainer, borderRadiusLG } } = theme.useToken();
 
-      const navItems = [
-        {
-          key: 'home',
-          label: (
-            <span 
-                onClick={()=> { navigate("/home", {replace: true}) } }
-            >
-                Home
-            </span>
-          ),
-          icon: <HomeOutlined />,
-        },
-        {
-            key: 'roleProfile',
-            label: (
-                <span 
-                    onClick={()=> { 
-                       if(user.role === "admin")
-                        {
-                            navigate("/admin", { replace: true });
-                        }
-                        else if(user.role === "partner")
-                        {
-                                navigate("/partner", { replace: true });
-                        }
-                        else
-                        {
-                            navigate("/my-profile/purchase-history", { replace: true });
-                        } 
-                    }}
-                >
-                    {user?.role === "admin" && "Movie Management"}
-                    {user?.role === "partner" && "Theatre Management"}
-                    {user?.role === "user" && "My Bookings"}
-                </span>
-            ),
-            icon: <ProfileOutlined/>,
-        },
-        {
-            key: 'profile',
-            label: (
-                <span style={{ cursor: "default", color: "inherit" }}>
-                    Hi, {user ? user.name : ""}
-                </span>
-            ),
-            icon: <UserOutlined/>
-        }
-          
-      ];
+    // Utility: Truncate name
+    const truncate = (str, maxLength = 12) => 
+    {
+        if (!str) return "";
+        return str.length > maxLength ? str.slice(0, maxLength) + "..." : str;
+    };
 
-      const drawerItems = [
-        {
-            key: '1',
-            icon: <UserOutlined />,
-            label: (
-                <Link 
-                    to="/my-profile/edit"
-                    onClick={closeDrawer}
-                >
-                    Edit Profile
-                </Link>
-            ),
-            
-        },
-        ...(user?.role === "user" 
-            ? [
-                {
-                    key: '2',
-                    icon: <ShoppingOutlined />,
-                    label: (
-                        <Link to="/my-profile/purchase-history" onClick={closeDrawer}>
-                            Your Orders
-                        </Link>
-                    ),
-                },
-            ]
-            : []),
-        {
-            type: 'divider',
-        }
-      ]
+    const navItems = [
+    {
+        key: 'home',
+        label: (
+        <span 
+            onClick={()=> { navigate("/home", {replace: true}) } }
+        >
+            Home
+        </span>
+        ),
+        icon: <HomeOutlined />,
+    },
+    {
+        key: 'roleProfile',
+        label: (
+            <span 
+                onClick={()=> { 
+                    if(user.role === "admin")
+                    {
+                        navigate("/admin", { replace: true });
+                    }
+                    else if(user.role === "partner")
+                    {
+                            navigate("/partner", { replace: true });
+                    }
+                    else
+                    {
+                        navigate("/my-profile/purchase-history", { replace: true });
+                    } 
+                }}
+            >
+                {user?.role === "admin" && "Movie Management"}
+                {user?.role === "partner" && "Theatre Management"}
+                {user?.role === "user" && "My Bookings"}
+            </span>
+        ),
+        icon: <ProfileOutlined/>,
+    },
+    {
+        key: 'profile',
+        label: (
+            <Tooltip title={user?.name || ""} placement='bottom'>
+            <span 
+                style={{ 
+                    cursor: "default", 
+                    color: "inherit",
+                    display: "inline-block",
+                    maxWidth: 120,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    verticalAlign: "middle",
+                }}
+            >
+                Hi, {truncate(user?.name)}
+            </span>
+            </Tooltip>
+        ),
+        icon: <UserOutlined/>
+    }
+        
+    ];
+
+    const drawerItems = [
+    {
+        key: '1',
+        icon: <UserOutlined />,
+        label: (
+            <Link 
+                to="/my-profile/edit"
+                onClick={closeDrawer}
+            >
+                Edit Profile
+            </Link>
+        ),
+        
+    },
+    ...(user?.role === "user" 
+        ? [
+            {
+                key: '2',
+                icon: <ShoppingOutlined />,
+                label: (
+                    <Link to="/my-profile/purchase-history" onClick={closeDrawer}>
+                        Your Orders
+                    </Link>
+                ),
+            },
+        ]
+        : []),
+    {
+        type: 'divider',
+    }
+    ]
     
   return (
     <>

@@ -36,7 +36,7 @@ const userSchema = new mongoose.Schema(
             required: true,
             default: "user"
         },
-        isVerified :
+        emailVerified :
         {
             type: Boolean,
             default: false
@@ -51,11 +51,17 @@ const userSchema = new mongoose.Schema(
         },
         resetTokenExpiry:{
             type: Date
-        }
+        },
+        // Add tokenVersion to invalidate all existing tokens
+        tokenVersion: {
+            type: Number,
+            default: 0,
+        },
     },
     {
         timestamps : true
     }
 );
 
-module.exports = mongoose.model("users", userSchema);
+const User = mongoose.model("users", userSchema);
+module.exports = User;

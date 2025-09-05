@@ -717,3 +717,53 @@ table th {
 .ant-menu-item[role='menuitem']:has(span[style*='cursor: default']):hover {
   background-color: transparent !important;
 }
+
+.bookmyshow-tabs .ant-tabs-tab {
+  padding: 14px 12px;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  color: #333;
+  background-color: transparent;
+}
+
+.bookmyshow-tabs .ant-tabs-tab:hover {
+  background-color: #fff1f3;
+  color: #f84464;
+}
+
+.bookmyshow-tabs .ant-tabs-tab-active {
+  background-color: #fff1f3;
+  font-weight: 600;
+  color: #f84464 !important;
+}
+
+.bookmyshow-tabs .ant-tabs-tab-active .tab-label,
+.bookmyshow-tabs .ant-tabs-tab-active .tab-icon {
+  color: #f84464;
+}
+
+.tab-icon {
+  font-size: 18px;
+  color: #8c8c8c;
+  transition: color 0.3s ease;
+}
+
+.bookmyshow-tabs .ant-tabs-tab-active .tab-icon {
+  color: #f84464;
+}
+
+/* Horizontal tab responsiveness */
+@media (max-width: 768px) {
+  .bookmyshow-tabs .ant-tabs-nav {
+    flex-direction: row !important;
+    overflow-x: auto;
+  }
+
+  .bookmyshow-tabs .ant-tabs-tab {
+    min-width: 140px;
+    text-align: center;
+    justify-content: center;
+    font-size: 13px;
+  }
+}
