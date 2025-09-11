@@ -1,25 +1,89 @@
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState, useCallback, useMemo } from "react"
 import moment from "moment"
 
 import { Link, useParams } from "react-router-dom"
 import { ArrowLeftOutlined, CalendarOutlined, ClockCircleOutlined} from "@ant-design/icons"
-import { Button, Card, Col, Divider, Form, Input, InputNumber, message, Row, Skeleton, Space, Steps, Tag, Typography } from "antd"
+import { 
+    Button, 
+    Card, 
+    Col, 
+    Divider, 
+    Form, 
+    Input, 
+    InputNumber, 
+    Row, 
+    Skeleton, 
+    Space, 
+    Steps, 
+    Tag, 
+    Typography 
+} from "antd"
 import { useDispatch, useSelector } from "react-redux"
 import { SeatLayout } from "../../../components/SeatLayout"
 import { useAuth } from "../../../hooks/useAuth"
 import PaymentSummary from "./Checkout"
-import { getShowByIdRequest, selectSelectedShow, selectShowError, selectShowLoading } from "../../../redux/slices/showSlice"
+import { 
+    getShowByIdRequest, 
+    selectSelectedShow, 
+    selectShowError, 
+    selectShowLoading 
+} from "../../../redux/slices/showSlice"
+import { notify } from "../../../utils/notificationUtils"
+import SeatRecommendation from "../../../components/SeatRecommendation"
 const { Title ,Text } = Typography;
 const { Step } = Steps
 
+const LoadingSkeleton = React.memo(() => (
+    <div className="min-h-screen p-6 md:p-12 bg-gray-50 flex justify-center">
+        <Card className="w-full max-w-4xl">
+            <div className="text-center py-12">
+                <Skeleton active paragraph={{ rows: 4 }} />
+                <Row gutter={[24, 24]} className="mt-8">
+                    {Array.from({ length: 12 }, (_, i) => (
+                        <Col xs={24} md={12} key={i}>
+                            <Skeleton active paragraph={{ rows: 3 }} />
+                        </Col>
+                    ))}
+                </Row>
+            </div>
+        </Card>
+    </div>
+))
+
+LoadingSkeleton.displayName = "LoadingSkeleton"
+
+const ScreenDisplay = React.memo(() => (
+  <div className="flex flex-col items-center mt-6">
+    <svg
+      width="300"
+      height="50"
+      viewBox="0 0 300 50"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      style={{ minHeight: "50px" }} // Prevent layout shift
+    >
+      <polygon points="10,40 30,10 270,10 290,40" fill="#D6E9FF" stroke="#B0D4FF" strokeWidth="1" />
+      <polygon points="10,40 290,40 285,45 15,45" fill="#EAF4FF" stroke="#B0D4FF" strokeWidth="1" />
+    </svg>
+    <div className="text-xs text-gray-700 mt-2">All eyes this way please!</div>
+  </div>
+))
+
+ScreenDisplay.displayName = "ScreenDisplay"
+
 const Booking = () => {
-    const {user} = useAuth();  
+    const { user } = useAuth();  
     const params = useParams();
     const dispatch = useDispatch();
     const [contactForm] = Form.useForm()
     const [currentStep, setCurrentStep] = useState(0);
     const [ticketCount, setTicketCount] = useState(2);
     const [selectedSeats, setSelectedSeats] = useState([]);
+     const [seatPreferences, setSeatPreferences] = useState({
+        preferCenter: true,
+        preferBack: false,
+        preferAisle: false,
+    })
 
     const loading = useSelector(selectShowLoading);
     const showError = useSelector(selectShowError);
@@ -27,24 +91,24 @@ const Booking = () => {
 
     useEffect(() => {
         dispatch(getShowByIdRequest(params.id))
-    }, [dispatch])
+    }, [dispatch, params.id])
 
-    const handleTicketCount = (value) => {
+    const handleTicketCount = useCallback((value) => {
         if(value)
         {
             setTicketCount(value);
             setSelectedSeats([]);
         }
-    }
+    }, [])
 
-    const handlePreviousStep = () => {
-        setCurrentStep(currentStep - 1);
-    }
+    const handlePreviousStep = useCallback(() => {
+        setCurrentStep((prev) => prev - 1);
+    }, [])
 
-    const handleNextStep = () => {
+    const handleNextStep = useCallback(() => {
         if(currentStep === 0 && selectedSeats.length !== ticketCount)
         {
-            message.warning(`Please select exactly ${ticketCount} seats`);
+            notify("warning", `Please select exactly ${ticketCount} seats`);
             return;
         }
 
@@ -53,50 +117,63 @@ const Booking = () => {
             contactForm
                 .validateFields()
                 .then(() => {
-                    setCurrentStep(currentStep + 1)
+                    setCurrentStep((prev) => prev + 1)
                 })
                 .catch((info) => {
-                    message.warning(`Validate failed : ${info}`)
+                    notify("warning", `Validate failed : ${info}`)
                 })
             return;
         }
 
-        setCurrentStep(currentStep + 1);
-    }
+        setCurrentStep((prev) => prev + 1);
+    }, [currentStep, selectedSeats.length, ticketCount, contactForm])
 
-    const handleSeatSelection = (seatId) => {
-        if(selectedSeats.includes(seatId))
-        {
-            setSelectedSeats((prev) => prev.filter((id) => id !== seatId))
-        }
-        else if(selectedSeats.length < ticketCount)
-        {
-            setSelectedSeats(prev => [...prev, seatId])
-        }
-        else
-        {
-            message.warning(`You can only select ${ticketCount} seats`);
-        }
-    }
+    const handleSeatSelection = useCallback(
+        (seatId) => {
+            if(selectedSeats.includes(seatId))
+            {
+                setSelectedSeats((prev) => prev.filter((id) => id !== seatId))
+            }
+            else if(selectedSeats.length < ticketCount)
+            {
+                setSelectedSeats(prev => [...prev, seatId])
+            }
+            else
+            {
+                notify("warning", `You can only select ${ticketCount} seats`);
+            }
+        },
+        [selectedSeats, ticketCount],
+    )
+
+    const handleRecommendedSeatSelection = useCallback(
+        (recommendedSeats) => {
+            // Clear current seat selection first
+            setSelectedSeats([]);
+            // Add each seat individually to match the existing selection logic
+            recommendedSeats.forEach((seat) => {
+                setSelectedSeats((prev) => {
+                    if(!prev.includes(seat.seatId) && prev.length < ticketCount)
+                    {
+                        return [...prev, seat.seatId]
+                    }
+                    return prev;
+                })
+            })
+    }, [ticketCount])
+
+    const formInitialValues = useMemo(
+        () => ({
+            name: user?.name,
+            email: user?.email,
+            phone: user?.phone
+        }),
+        [user?.name, user?.email, user?.phone],
+    )
 
     if (loading) {
-    return (
-      <div className="min-h-screen p-6 md:p-12 bg-gray-50 flex justify-center">
-        <Card className="w-full max-w-4xl">
-            <div className="text-center py-12">
-                <Skeleton active paragraph={{ rows: 4 }} />
-                <Row gutter={[24, 24]} className="mt-8">
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((i) => (
-                    <Col xs={24} md={12} key={i}>
-                    <Skeleton active paragraph={{ rows: 3 }} />
-                    </Col>
-                ))}
-                </Row>
-            </div>
-        </Card>
-      </div>
-    )
-  }
+        return <LoadingSkeleton/>
+    }
 
     if (!show) {
     return (
@@ -125,7 +202,7 @@ const Booking = () => {
                 </Link>
 
                 <div className="mb-6 mt-5">
-                    <Card >
+                    <Card style={{ minHeight: "600px" }}>
                         <div className="flex flex-col justify-between items-start mb-6">
                             <Title level={3} className="!mb-1">
                                 {show?.movie.movieName}
@@ -135,8 +212,11 @@ const Booking = () => {
                                 <Space size="middle" wrap>
                                     <Text>{show?.theatre.name}</Text>
                                     <Tag color="blue" className="!flex !gap-1">
-                                        <CalendarOutlined/>{moment(show?.date).format("ddd, DD MMM, YYYY")}
-                                        <ClockCircleOutlined/> {moment(show?.time, "HH:mm").format("hh:mm A")}</Tag>
+                                        <CalendarOutlined/>
+                                        {moment(show?.date).format("ddd, DD MMM, YYYY")}
+                                        <ClockCircleOutlined/> 
+                                        {moment(show?.time, "HH:mm").format("hh:mm A")}
+                                    </Tag>
                                 </Space>
                             </Space>
                         </div>
@@ -157,6 +237,15 @@ const Booking = () => {
                                         <InputNumber className="w-24" min={1} max={5} value={ticketCount} onChange={handleTicketCount}/>
                                     </div>
 
+                                    <SeatRecommendation 
+                                        totalSeats={show?.totalSeats}
+                                        bookedSeats={show?.bookedSeats}
+                                        selectedSeats={selectedSeats}
+                                        onSeatSelect={handleRecommendedSeatSelection}
+                                        groupSize={ticketCount}
+                                        preferences={seatPreferences}
+                                    />
+
                                     <Divider/>
                                     <div className="mb-6">
                                         <div className="overflow-x-auto max-w-full">
@@ -168,36 +257,12 @@ const Booking = () => {
                                                     onSeatSelect={handleSeatSelection}
                                                 />
 
-                                                <div className="flex flex-col items-center mt-6">
-                                                    <svg
-                                                        width="300"
-                                                        height="50"
-                                                        viewBox="0 0 300 50"
-                                                        fill="none"
-                                                        xmlns="http://www.w3.org/2000/svg"
-                                                    >
-                                                        <polygon
-                                                        points="10,40 30,10 270,10 290,40"
-                                                        fill="#D6E9FF"
-                                                        stroke="#B0D4FF"
-                                                        strokeWidth="1"
-                                                        />
-                                                        <polygon
-                                                        points="10,40 290,40 285,45 15,45"
-                                                        fill="#EAF4FF"
-                                                        stroke="#B0D4FF"
-                                                        strokeWidth="1"
-                                                        />
-                                                    </svg>
-                                                    <div className="text-xs text-gray-700 mt-2">
-                                                        All eyes this way please!
-                                                    </div>
-                                                </div>
+                                                <ScreenDisplay/>
 
-                                                <div className="flex justify-center mt-12">
+                                                <div className="flex justify-center mt-12" style={{ minHeight: "40px"}}>
                                                     <div className="flex items-center mr-6">
                                                         <div className="w-4 h-4 bg-gray-200 rounded-sm mr-2"/>
-                                                        <Text> Available</Text>
+                                                        <Text>Available</Text>
                                                     </div>
                                                 
                                                     <div className="flex items-center mr-6">
@@ -248,11 +313,7 @@ const Booking = () => {
                                     <Form
                                         form={contactForm}
                                         layout="vertical"
-                                        initialValues={{
-                                            name: user?.name,
-                                            email: user?.email,
-                                            phone: user?.phone,
-                                        }}
+                                        initialValues={formInitialValues}
                                     >
                                         <Form.Item
                                             name={"name"}
@@ -292,7 +353,6 @@ const Booking = () => {
                                             <Button 
                                                 size="large" 
                                                 onClick={handlePreviousStep}
-                                                // className="hover:!border-[#f84464] hover:!text-black"
                                             >
                                                 Back
                                             </Button>
@@ -303,7 +363,6 @@ const Booking = () => {
                                                 className="!bg-[#f84464] hover:!bg-[#dc3558]">
                                                Proceed to Pay
                                             </Button>
-
                                         </div>
                                     </Form>
                                 </div>

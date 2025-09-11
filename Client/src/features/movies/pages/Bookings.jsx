@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Card, Col, Divider, Empty, Flex, message, QRCode, Row, Skeleton, Space, Tag, Typography } from 'antd';
+import { Button, Card, Col, Divider, Flex, QRCode, Row, Skeleton, Space, Tag, Typography } from 'antd';
 import { BarcodeOutlined } from '@ant-design/icons';
 import moment from "moment";
 const {Text, Title} = Typography;
@@ -9,12 +9,14 @@ import { bookingsByUserId } from '../../../api/booking';
 import { useDispatch, useSelector } from 'react-redux';
 import { hideLoading, showLoading } from "../../../redux/slices/loaderSlice";
 import NoBookings from './NoBookings';
+import { scheduleBookingReminder } from "../../../utils/reminderUtils"
+import { notify } from '../../../utils/notificationUtils';
 
 const OrderHistory = () => {
-    const {user} = useAuth(); 
+    const { user } = useAuth(); 
     const [bookings, setBookings] = useState([]);
     const dispatch = useDispatch();
-    const {loading} = useSelector((state) => state.loader)
+    const { loading } = useSelector((state) => state.loader)
 
   const getData = async () => {
     try 
@@ -24,13 +26,21 @@ const OrderHistory = () => {
       if(response.success)
       {
           setBookings(response.data);
+
+          response.data.forEach((booking) => {
+            const showDateTime = moment(`${booking.showDate} ${booking.showTime}`, "YYYY-MM-DD HH:mm");
+            if(showDateTime.isAfter(moment()))
+            {
+              scheduleBookingReminder(booking)
+            }
+          })
       }
       else
       {
-        message.warning(response.message)
+        notify("warning", response.message);
       }
     } catch (error) {
-        message.error(error.message);
+        notify("error", error.message);
     }finally{
         dispatch(hideLoading());
     }
@@ -60,8 +70,10 @@ const OrderHistory = () => {
           bookings.map((booking, id) => {
             let seatCount = booking.seats.length; 
             let baseTotal = booking.ticketPrice * seatCount;
-            let convenienceFee_gst = booking.convenienceFee + (booking.convenienceFee * booking.gstPercent) / 100; 
-            let grandTotal = baseTotal + convenienceFee_gst;
+            let convenienceFee = booking.convenienceFee; 
+            let grandTotal = baseTotal + convenienceFee;
+            // Round to 2 decimals
+            grandTotal = Math.round(grandTotal * 100) / 100;
             return (
               <div key={id} className="max-w-5xl mx-auto bg-[#f5f5f5] p-3 rounded-xl">
                 <Card 
@@ -85,7 +97,7 @@ const OrderHistory = () => {
                   <Flex wrap="wrap" gap={24}>
                     <img 
                       alt="Movie Poster" 
-                      src={booking.poster} 
+                      src={booking.poster || "/placeholder.svg"} 
                       className="!rounded-lg"
                       style={{ height: 200, width: 130, objectFit: "cover"}}
                     />   
@@ -98,7 +110,8 @@ const OrderHistory = () => {
                             #{booking.movieTitle} <span className="text-sm text-gray-500">2D</span>
                           </Title>
                           <Text strong className="!text-lg">
-                            {moment(booking.showDate).format('ddd, DD MMM YYYY')} | {moment(booking.showTime, "HH:mm").format("hh:mm A")}
+                            {moment(booking.showDate).format('ddd, DD MMM YYYY')} | {" "}
+                            {moment(booking.showTime, "HH:mm").format("hh:mm A")}
                           </Text>
                           <Text type='secondary'>
                             {booking.theatreName}
@@ -108,8 +121,10 @@ const OrderHistory = () => {
                           </Text>
                           <Text strong>
                             <div className="flex items-center gap-2">
-                                <img src={armChairUrl} alt="Seat Icon" />
-                                <span>{booking.seatType?.toUpperCase()} - {booking.seats.join(', ')}</span>
+                                <img src={armChairUrl || "/placeholder.svg"} alt="Seat Icon" />
+                                <span>
+                                  {booking.seatType?.toUpperCase()} - {booking.seats.join(', ')}
+                                </span>
                               </div> 
                           </Text>
 
@@ -130,7 +145,7 @@ const OrderHistory = () => {
                               <div className="text-xs text-gray-500">Incl. of Tax</div>
                             </Col>
                             <Col>
-                              ₹{convenienceFee_gst}
+                              ₹{convenienceFee}
                             </Col>
                           </Row>
 
@@ -151,7 +166,6 @@ const OrderHistory = () => {
                     <div className="flex justify-center items-center">
                       <QRCode value={booking.bookingId} size={100} />
                     </div>
-
                   </Flex>   
                 </Card>
 
@@ -165,17 +179,24 @@ const OrderHistory = () => {
                 >
                   <div style={{ margin: "0px 50px 0px 0px"}}>
                     <Text style={{ fontSize: "10px", fontWeight: 400, color: "rgb(102, 102, 102)"}}>BOOKING DATE & TIME</Text>
-                    <div style={{ fontSize: "12px",fontWeight: 400, color: "rgb(51, 51, 51)"}}>{ moment(booking.bookingTime).format('MMM DD YYYY')} {moment(booking.bookingTime).format('hh:mm A')}</div>
+                    <div style={{ fontSize: "12px",fontWeight: 400, color: "rgb(51, 51, 51)"}}>
+                      {moment(booking.bookingTime).format('MMM DD YYYY')} {" "} 
+                      {moment(booking.bookingTime).format('hh:mm A')}
+                    </div>
                   </div>
 
                   <div style={{ margin: "0px 50px 0px 0px"}}>
                     <Text style={{ fontSize: "10px", fontWeight: 400, color: "rgb(102, 102, 102)"}}>PAYMENT METHOD</Text>
-                    <div style={{ fontSize: "12px",fontWeight: 400, color: "rgb(51, 51, 51)"}}>{booking.paymentMethod || 'N/A'}</div>
+                    <div style={{ fontSize: "12px",fontWeight: 400, color: "rgb(51, 51, 51)"}}>
+                      {booking.paymentMethod || 'N/A'}
+                    </div>
                   </div>
 
                   <div style={{ margin: "0px 50px 0px 0px"}}>
                     <Text style={{ fontSize: "10px", fontWeight: 400, color: "rgb(102, 102, 102)"}}>BOOKING ID</Text>
-                  <div style={{ fontSize: "12px",fontWeight: 400, color: "rgb(51, 51, 51)"}}>{booking.bookingId}</div>
+                    <div style={{ fontSize: "12px",fontWeight: 400, color: "rgb(51, 51, 51)"}}>
+                      {booking.bookingId}
+                      </div>
                   </div>
                 </div>
               </div>
