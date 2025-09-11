@@ -4,6 +4,9 @@ const express = require("express");
 const rateLimit = require('express-rate-limit');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
+const helmet = require("helmet")
+const compression = require("compression")
+const mongoSanitize = require("express-mongo-sanitize")
 
 const connectDB = require('./config/db');
 const authRoute = require('./routes/authRoute');
@@ -14,7 +17,6 @@ const showRoute = require("./routes/showRoute");
 const bookingRoute = require("./routes/bookingRoute");
 const errorHandler = require('./middlewares/errorHandler');
 const { validateJWT } = require("./middlewares/authorization");
-
 
 const app = express();
 
@@ -30,8 +32,43 @@ const limiter = rateLimit({
 
 })
 
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  })
+);
+
+app.use(
+  helmet.contentSecurityPolicy({
+    directives: {
+      defaultSrc: ["'self'"], // Allows resources from the same origin 
+      scriptSrc: ["'self'"], // Allows scripts from your own domain
+      styleSrc: ["'self'", "'unsafe-inline'"], // Allows styles from your domain and inline styles (if needed)
+      imgSrc: ["'self'", "data:"], // Allows images from your domain and base64-encoded images
+      connectSrc: ["'self'"], // Allows AJAX requests to your own domain
+      fontSrc: ["'self'"], // Allows fonts from your domain
+      objectSrc: ["'none'"], // Disallows <object>, <embed>, and <applet> elements
+      upgradeInsecureRequests: [], // Automatically upgrades HTTP requests to HTTPS
+    },
+  })
+);
+
+app.use(compression())
 app.use(express.json());
 app.use(cookieParser());
+
+app.use((req, _res, next) => {
+	Object.defineProperty(req, 'query', {
+		...Object.getOwnPropertyDescriptor(req, 'query'),
+		value: req.query,
+		writable: true,
+	})
+
+	next()
+})
+
+app.use(mongoSanitize())
+
 connectDB();
 
 app.use(cors({
@@ -40,6 +77,7 @@ app.use(cors({
 }));
 
 app.use(limiter);
+
 app.use("/bms/v1/auth", authRoute);
 app.use("/bms/v1/users", validateJWT, userRoute);
 app.use("/bms/v1/movies", validateJWT, movieRoute);
