@@ -1,18 +1,29 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, memo, useState, useMemo, useCallback } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom'
-import { Button, Card, Col, message, Rate, Result, Row, Space, Spin, Tabs, Tag, Typography } from 'antd';
-import { CalendarOutlined, ClockCircleOutlined, InfoCircleOutlined, PlayCircleOutlined, TeamOutlined } from '@ant-design/icons';
+import { Button, Card, Col, Rate, Row, Space, Spin, Tabs, Tag, Typography } from 'antd';
+import { 
+    CalendarOutlined, 
+    ClockCircleOutlined, 
+    InfoCircleOutlined, 
+    PlayCircleOutlined, 
+    TeamOutlined 
+} from '@ant-design/icons';
 const { Title, Paragraph } = Typography;
 import moment from "moment";
 import { formatDuration } from '../../../utils/format-duration';
 
-import ShowTime from './ShowTime';
-import MovieSynopsis from "./MovieSynopsis";
-import { getMovieByIdRequest, selectMovieError, selectMovieLoading, selectSelectedMovie } from '../../../redux/slices/movieSlice';
+const ShowTime = React.lazy(() => import("./ShowTime"));
+const MovieSynopsis = React.lazy(() => import ("./MovieSynopsis"));
+import { 
+    getMovieByIdRequest, 
+    selectMovieError, 
+    selectMovieLoading, 
+    selectSelectedMovie 
+} from '../../../redux/slices/movieSlice';
 import { notify } from '../../../utils/notificationUtils';
 
-const MovieInfo = () => {
+const MovieInfo = memo(() => {
     const params = useParams();
     const dispatch = useDispatch();
     const [activeTab, setActiveTab] = useState("showTimes")
@@ -21,41 +32,93 @@ const MovieInfo = () => {
     const movieError = useSelector(selectMovieError)
     const movie = useSelector(selectSelectedMovie);
 
-    useEffect(() => {
-        dispatch(getMovieByIdRequest(params.id))
-    }, [dispatch])
+    const formattedDuration = useMemo(() => {
+        return movie?.duration ? formatDuration(movie.duration) : ""
+    }, [movie?.duration])
+
+    const formattedReleaseDate = useMemo(() => {
+        return movie?.releaseDate ? moment(movie.releaseDate).format("DD MMM, YYYY") : ""
+    }, [movie?.releaseDate])
+
+    const genreTags = useMemo(() => {
+        return (
+            movie?.genre?.map((g) => (
+                <Tag key={g} color="blue" style={{ marginRight: 8, marginBottom: 8 }}>
+                    {g}
+                </Tag>
+            )) || []
+        )
+    }, [movie?.genre])
+
+    const languageTags = useMemo(() => {
+        return (
+            movie?.language?.map((lang) => (
+                <Tag key={lang} color="volcano" style={{ marginRight: 8, marginBottom: 8 }}>
+                    {lang}
+                </Tag>
+            )) || []
+        )
+    }, [movie?.language])
+
+    const handleTabChange = useCallback((key) => {
+        setActiveTab(key)
+    }, [])
 
     // Define tab items
-    const items = [
-        {
-            key: "showTimes",
-            label: <span className="flex items-center gap-2">
+    const tabItems = useMemo(
+        () => [
+            {
+                key: "showTimes",
+                label:  (
+                    <span className="flex items-center gap-2">
                         <CalendarOutlined/>
                         Show Times
-                    </span>,
-            children:<ShowTime />
-        },
-        {
-            key: "about",
-            label: <span className="flex items-center gap-2">
+                    </span>
+                ),
+                children:(
+                    <React.Suspense fallback={<Spin size="large" />}>
+                        <ShowTime />
+                    </React.Suspense>
+                )
+            },
+            {
+                key: "about",
+                label:  (
+                    <span className="flex items-center gap-2">
                         <InfoCircleOutlined />
                         About
-                    </span>,
-            children: <MovieSynopsis movie={movie} />
-        },
-        {
-            key: "cast",
-            label: <span className="flex items-center gap-2">
+                    </span>
+                ),
+                children: (
+                    <React.Suspense fallback={<Spin size="large" />}>
+                        <MovieSynopsis movie={movie} />
+                    </React.Suspense>
+                )
+            },
+            {
+                key: "cast",
+                label:  (
+                    <span className="flex items-center gap-2">
                         <TeamOutlined />
                         Cast & Crew
-                    </span>,
-            children:  <Card>
+                    </span>
+                ),
+                children:  (
+                    <Card>
                         <Title level={4} style={{ marginTop: 0 }}>
                             Cast
                         </Title>
                     </Card>
-        }
-    ]
+                )
+            }
+        ],
+        [movie]
+    )
+
+    useEffect(() => {
+        dispatch(getMovieByIdRequest(params.id))
+    }, [dispatch, params.id])
+
 
     if (!movie) {
         return (
@@ -79,6 +142,7 @@ const MovieInfo = () => {
                 backgroundPosition: "center",
                 padding: "60px 0",
                 color: "white",
+                minHeight: "400px",
             }}
         >
             <div className="inner-container">
@@ -109,29 +173,17 @@ const MovieInfo = () => {
 
                             <span style={{ display: "flex", alignItems: "center" }}>
                                 <ClockCircleOutlined style={{ marginRight: 8 }} />
-                                <Typography style={{ color: "white" }}>{formatDuration(movie.duration)}</Typography>
+                                <Typography style={{ color: "white" }}>{formattedDuration}</Typography>
                             </span>
                         </Space>
 
-                        <div className="mb-4">
-                            {movie.genre.map((g) => (
-                            <Tag key={g} color="blue" style={{ marginRight: 8, marginBottom: 8 }}>
-                                {g}
-                            </Tag>
-                            ))}
-                        </div>
+                        <div className="mb-4">{genreTags}</div>
 
-                        <div className="mb-4">
-                            {movie.language.map((lang) => (
-                            <Tag key={lang} color="volcano" style={{ marginRight: 8, marginBottom: 8 }}>
-                                {lang}
-                            </Tag>
-                            ))}
-                        </div>
+                        <div className="mb-4">{languageTags}</div>
 
                         <Paragraph style={{ color: "#e6e6e6", marginBottom: 16 }}>
                             <CalendarOutlined style={{ marginRight: 8 }} />
-                            Release: {moment(movie.releaseDate).format("DD MMM, YYYY")}
+                            Release: {formattedReleaseDate}
                         </Paragraph>
 
                         <Button 
@@ -148,17 +200,18 @@ const MovieInfo = () => {
         </div>
 
         {/* Main Content Section */}
-        <div className='inner-container' style={{paddingTop: "40px 0"}}>
+        <div className='inner-container' style={{paddingTop: "40px 0", minHeight: "300px"}}>
             <Tabs  
                 activeKey={activeTab}
-                onChange={(key) => setActiveTab(key)}
-                items={items}
+                onChange={handleTabChange}
+                items={tabItems}
                 size='large' 
                 style={{marginBottom: 32, marginTop: 20}}
             />  
         </div>
     </>
   )
-}
+})
 
+MovieInfo.displayName = "MovieInfo"
 export default MovieInfo

@@ -1,10 +1,11 @@
-import React, { useEffect } from 'react';
-import { Alert, Button, Checkbox, Divider, Form, Input, message } from 'antd';
+import React, { useEffect, memo, useCallback, useMemo } from 'react';
+import { Alert, Button, Checkbox, Divider, Form, Input } from 'antd';
 import { useDispatch, useSelector } from 'react-redux';
 import { FacebookOutlined, GoogleOutlined, LockOutlined, MailOutlined, QuestionCircleOutlined } from '@ant-design/icons';
-import TwoFactorAuthentication from './TwoFactorAuthentication';
-import ReverifyAccount from './ReverifyAccount';
-import ForgotPassword from './ForgotPassword';
+const TwoFactorAuthentication = React.lazy(() => import("./TwoFactorAuthentication"))
+const ReverifyAccount = React.lazy(() => import("./ReverifyAccount"))
+const ForgotPassword = React.lazy(() => import("./ForgotPassword"))
+const EmailVerification = React.lazy(() => import("./EmailVerification"))
 import { 
         clearLoginError, 
         selectActiveTab, 
@@ -20,9 +21,9 @@ import {
         setShowReverifyAccountModal 
     } from '../../../redux/slices/verificationSlice';
 import { resetForgotPasswordState } from '../../../redux/slices/forgotPasswordSlice';
-import EmailVerification from './EmailVerification';
+import { notify } from '../../../utils/notificationUtils';
 
-const Login = () => {
+const Login = memo(() => {
     const dispatch = useDispatch();
     const [loginForm] = Form.useForm();
     const loginError = useSelector(selectLoginError);
@@ -30,33 +31,54 @@ const Login = () => {
     const activeTab = useSelector(selectActiveTab);
     const isTwoFactorModalOpen = useSelector(selectShowTwoFactorAuthModal);
     const isReverifyAccountModalOpen = useSelector(selectShowReverifyAccountModal);
-    const isForgotPasswordModalOpen = useSelector(selectShowForgotPasswordModal);
-
+    const isForgotPasswordModalOpen = useSelector(selectShowForgotPasswordModal);``
     const isEmailVerificationModalOpen = useSelector(selectShowEmailVerificationModal);
-   
+
+    const handleLogin = useCallback(
+        (values) => {
+            dispatch(loginRequest(values));
+        }, [dispatch]
+    )
+
+    const handleReverifyAccount = useCallback(() => {
+       dispatch(setShowReverifyAccountModal(true));
+       dispatch(clearLoginError());
+    },[dispatch]) 
+
+    const handleSocialLogin = useCallback((provider) => {
+        notify("info", `${provider} login coming soon!`);
+    },[])
+
+    const handleForgotPassword = useCallback(() => {
+        //Reset any previous forgot password state before opening modal
+        dispatch(resetForgotPasswordState());
+        dispatch(setShowForgotPasswordModal(true));
+    }, [dispatch])
+
+    const emailRules = useMemo(
+        () => [
+                { required: true, message: "Please enter your email!" },
+                { type: "email", message: "Please enter a valid email!" },
+            ],
+        [],
+    )
+
+    const passwordRules = useMemo(
+        () => [
+                { required: true, message: "Please enter your password!" },
+                { min: 8, message: "Password must be at least 8 characters!" },
+                {
+                    pattern: /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])/,
+                    message: "Password must include at least one uppercase letter, one number, and one special character",
+                },
+            ],
+        [],
+    )
+
     // Clean up forgot password state when login component mounts
     useEffect(() => {
         dispatch(resetForgotPasswordState());
     }, [dispatch])
-
-    const handleLogin = (values) => {
-        dispatch(loginRequest(values));
-    }
-
-    const handleReverifyAccount = () => {
-       dispatch(setShowReverifyAccountModal(true));
-       dispatch(clearLoginError());
-    } 
-
-    const handleSocialLogin = (provider) => {
-        message.info(`${provider} login coming soon!`)
-    }
-
-    const handleForgotPassword = () => {
-        //Reset any previous forgot password state before opening modal
-        dispatch(resetForgotPasswordState());
-        dispatch(setShowForgotPasswordModal(true));
-    }
     
     return(
         <>
@@ -91,30 +113,22 @@ const Login = () => {
                         </Form.Item>
                     )
                 }
-                <Form.Item
-                    name="email"
-                    rules={[
-                        { required: true, message: 'Please enter your email!' },
-                        { type: "email", message: "Please enter a valid email!" }
-                    ]}
-                    hasFeedback
-                >
-                    <Input id='email' type='email' prefix={<MailOutlined className="!text-gray-400" />} placeholder='Email' size="large"/>
+                <Form.Item name="email" rules={emailRules} hasFeedback>
+                    <Input 
+                        id='email' 
+                        type='email' 
+                        prefix={<MailOutlined className="!text-gray-400" />} 
+                        placeholder='Email' 
+                        size="large"
+                    />
                 </Form.Item>
-                <Form.Item
-                    name="password"
-                    rules={[
-                        { required: true, message: 'Please enter your password!' },
-                        { min: 8, message: "Password must be at least 8 characters!" },
-                        {
-                            pattern: /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])/,
-                            message: 
-                            "Password must include at least one uppercase letter, one number, and one special character",
-                        },
-                    ]}
-                    hasFeedback
-                >
-                    <Input.Password id='password' prefix={<LockOutlined className="!text-gray-400"/>} placeholder='Password' size="large" />
+                <Form.Item name="password" rules={passwordRules} hasFeedback>
+                    <Input.Password 
+                        id='password' 
+                        prefix={<LockOutlined className="!text-gray-400"/>} 
+                        placeholder='Password' 
+                        size="large" 
+                    />
                 </Form.Item>
                 <Form.Item>
                     <div className="auth-remember-forgot">
@@ -168,12 +182,16 @@ const Login = () => {
                     Need to verify your account?
                 </Button>
             </div>
-
-            { isTwoFactorModalOpen && <TwoFactorAuthentication/> }
-            { isReverifyAccountModalOpen && <ReverifyAccount/> }
-            { isForgotPasswordModalOpen && <ForgotPassword/> }
-            {isEmailVerificationModalOpen && <EmailVerification/>}
+            
+            <React.Suspense fallback= {<div>Loading...</div>}>
+                { isTwoFactorModalOpen && <TwoFactorAuthentication/> }
+                { isReverifyAccountModalOpen && <ReverifyAccount/> }
+                { isForgotPasswordModalOpen && <ForgotPassword/> }
+                {isEmailVerificationModalOpen && <EmailVerification/>}
+            </React.Suspense>
         </>
     )
-};
+});
+
+Login.displayName = "Login"
 export default Login;

@@ -1,17 +1,23 @@
-import React, { useEffect } from "react"
-import { Layout, Typography, Card, Tabs, Spin, Avatar, Alert } from "antd"
-import {UserOutlined} from "@ant-design/icons"
+import React, { useEffect, memo, useMemo } from "react"
+import { Layout, Typography, Card, Spin, Avatar, Alert } from "antd"
+import { UserOutlined } from "@ant-design/icons"
 
 import { useAuth } from "../../../hooks/useAuth"
-import ProfileTabs from "./ProfileTabs"
+const ProfileTabs = React.lazy(() => import("./ProfileTabs"))
 import { useProfile } from "../../../hooks/useProfile"
 
 const { Content } = Layout
 const { Title, Text } = Typography
 
-const Profile = () => {
+const Profile = memo(() => {
   const { user } = useAuth();    
-  const {profile, loading, error, fetchProfile, resetProfile} = useProfile()
+  const {profile, loading, error, fetchProfile, resetProfile } = useProfile()
+
+  const displayProfile = useMemo(() => profile || user, [profile, user])
+
+  const memberSinceDate = useMemo(() => {
+    return displayProfile?.createdAt ? new Date(displayProfile.createdAt).toLocaleDateString() : "Unknown"
+  }, [displayProfile?.createdAt])
 
   useEffect(() => {
     if(!profile && !loading){
@@ -38,8 +44,6 @@ const Profile = () => {
       />
     )
   }
-
-  const displayProfile =  profile || user;
   
   return (
     <Layout style={{ minHeight: "100vh" }}>
@@ -64,22 +68,18 @@ const Profile = () => {
                 {displayProfile?.email || "Loading..."}
               </Text>
               <Text type="secondary" className="text-sm block mt-1">
-                Member since {" "}
-                { 
-                  displayProfile?.createdAt 
-                  ? new Date(displayProfile.createdAt).toLocaleDateString() 
-                  : "Unknown"
-                }
+                Member since {memberSinceDate}
               </Text>
             </div>
           </div>
         </Card>
-                
-        <ProfileTabs/>
-
+        <React.Suspense fallback={<Spin size="large" />}>
+           <ProfileTabs/>
+        </React.Suspense> 
       </Content>
   </Layout>
   )
-}
+})
 
+Profile.displayName = "Profile"
 export default Profile
