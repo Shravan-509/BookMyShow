@@ -1,4 +1,4 @@
-import { call, put, select, takeLatest, } from "redux-saga/effects";
+import { call, put, select, takeLatest, putResolve} from "redux-saga/effects";
 import { axiosInstance } from "../../api";
 import { notify } from "../../utils/notificationUtils";
 import { logout, setUserData } from "../slices/authSlice";
@@ -123,7 +123,7 @@ function* fetchProfileSaga() {
             else
             {
                 yield put(fetchProfileFailure(response.message));
-                notify("warning", "Failed to update rofile", response.message);
+                notify("warning", "Failed to update profile", response.message);
             }        
         }
         catch(error)

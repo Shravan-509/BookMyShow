@@ -1,4 +1,4 @@
-import { Alert, Button, Card, Form, Input, message } from 'antd'
+import { Alert, Button, Card, Form, Input } from 'antd'
 import React, { useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import { 
@@ -10,6 +10,7 @@ import {
 } from '../../../redux/slices/forgotPasswordSlice';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeftOutlined, KeyOutlined, LockOutlined } from '@ant-design/icons';
+import { notify } from '../../../utils/notificationUtils';
 
 const ResetPassword = () => {
     const [form] = Form.useForm();
@@ -25,7 +26,7 @@ const ResetPassword = () => {
     useEffect(() => {
         if(!token)
         {
-            message.error("Invalid reset link")
+            notify("error", "Invalid reset link");
             navigate("/", {replace: true});
         }
 
