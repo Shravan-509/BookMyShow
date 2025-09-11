@@ -4,97 +4,105 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Email Address Changed</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      line-height: 1.6;
-      color: #333;
-      margin: 0;
-      padding: 0;
-    }
-    .container {
-      max-width: 600px;
-      margin: 0 auto;
-    }
-    .header {
-      background-color: #e5293e;
-      padding: 20px;
-      text-align: center;
-    }
-    .header h1 {
-      color: white;
-      margin: 0;
-    }
-    .content {
-      padding: 20px;
-      border: 1px solid #ddd;
-      border-top: none;
-    }
-    .alert-box {
-      background-color: #d4edda;
-      border: 1px solid #c3e6cb;
-      padding: 15px;
-      border-radius: 6px;
-      margin: 20px 0;
-      color: #155724;
-    }
-    .email-info {
-      background-color: #f8f9fa;
-      padding: 15px;
-      border-radius: 6px;
-      margin: 20px 0;
-    }
-    .footer {
-      background-color: #f5f5f5;
-      padding: 15px;
-      text-align: center;
-      font-size: 12px;
-      color: #666;
-    }
-    .timestamp {
-      color: #666;
-      font-size: 14px;
-      margin: 10px 0;
-    }
-  </style>
 </head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>BookMyShow</h1>
-    </div>
-    <div class="content">
-      <h2>Email Address Changed Successfully</h2>
-      <p>Your BookMyShow account email address has been updated successfully.</p>
-      
-      <div class="alert-box">
-        <strong>Important:</strong> For your security, you have been logged out of all devices and will need to log in again with your new email address.
-      </div>
+<body style="margin:0; padding:20px; background-color:#f5f5f5; font-family: Arial, sans-serif;">
 
-      <div class="email-info">
-        <p><strong>Previous Email:</strong> {{oldEmail}}</p>
-        <p><strong>New Email:</strong> {{newEmail}}</p>
-      </div>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" align="center">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" border="0" style="background:#ffffff; border-radius:8px; overflow:hidden;">
 
-      <div class="timestamp">
-        <strong>Changed on:</strong> {{timestamp}}<br>
-        <strong>IP Address:</strong> {{ipAddress}}
-      </div>
+          <!-- Header -->
+          <tr>
+            <td align="center" style="padding:30px 20px 20px; background:#ffffff;">
+              <div style="font-size:24px; font-weight:bold; color:#333;">
+                book<span style="color:#dc3545;">my</span>show
+              </div>
+              <div style="font-size:22px; color:#e5293e; font-weight:bold; margin:20px 0 10px;">
+                Email Address Changed
+              </div>
+              <div style="font-size:16px; color:#666;">
+                Your account email has been updated successfully
+              </div>
+            </td>
+          </tr>
 
-      <p><strong>What this means:</strong></p>
-      <ul>
-        <li>Use your new email address to log in</li>
-        <li>All future communications will be sent to your new email</li>
-        <li>Your account data and preferences remain unchanged</li>
-      </ul>
+          <!-- Alert Box -->
+          <tr>
+            <td style="padding:20px; background:#d4edda; border-top:1px solid #c3e6cb; border-bottom:1px solid #c3e6cb; font-size:14px; color:#155724; line-height:1.6;">
+              <strong>Important:</strong> For your security, you have been logged out of all devices and will need to log in again with your new email address.
+            </td>
+          </tr>
 
-      <p><strong>If you didn't make this change:</strong></p>
-      <p>If you didn't change your email address, please contact our support team immediately at support@bookmyshow.com or call our helpline.</p>
-    </div>
-    <div class="footer">
-      <p>&copy; {{year}} BookMyShow. All rights reserved.</p>
-      <p>This is an automated security notification. Please do not reply to this email.</p>
-    </div>
-  </div>
+          <!-- Email Info -->
+          <tr>
+            <td style="padding:20px; background:#ffffff; font-size:14px; color:#333;">
+              <div style="background:#f8f9fa; border-radius:6px; padding:15px; margin:10px 0;">
+                <p><strong>Previous Email:</strong> {{oldEmail}}</p>
+                <p><strong>New Email:</strong> {{newEmail}}</p>
+              </div>
+              <div style="color:#666; font-size:14px; margin:10px 0;">
+                <strong>Changed on:</strong> {{timestamp}}<br>
+                <strong>IP Address:</strong> {{ipAddress}}
+              </div>
+            </td>
+          </tr>
+
+          <!-- Info Section -->
+          <tr>
+            <td style="padding:20px; background:#ffffff; font-size:14px; color:#666; line-height:1.6;">
+              <p><strong>What this means:</strong></p>
+              <ul style="margin:0; padding-left:20px;">
+                <li>Use your new email address to log in</li>
+                <li>All future communications will be sent to your new email</li>
+                <li>Your account data and preferences remain unchanged</li>
+              </ul>
+              <br>
+              <p><strong>If you didn’t make this change:</strong></p>
+              <p>Please contact our support team immediately at 
+                <a href="mailto:support@bookmyshow.com" style="color:#dc3545; text-decoration:none;">support@bookmyshow.com</a> 
+                or call our helpline.</p>
+            </td>
+          </tr>
+
+          <!-- Promo Footer -->
+          <tr>
+            <td align="center" style="background:#dc3558; padding:20px; color:#ffffff;">
+              <div style="font-size:18px; font-weight:bold; margin-bottom:15px;">📧 Stay connected with BookMyShow!</div>
+              <table cellpadding="0" cellspacing="0" border="0" align="center" style="margin-bottom:15px;">
+                <tr>
+                  <td align="center" style="padding:0 15px;">
+                    <div style="font-size:20px;">🎬</div>
+                    <div style="font-size:12px;">Movies</div>
+                  </td>
+                  <td align="center" style="padding:0 15px;">
+                    <div style="font-size:20px;">🎤</div>
+                    <div style="font-size:12px;">Events</div>
+                  </td>
+                  <td align="center" style="padding:0 15px;">
+                    <div style="font-size:20px;">🍿</div>
+                    <div style="font-size:12px;">Experiences</div>
+                  </td>
+                </tr>
+              </table>
+              <a href="{{exploreUrl}}" style="display:inline-block; background:#ffffff; color:#dc3545; padding:10px 25px; text-decoration:none; border-radius:20px; font-weight:bold; font-size:14px;">
+                Explore Now
+              </a>
+            </td>
+          </tr>
+
+          <!-- Legal Footer -->
+          <tr>
+            <td align="center" style="padding:15px; background:#f5f5f5; font-size:12px; color:#666;">
+              <p>&copy; {{year}} BookMyShow. All rights reserved.</p>
+              <p>This is an automated security notification. Please do not reply to this email.</p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+
 </body>
 </html>

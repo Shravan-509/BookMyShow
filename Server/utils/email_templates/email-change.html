@@ -4,71 +4,88 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Email Change Verification</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      line-height: 1.6;
-      color: #333;
-      margin: 0;
-      padding: 0;
-    }
-    .container {
-      max-width: 600px;
-      margin: 0 auto;
-    }
-    .header {
-      background-color: #f84464; 
-      padding: 20px;
-      text-align: center;
-    }
-    .header h1 {
-      color: white;
-      margin: 0;
-    }
-    .content {
-      padding: 20px;
-      border: 1px solid #ddd;
-      border-top: none;
-    }
-    .code-container {
-      background-color: #f5f5f5;
-      padding: 15px;
-      text-align: center;
-      margin: 20px 0;
-    }
-    .verification-code {
-      margin: 0;
-      color: #f84464;
-      letter-spacing: 5px;
-      font-size: 24px;
-      font-weight: bold;
-    }
-    .footer {
-      background-color: #f5f5f5;
-      padding: 15px;
-      text-align: center;
-      font-size: 12px;
-      color: #666;
-    }
-  </style>
 </head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>BookMyShow</h1>
-    </div>
-    <div class="content">
-      <h2>Email Change Verification</h2>
-      <p>You've requested to change your email address on your BookMyShow account. Please use the verification code below to confrim this change:</p>
-      <div class="code-container">
-        <h2 class="verification-code">{{code}}</h2>
-      </div>
-      <p>This code will expire in 10 minutes.</p>
-      <p>If you didn't request this change, please secure your account by changing your password immediately.</p>
-    </div>
-    <div class="footer">
-      <p>&copy; {{year}} BookMyShow. All rights reserved.</p>
-    </div>
-  </div>
+<body style="margin:0; padding:20px; background-color:#f5f5f5; font-family: Arial, sans-serif;">
+
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" align="center">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" border="0" style="background:#ffffff; border-radius:8px; overflow:hidden;">
+
+          <!-- Header -->
+          <tr>
+            <td align="center" style="padding:30px 20px 20px; background:#ffffff;">
+              <div style="font-size:24px; font-weight:bold; color:#333;">
+                book<span style="color:#dc3545;">my</span>show
+              </div>
+              <div style="font-size:22px; color:#28a745; font-weight:bold; margin:20px 0 10px;">
+                Email Change Verification
+              </div>
+              <div style="font-size:16px; color:#666;">
+                Confirm your request with the code below
+              </div>
+            </td>
+          </tr>
+
+          <!-- Verification Code -->
+          <tr>
+            <td style="padding:30px 20px; background:#f8f9fa;" align="center">
+              <div style="font-size:18px; color:#333; margin-bottom:10px;">
+                Please use this verification code:
+              </div>
+              <div style="font-size:28px; letter-spacing:6px; font-weight:bold; color:#dc3545; background:#fff; padding:15px 25px; border-radius:8px; display:inline-block; border:1px solid #dee2e6;">
+                {{code}}
+              </div>
+              <div style="font-size:14px; color:#666; margin-top:15px;">
+                This code will expire in <strong>10 minutes</strong>.
+              </div>
+            </td>
+          </tr>
+
+          <!-- Info Section -->
+          <tr>
+            <td style="padding:20px; background:#ffffff; font-size:14px; color:#666; line-height:1.6;">
+              <p>If you didn’t request this change, please <strong style="color:#333;">secure your account</strong> immediately by changing your password.</p>
+            </td>
+          </tr>
+
+          <!-- Promo Footer -->
+          <tr>
+            <td align="center" style="background:#dc3558; padding:20px; color:#ffffff;">
+              <div style="font-size:18px; font-weight:bold; margin-bottom:15px;">📧 Manage your account with confidence</div>
+              <table cellpadding="0" cellspacing="0" border="0" align="center" style="margin-bottom:15px;">
+                <tr>
+                  <td align="center" style="padding:0 15px;">
+                    <div style="font-size:20px;">🔒</div>
+                    <div style="font-size:12px;">Secure</div>
+                  </td>
+                  <td align="center" style="padding:0 15px;">
+                    <div style="font-size:20px;">⚡</div>
+                    <div style="font-size:12px;">Fast</div>
+                  </td>
+                  <td align="center" style="padding:0 15px;">
+                    <div style="font-size:20px;">🎬</div>
+                    <div style="font-size:12px;">Entertainment</div>
+                  </td>
+                </tr>
+              </table>
+              <a href="{{exploreUrl}}" style="display:inline-block; background:#ffffff; color:#dc3545; padding:10px 25px; text-decoration:none; border-radius:20px; font-weight:bold; font-size:14px;">
+                Explore BookMyShow
+              </a>
+            </td>
+          </tr>
+
+          <!-- Legal Footer -->
+          <tr>
+            <td align="center" style="padding:15px; background:#f5f5f5; font-size:12px; color:#666;">
+              <p>&copy; {{year}} BookMyShow. All rights reserved.</p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+
 </body>
 </html>
