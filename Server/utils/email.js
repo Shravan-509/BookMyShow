@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const nodemailer = require("nodemailer");
+const QRCode = require("qrcode")
 
 const Verification = require('../models/verificationSchema');
 
@@ -142,7 +143,7 @@ const sendPasswordResetEmail = async({to, name, resetUrl}) => {
 }
 
 // Send security notification email
-const sendSecurityNotificationEmail = async (email, type, data = {}) => {
+const sendSecurityNotificationEmail = async (email, type, data = {} ) => {
   try {
     let templateName
     let subject
@@ -188,10 +189,104 @@ const sendSecurityNotificationEmail = async (email, type, data = {}) => {
   }
 }
 
+// Send security notification email
+const sendTicketEmail = async ({name, to, booking, show, movie, theatre, pdfBuffer}) => {
+  try {
+        let templateName = "movie-ticket";
+        let subject = `Your BookMyShow Ticket - ${booking.bookingId}`;
+
+        let showDate = new Date(show?.date || booking?.createdAt).toLocaleDateString("en-US",{weekday:"short",day:"numeric",month:"short",year:"numeric"})
+        let [hours, minutes] = (show?.time || "00:00").split(":");
+        let dateObj = new Date();
+        dateObj.setHours(hours, minutes);
+        let showTime = dateObj.toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+        });
+
+        let quantity = booking.seats?.length || 1 ;
+        let quantStr = `${quantity} ticket${quantity > 1 ? "s": ""}`;
+        let ticketAmount = show?.ticketPrice * quantity || 0;
+        let convenienceFee = booking.convenienceFee ?? 0;
+        let gstPercent = booking?.gstPercent || 0;
+        let gst = gstPercent / 100; 
+        let baseAmount = convenienceFee / (1 + gst) ;
+        let gstAmount = baseAmount * gst ;
+        let bookingDate = new Date(booking?.createdAt).toLocaleDateString("en-US",{
+            weekday:"short",
+            day:"numeric",
+            month:"short",
+            year:"numeric"
+        });
+        let bookingTime = new Date(booking?.createdAt).toLocaleTimeString("en-US",{
+            hour:"2-digit",
+            minute:"2-digit"
+        });
+
+        const qrPayload = booking?.bookingId;        
+        const qrCodeUrl = await QRCode.toDataURL(qrPayload, { margin: 1, scale: 6 })
+        
+        //Prepare metadta for template
+        const metaData = {
+            name: name,
+            bookingId: booking.bookingId,
+            movieName: movie?.movieName || movie?.title || "Movie",
+            moviePosterUrl: movie?.poster,
+            qrCodeUrl: qrCodeUrl,
+            theatreName: theatre?.name || "Theatre Name",
+            theatreLocation: theatre?.address || "Location",
+            screenName: theatre.screen || "Screen 1",
+            showDate : showDate,
+            showTime: showTime,
+            bookingDate: bookingDate,
+            bookingTime: bookingTime,
+            seats: booking.seats?.join(", ") || "N/A",
+            quantity: quantStr,
+            ticketAmount: ticketAmount.toFixed(2),
+            convenienceFee: convenienceFee.toFixed(2),
+            baseAmount: baseAmount.toFixed(2),
+            gstPercent: gstPercent,
+            gstAmount: gstAmount.toFixed(2),
+            amountPaid: (booking.amount ?? 0).toFixed(2),
+            paymentMethod: booking?.paymentMethod || "N/A",
+            confirmationNumber : (booking?.receipt).slice(-6),
+            year: new Date().getFullYear().toString()
+        }
+
+        // Get Email HTML from template
+        const html = await getEmailTemplate(templateName, metaData);
+
+       const mailOptions = {
+            from: `"BookMyShow" <${process.env.EMAIL_USER}>`,
+            to,
+            subject,
+            html,
+            attachments: [],
+        };
+
+        if (pdfBuffer && Buffer.isBuffer(pdfBuffer)) 
+        {
+            mailOptions.attachments.push({
+                filename: `ticket-${booking.bookingId}.pdf`,
+                content: pdfBuffer,
+                contentType: "application/pdf",
+            })
+        }
+
+        const result = await transporter.sendMail(mailOptions);
+        console.log("Ticket Email with PDF sent:", result.messageId);
+        return result;
+    } catch (error) {
+        console.error(`Error sending ticket email: ${error.message}`);
+        throw error;        
+    }  
+}
+
 module.exports= {
     createVerification,
     generateVerificationCode,
     sendVerificationEmail,
     sendPasswordResetEmail,
-    sendSecurityNotificationEmail
+    sendSecurityNotificationEmail,
+    sendTicketEmail
 }

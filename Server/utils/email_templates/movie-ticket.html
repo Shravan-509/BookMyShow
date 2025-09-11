@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Your BookMyShow Ticket</title>
+</head>
+<body style="margin:0; padding:20px; background-color:#f5f5f5; font-family: Arial, sans-serif;">
+  <table bgcolor="#fff" width="100%" cellpadding="0" cellspacing="0" border="0" align="center" style="padding:10px 0 25px 0;margin:0 auto;background:#fff">
+    <tbody>
+      <tr>
+        <td width="100%" valign="top">
+          <table width="600" cellpadding="0" cellspacing="0" border="0" align="center" bgcolor="ffffff" style="margin:0 auto;padding:35px 25px;min-width:650px;max-width:650px;border:1px solid #e5e5e5;">
+            <tbody>
+              <!-- Header -->
+              <tr>
+                <td align="center" style="padding:30px 20px 20px; background:#ffffff;">
+                  <div style="font-size:24px; font-weight:bold; color:#333;">book<span style="color:#dc3545;">my</span>show</div>
+                  <div style="font-size:18px; font-weight:bold; color:#333; margin-bottom:20px;">SUPERSTAR</div>
+                  <div style="font-size:22px; color:#4caf50; font-weight:bold; margin-bottom:10px;">Your booking is confirmed!</div>
+                  <div style="font-size:16px; color:#828282;">Booking ID <strong style="color:#000;">{{bookingId}}</strong></div>
+                </td>
+              </tr>
+              
+              <!-- Movie Details, Booking Confirmation, Open Ticket details-->
+              <tr>
+                <td align="center" style="width:600px;padding:25px 10px 0 10px;text-align:left;background-color:#ffffff">
+                  <table align="center" cellpadding="0" cellspacing="0" style="width:580px;margin:0 auto;background-color:#ffffff">
+                    <tbody>
+                      <tr>
+                        <td>
+                          <!-- Movie Details -->
+                          <table align="center" cellpadding="0" cellspacing="0" style="width:580px;margin:0 auto;background-color:#f5f5f5;border-radius:5px">
+                            <tbody>
+                              <tr>
+                                <td valign="top" align="center" style="width:580px;background-color:#f5f5f5">
+                                  
+                                  <table align="center" cellpadding="0" cellspacing="0" style="width:100%;background-color:#f5f5f5;margin:0px auto">
+                                    <tbody>
+                                      <tr>
+                                        <td valign="top" align="center" style="width:80px;background-color:#f5f5f5;padding:10px 10px 0px 10px">
+                                          <img src="{{moviePosterUrl}}" alt="Movie Poster" border="0" width="80" height="120" 
+                                              style="display:block;background-color:#f5f5f5;color:#010101;border-radius:5px;object-fit:cover">
+                                        </td>
+                                        <td valign="top" align="center" style="width:370px;background-color:#f5f5f5;padding:10px">
+                                          
+                                          <table align="center" cellpadding="0" cellspacing="0" style="width:100%;background-color:#f5f5f5;margin:0px auto">
+                                            <tbody>
+                                              <tr>
+                                                <td valign="top" align="left" style="padding:0px 5px 0px 0px;height:50px;font-size:20px;font-weight:bold;font-family:Arial,sans-serif;text-align:left;vertical-align:top;background-color:#f5f5f5;color:#3c3c3c">
+                                                  <span>{{movieName}}</span>
+                                                </td>
+                                              </tr>
+                                              <tr>
+                                                <td valign="top" align="left" style="padding:0px 5px 0px 0px;font-size:16px;font-family:Arial,sans-serif;text-align:left;vertical-align:top;background-color:#f5f5f5;color:#3c3c3c">
+                                                  {{showTime}} | {{showDate}}
+                                                  <br>
+                                                  <span style="display:block;font-size:13px;color:#828282;font-weight:400;padding-top:10px">
+                                                    <span>
+                                                      {{theatreName}}
+                                                    </span>
+                                                    <br>
+                                                      {{theatreLocation}}
+                                                      <div></div>
+                                                  </span>
+                                                </td>
+                                              </tr>
+                                              <tr>
+                                                <td>
+                                                  <br>
+                                                  <span style="font-size:15px;font-weight:bold;color:#010101">
+                                                    SEATS - {{seats}}
+                                                  </span>
+                                                </td>
+                                              </tr>
+                                            </tbody>
+                                          </table>
+                                        </td>
+                                        <td valign="top" align="center" style="width:100px;background-color:#f5f5f5">
+                                          <img src="{{qrCodeUrl}}" alt="QR Code" width="80" height="80" border="0" style="padding:5px 10px;display:block;background-color:#f5f5f5;color:#010101">
+                                        </td>
+                                      </tr>
+                                    </tbody>
+                                  </table>
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td valign="top" style="width:580px;background-color:#f5f5f5;border:0">
+                          <!-- Booking Confirmation -->
+                          <table cellspacing="0"  cellpadding="0" align="center" style="width:100%;background-color:#f5f5f5;margin:0px auto;border:0">
+                            <tbody>
+                              <tr>
+                                <td valign="top" style="width:582px;background:url(https://ci3.googleusercontent.com/meips/ADKq_NYgj6wBAgl5qIUIJhLysN4BpZDLE0PngZqoMLAh45sRPeQuML0JUOOLMv5-1RxOwGdg3-clfVkm6V5qdqHuF0oZ6En4JXj8MJYnR4XxCQ=s0-d-e1-ft#https://in.bmscdn.com/webin/mailer/dotted-line-new-5.png) no-repeat;background-repeat:no-repeat;background-position:top;overflow:visible;border:0;background-size:contain">
+                                  <table cellspacing="0"  cellpadding="0" align="center" style="width:580px;margin:0px auto;border:0">
+                                    <tbody>
+                                      <tr>
+                                        <td valign="top" align="left" style="width:60px;height:40px;padding:40px 30px 0px 30px;vertical-align:middle;text-align:center;border:0">
+                                        </td>
+                                        <td valign="top" align="center" style="width:270px;height:40px;padding:20px 10px 0px 15px;vertical-align:middle;font-family:Arial,sans-serif;text-align:center;font-size:13px;color:#828282;font-weight:400;border:0">
+                                            <p style="margin:0;padding-bottom:6px;border:0">{{screenName}}</p>
+                                        </td>
+                                        <td valign="top" style="width:120px;border:0">
+                                            <img src="https://ci3.googleusercontent.com/meips/ADKq_NZn5L6iKsEAQ-XrG3nLAmbUc3naBdjWlJPl96vwK4AGmsAXlG1qmlr1_Cw5HKwYlieMFv4UtI18PDuWtEy7sCDUAdcmoz7FHtMVuW5cyhNphFAtdzF8amtR=s0-d-e1-ft#https://in.bmscdn.com/mailers/images/161202ticket/bookingstamps.png" width="105" height="107" style="display:block;color:#010101" border="0">
+                                        </td>
+                                      </tr>
+                                    </tbody>
+                                  </table>
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td valign="top" style="width:580px;background-color:#f5f5f5;border:0">
+                          <!-- Open Ticket details -->
+                          <table cellspacing="0"  cellpadding="0" align="center" style="width:100%;background-color:#f5f5f5;margin:0px auto;border:0">
+                            <tbody>
+                              <tr>
+                                <td valign="top" align="center" style="width:582px;border-top:2px dashed #e5e5e5;overflow:visible;background-size:contain">
+                                  <table cellspacing="0"  cellpadding="0" align="center" style="width:580px;margin:0px auto;border:0">
+                                    <tbody>
+                                      <tr>
+                                        <td valign="top" align="center" style="width:582px;height:30px;padding:20px 10px 0px 15px;vertical-align:middle;font-family:Arial,sans-serif;text-align:left;font-size:20px;color:#828282;font-weight:400;text-align:center;border:0">
+                                          <p style="margin:0">
+                                            Check your booking details, discounts, deals 
+                                          </p>
+                                          <p style="margin:0;padding-bottom:6px;border:0">
+                                            and much more with your ticket
+                                          </p>
+                                        </td>
+                                      </tr>
+                                      <tr>
+                                        <td valign="top" align="center" style="width:582px;height:32px;padding:12px 0px 12px 0px;vertical-align:middle;font-family:Arial,sans-serif;text-align:left;color:#828282;font-weight:400;text-align:center;border:0">
+                                          <a href="{{ticketDownloadUrl}}" style="text-decoration:none;display:block">
+                                            <button style="width:222px;padding:12px;height:100%;border-radius:8px;background:#dc3558;color:#fff;border:0;font-size:22px;font-weight:400">
+                                              Open ticket
+                                            </button>
+                                          </a>
+                                        </td>
+                                      </tr>
+                                    </tbody>
+                                  </table>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td colspan="2" valign="top" align="center" style="background-color:#ffffff;padding-bottom:10px">
+                                  <img src="https://ci3.googleusercontent.com/meips/ADKq_NZfE8H1AVCcCYAGJUTiC6wAq3lG5WAeHPds6igJyUobtcUtOAy6UIrKN0pGxhyICNj1RGrXnzYN0F7tmgTOJmdzEHtjPnlpwETrxVcEpd5jUcOgrw=s0-d-e1-ft#https://in.bmscdn.com/mailers/images/161223confirmation/4a.png" width="580" height="8" style="display:block;background-color:#f5f5f5;color:#010101" border="0"?>
+                                </td>
+                              </tr>
+
+                               <!-- Safety Note -->
+                              <tr>
+                                <td align="center" style="width:580px;text-align:center;padding:20px 15px;background-color:#f1f1f1;font-size:13px">
+                                  <strong>Note:</strong> 
+                                    Please follow the covid/safety guidelines (As per the directions from your local authority)
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </td>
+              </tr>
+              <!-- Order Summary -->
+              <tr>
+                <td valign="top" align="left" style="font-size:14px;font-family:Arial,sans-serif;text-align:left;vertical-align:top;background-color:#ffffff;color:#828282">
+                  <table cellpadding="0" cellspacing="0" align="center" style="width:600px;font-family:Arial,sans-serif;margin:0 auto">
+                    <tbody>
+                      <tr>
+                        <td align="left" style="width:580px;padding:15px 10px 15px 10px;font-size:13px;font-family:Arial,sans-serif;text-align:left;vertical-align:top;background-color:#ffffff;font-weight:600;color:#828282;letter-spacing:1px">
+                          ORDER SUMMARY
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </td>
+              </tr>
+
+              <!-- Ticket Amount Details -->
+              <tr>
+                <td align="left" style="text-align:center;background-color:#ffffff">
+                  <table cellpadding="0" cellspacing="0" style="width:580px;padding:25px 25px 15px 25px;border:2px solid #f1f1f1;border-bottom:0px!important;border-top-left-radius:5px;border-top-right-radius:5px;font-family:Arial,sans-serif;margin:0 auto">
+                    <tbody>
+                      <tr>
+                        <td valign="top" align="left" style="width:100%;font-size:14px;font-family:Arial,sans-serif;text-align:left;vertical-align:top;background-color:#ffffff;color:#828282">
+                          <table cellpadding="0" cellspacing="0" style="width:100%;padding-bottom:20px;font-family:Arial,sans-serif;margin:0 auto;">
+                            <tbody>
+                              <tr>
+                                <td align="left" style="width:50%;font-size:14px;font-family:Arial,sans-serif;text-align:left;vertical-align:top;background-color:#ffffff;color:#3f474e">
+                                  <p style="margin:0;padding:0 0 12px 0">
+                                    <strong>TICKET AMOUNT</strong>
+                                  </p>
+                                  <span style="color:#828282;font-size:13px">Quantity</span>
+                                </td>
+                                <td align="right" style="width:50%;font-size:15px;font-family:Arial,sans-serif;text-align:right;vertical-align:top;background-color:#ffffff;color:#3c3c3c">
+                                  <p style="margin:0;padding:0 0 12px 0">
+                                    Rs.{{ticketAmount}}
+                                  </p>
+                                  <span style="color:#828282;font-size:13px">{{quantity}}</span>
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td valign="top" align="left" style="width:100%;font-size:14px;font-family:Arial,sans-serif;text-align:left;vertical-align:top;background-color:#ffffff;color:#828282">
+                          <table cellpadding="0" cellspacing="0" style="width:100%;padding:20px 0px;border-top:2px dashed #f1f1f1;font-family:Arial,sans-serif;margin:0 auto">
+                            <tbody>
+                              <tr>
+                                <td align="left" style="width:50%;font-size:14px;font-family:Arial,sans-serif;text-align:left;vertical-align:top;background-color:#ffffff;color:#3f474e">
+                                  <p style="margin:0;padding:0 0 12px 0;text-transform:uppercase">
+                                    <strong>Convenience fees</strong>
+                                  </p>
+                                  <p style="color:#828282;font-size:13px;margin:0;padding:0 0 4px 0">Base Amount</p>
+                                  <p style="color:#828282;font-size:13px;margin:0;padding:0 0 4px 0">Integrated GST (IGST) @ {{gstPercent}}%</p>
+                                  <p style="color:#828282;font-size:13px;margin:0;padding:0 0 4px 0"></p>
+                                  <p style="color:#828282;font-size:13px;margin:0;padding:0 0 4px 0"></p>
+                                </td>
+                                <td align="right" style="width:50%;font-size:15px;font-family:Arial,sans-serif;text-align:right;vertical-align:top;background-color:#ffffff;color:#3c3c3c">
+                                  <p style="margin:0;padding:0 0 12px 0">Rs.{{convenienceFee}}</p>
+                                  <p style="color:#828282;font-size:13px;margin:0;padding:0 0 4px 0">Rs.{{baseAmount}}</p>
+                                  <p style="color:#828282;font-size:13px;margin:0;padding:0 0 4px 0">Rs.{{gstAmount}}</p>
+                                  <p style="color:#828282;font-size:13px;margin:0;padding:0 0 4px 0"></p>
+                                  <p style="color:#828282;font-size:13px;margin:0;padding:0 0 4px 0"></p>
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td valign="top" align="left" style="width:100%;font-size:14px;font-family:Arial,sans-serif;text-align:left;vertical-align:top;background-color:#ffffff;color:#828282">
+                        </td>
+                      </tr>
+                      <tr></tr>
+                    </tbody>
+                  </table>
+                </td>
+              </tr> 
+
+              <!-- Amount Paid -->
+              <tr>
+                <td align="center" style="width:580px;text-align:center;background-color:#ffffff">
+                  <table cellpadding="0" cellspacing="0" style="width:580px;margin:0 auto;background-color:#ffffff;">
+                    <tbody>
+                       <!-- Amount Paid -->
+                      <tr>
+                        <td valign="top" align="left" style="font-size:14px;font-family:Arial,sans-serif;text-align:left;vertical-align:top;background-color:#f1f1f1;color:#828282;">
+                          <table cellpadding="0" cellspacing="0" style="width:100%;padding:20px 25px 10px 25px;border-bottom:2px dashed #f1f1f1;font-family:Arial,sans-serif;margin:0 auto">
+                            <tbody>
+                              <tr>
+                                <td align="left" style="font-size:16px;font-family:Arial,sans-serif;text-align:left;vertical-align:top;font-weight:bold;background-color:#f1f1f1;color:#333333">
+                                  AMOUNT PAID
+                                </td>
+                                <td align="left" style="font-size:16px;font-family:Arial,sans-serif;text-align:right;vertical-align:top;font-weight:bold;background-color:#f1f1f1;color:#333333">
+                                  Rs.{{amountPaid}}
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td valign="top" style="width:100%;background-color:#ffffff">
+                          <img src="https://ci3.googleusercontent.com/meips/ADKq_NZxo6LXm7unxmOMyqwrvnlvmMSKGCGqpHz5AdqrvmX9uNeP3RCYz78O0BlswLZa0UPKJgvXulOEcyVGJlYv2fJKPCKFz-TzOLlV6nE9AfCG9DQ=s0-d-e1-ft#https://in.bmscdn.com/mailers/images/161202ticket/zigzag.png" width="580" height="15" style="width:100%;display:block;background-color:#ffffff;color:#010101" border="0">
+                        </td>
+                      </tr>
+                      <!-- Booking Info -->
+                      <tr>
+                        <td valign="top" align="center" style="width:580px;padding:20px 0;background-color:#ffffff">
+                          <table cellpadding="0" cellspacing="0" align="center" style="width:100%;background-color:#ffffff;margin:0px auto">
+                            <tbody>
+                              <tr>
+                                <td valign="top" align="left" style="width:260px;font-size:13px;font-weight:bold;font-family:Arial,sans-serif;text-align:left;vertical-align:top;background-color:#ffffff;color:#3f474e">
+                                  <p style="color:#787878;font-size:12px;margin:0;padding:0 0 4px 0">Booking Date & Time</p>{{bookingDate}} | {{bookingTime}}
+                                </td>
+                                <td valign="top" align="left" style="width:240px;font-size:13px;font-weight:bold;font-family:Arial,sans-serif;text-align:left;vertical-align:top;background-color:#ffffff;color:#3f474e">
+                                  <p style="color:#787878;font-size:12px;margin:0;padding:0 0 4px 0">Payment Type</p>{{paymentMethod}}
+                                </td>
+                                <td valign="top" align="left" style="width:100px;font-size:13px;font-weight:bold;font-family:Arial,sans-serif;text-align:left;vertical-align:top;background-color:#ffffff;color:#3f474e">
+                                  <p style="color:#787878;font-size:12px;margin:0;padding:0 0 4px 0">Confirmation#</p>{{confirmationNumber}}
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </td>
+                      </tr>
+                      <!-- Footer Promo -->
+                      <tr>
+                        <td align="center" style="background:#dc3558; padding:20px; color:#ffffff;">
+                          <div style="font-size:18px; font-weight:bold; margin-bottom:15px;">🍿 Book your movie munchies now!</div>
+                          <table cellpadding="0" cellspacing="0" border="0" align="center" style="margin-bottom:15px;">
+                            <tr>
+                              <td align="center" style="padding:0 15px;">
+                                <div style="font-size:20px;">🎬</div>
+                                <div style="font-size:12px;">Movie Seat</div>
+                              </td>
+                              <td align="center" style="padding:0 15px;">
+                                <div style="font-size:20px;">🍿</div>
+                                <div style="font-size:12px;">Food Combo</div>
+                              </td>
+                              <td align="center" style="padding:0 15px;">
+                                <div style="font-size:20px;">💳</div>
+                                <div style="font-size:12px;">Make Payment</div>
+                              </td>
+                            </tr>
+                          </table>
+                          <a href="{{foodOrderUrl}}" style="display:inline-block; background:#ffffff; color:#dc3545; padding:10px 25px; text-decoration:none; border-radius:20px; font-weight:bold; font-size:14px;">Order Now</a>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </td>
+      </tr>
+    </tbody>     
+  </table>
+</body>
+</html>

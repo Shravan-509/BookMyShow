@@ -4,6 +4,11 @@ const Razorpay = require("razorpay");
 const crypto = require("crypto");
 const { generateBookingId } = require("../utils/idGenerator");
 
+const path = require("path")
+const User = require("../models/userSchema")
+const { generateTicketPDF } = require("../utils/ticket-pdf")
+const { sendTicketEmail } = require("../utils/email")
+
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,       
   key_secret: process.env.RAZORPAY_KEY_SECRET,
@@ -36,39 +41,131 @@ const createOrder = async (req, res, next) => {
 
 const bookSeat = async (req, res, next) => {
     try {
-        const { transactionId, orderId, signature } = req.body;
+        const { 
+            transactionId, 
+            orderId, 
+            signature,
+            seats,
+            show: showId,
+            amount,
+            seatType,
+            convenienceFee,
+            gstPercent,
+            paymentMethod,
+            receipt,
+        } = req.body;
         
+       
         const generatedSignature = crypto
             .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
             .update(orderId + "|" + transactionId)
             .digest("hex");
-        
-            if(generatedSignature === signature)
-            {
-                const bookingId = generateBookingId();
-                const newBooking = new Booking({
-                    ...req.body,
-                    bookingId
-                });
-                await newBooking.save();
-                
-                const show = await Show.findById(req.body.show).populate("movie");
-                const updatedBookedSeats = [...show.bookedSeats, ...req.body.seats]
-                
-                await Show.findByIdAndUpdate(req.body.show, {
-                    bookedSeats: updatedBookedSeats
-                });
 
-                res.send({
-                    success: true,
-                    message: "Booking Successful",
-                    data: newBooking
+            if (generatedSignature !== signature) 
+            {
+                return res.json({ success: false, message: "Invalid payment" })
+            }
+
+            // 1) Atomically reserve seats to prevent double booking
+            // If any requested seat already exists in bookedSeats, the update will fail (result = null)
+            const reservedShow = await Show.findOneAndUpdate(
+                { _id: showId, bookedSeats: { $nin: seats } },
+                { $push: { bookedSeats: { $each: seats } } },
+                { new: true },
+            ).populate(["movie", "theatre"])
+
+            if (!reservedShow) 
+            {
+                return res.status(409).send({
+                    success: false,
+                    message: "Some seats were already booked. Please choose different seats.",
                 })
             }
-            else 
+
+            // const show = await Show.findById(req.body.show).populate("movie");
+            // const updatedBookedSeats = [...show.bookedSeats, ...req.body.seats]
+            
+            // await Show.findByIdAndUpdate(req.body.show, {
+            //     bookedSeats: updatedBookedSeats
+            // });
+        
+            // 2) Create Booking
+            const bookingId = generateBookingId();
+            const newBooking = new Booking({
+                show: showId,
+                user: req.body.userId,
+                seats,
+                seatType: seatType || "Standard",
+                transactionId,
+                orderId,
+                receipt,
+                bookingId,
+                amount: amount / 100,
+                convenienceFee: convenienceFee ?? 0,
+                gstPercent: gstPercent ?? 18,
+                paymentMethod: paymentMethod || "N/A",
+                ticketStatus: "Confirmed",
+            });
+
+            try 
             {
-                return res.json({ success: false, message: "Invalid payment" });
+                await newBooking.save()
+            } 
+            catch (err) 
+            {
+                // If booking save fails, rollback the seat reservation
+                await Show.findByIdAndUpdate(showId, { $pull: { bookedSeats: { $in: seats } } })
+                throw err
             }
+            
+            // 3) Generate Ticket PDF
+            const userId = newBooking.user
+            const userDoc = await User.findById(userId).lean()
+            const toEmail = userDoc?.email
+            let pdfBuffer = null
+
+            try 
+            {
+                pdfBuffer = await generateTicketPDF({
+                    booking: newBooking.toObject(),
+                    show: reservedShow.toObject(),
+                    movie: reservedShow.movie,
+                    theatre: reservedShow.theatre,
+                })
+            } 
+            catch (err) 
+            {
+                // PDF should not block the booking; log and continue
+                console.error("[ticket-pdf] Error generating PDF:", err.message)
+            }
+
+            // 4) Email Ticket (attach PDF if generated)
+            if(toEmail)
+            {
+                try 
+                {
+                    await sendTicketEmail({
+                        name: userDoc.name,
+                        to: toEmail,
+                        booking: newBooking.toObject(),
+                        show: reservedShow.toObject(),
+                        movie: reservedShow.movie,
+                        theatre: reservedShow.theatre,
+                        pdfBuffer,
+                    })
+                } 
+                catch (error) 
+                {
+                    console.error("[email] Error sending ticket email:", error.message)
+                }
+            }
+
+            res.send({
+                success: true,
+                message: "Booking Successful",
+                data: newBooking
+            })
+            
 
     } catch (error) {
         res.status(400);
