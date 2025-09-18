@@ -14,6 +14,69 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 })
 
+const validateSeats = async (req, res, next) => {
+    try {
+        const { showId, seats } = req.body
+
+        if(!showId || !seats || !Array.isArray(seats) || seats.length === 0)
+        {
+            return res.status(400).send({
+                success: false,
+                message: "Show Id and Seats Array are required"
+            })
+        }
+
+        // Find the show and check seat availability
+        const show = await Show.findById(showId).populate(["movie", "theatre"])
+
+        if(!show)
+        {
+            return res.status(404).send({
+                success: false,
+                message: "Show not found"
+            })
+        }
+
+        // Check if any of the requested seats are already booked
+        const unavailableSeats = seats.filter((seat) => show.bookedSeats.includes(seat))
+
+        if(unavailableSeats.length > 0)
+        {
+            return res.status(409).send({
+                success: false,
+                message: `Seats ${unavailableSeats.join(", ")} are no longer available`,
+                data: {
+                    availableSeats : seats.filter((seat) => !show.bookedSeats.includes(seat)),
+                    unavailableSeats: unavailableSeats,
+                    allBookedSeats: show.bookedSeats
+                }
+            })
+        }
+
+        // All Seats are available
+        res.send({
+            success: true,
+            message: "All selected seats are available",
+            data: {
+                availableSeats : seats,
+                unavailableSeats: [],
+                allBookedSeats: show.bookedSeats,
+                show: {
+                    id: show._id,
+                    movie: show.movie.movieName,
+                    theatre: show.theatre.name,
+                    date: show.date,
+                    time: show.time,
+                    ticketPrice: show.ticketPrice
+                }
+            }
+        })
+    } catch (error) {
+        res.status(400)
+        next(error)
+    }
+}
+
 
 const createOrder = async (req, res, next) => {
     try {
@@ -38,6 +101,7 @@ const createOrder = async (req, res, next) => {
         next(error);
     }
 }
+
 
 const bookSeat = async (req, res, next) => {
     try {
@@ -230,6 +294,7 @@ const getBookingsByUserId = async(req, res, next) => {
 
 
 module.exports = {
+    validateSeats,
     bookSeat,
     createOrder,
     getBookingsByUserId

@@ -4,14 +4,16 @@ import { DownCircleOutlined, ExclamationCircleOutlined, LoadingOutlined } from '
 import moment from 'moment';
 import { bookSeat, createPaymentIntent, createRazorPayOrder } from '../../../api/booking';
 import { useAuth } from '../../../hooks/useAuth';
+import { useBooking } from '../../../hooks/useBooking';
 import { useNavigate } from 'react-router-dom';
 import { notify } from '../../../utils/notificationUtils';
 const { Title ,Text, Paragraph } = Typography;
 const { Panel } = Collapse; 
 
 const PaymentSummary = ({show, seats, handlePreviousStep}) => {
-    const {user} = useAuth(); 
+    const { user } = useAuth(); 
     const navigate = useNavigate();
+    const { validateSeatBooking, validationResult, loading: validationLoading } = useBooking()
     const [isProcessingPayment, setIsProcessingPayment] = useState(false)
     const [paymentStatus, setPaymentStatus] = useState("") // 'processing', 'success', 'failed'
 
@@ -34,20 +36,40 @@ const PaymentSummary = ({show, seats, handlePreviousStep}) => {
 
     const validateSeatAvailability = async () => {
     try {
-      // This would ideally call a backend API to check real-time seat availability
-      // For now, we'll add a client-side check as a first line of defense
+      
       console.log("[v0] Validating seat availability for:", seats)
+      
+      validateSeatBooking({ showId: show._id, seats})
 
-      // TODO: Replace with actual API call to validate seats
-      // const response = await validateSeats({ showId: show._id, seats });
-      // return response.success;
-
-      return true // Placeholder - should be replaced with actual validation
-    } catch (error) {
+       // Wait for validation result
+      return new Promise((resolve) => {
+        const checkResult = () => {
+            console.log(validationResult)
+            if(validationResult)
+            {
+                resolve(validationResult.success === true)
+            }
+            else if(!validationLoading)
+            {
+                // If not loading and no result, assume failure
+                resolve(false)
+            }
+            else
+            {
+                // Still loading check again
+                setTimeout(checkResult, 100)
+            }
+        }
+        checkResult()
+      })
+      
+    } 
+    catch (error) 
+    {
       console.error("[v0] Seat validation error:", error)
       return false
     }
-  }
+    }
 
     const handleRazorPay = async () => {
         if(isProcessingPayment)
@@ -71,7 +93,7 @@ const PaymentSummary = ({show, seats, handlePreviousStep}) => {
             }
 
             const amount = parseFloat(totalAmount.toFixed(2));
-            const response = await createRazorPayOrder({amount})
+            const response = await createRazorPayOrder({ amount })
 
             if(response.success)
             {
@@ -134,7 +156,10 @@ const PaymentSummary = ({show, seats, handlePreviousStep}) => {
                         catch (bookingError) 
                         {
                             console.log("Booking error: ", bookingError);
-                            notify("error", "Booking failed, Please contact support with your payment ID: " + response.razorpay_payment_id);
+                            notify(
+                                "error", 
+                                "Booking failed, Please contact support with your payment ID: " + response.razorpay_payment_id
+                            );
                             setPaymentStatus("failed");
                         }
                         finally{
@@ -193,7 +218,7 @@ const PaymentSummary = ({show, seats, handlePreviousStep}) => {
             return (
                 <div className='text-center py-4'>
                     <Spin indicator={<LoadingOutlined style={{fontSize: 24}} spin />} />
-                    <div className='"mt-2 text-green-600'>Payement Successful! Confirming your booking...</div>
+                    <div className='"mt-2 text-green-600'>Payment Successful! Confirming your booking...</div>
                     <div className='"mt-2 text-gray-500 mt-1'>You will be redirected to your booking history shortly.</div>
                 </div>
             )

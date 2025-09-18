@@ -1,5 +1,13 @@
 import { axiosInstance } from ".";
 
+export const validateSeats = async (payload) => {
+  try {
+    const response = await axiosInstance.post("/bookings/validateSeats", payload)
+    return response?.data
+  } catch (error) {
+    return error
+  }
+}
 
 export const bookSeat = async (payload) => {
     try {
