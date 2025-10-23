@@ -1,4 +1,4 @@
-import React, { useEffect, memo, useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Card, Spin, Tabs } from 'antd'
 import {
   UserOutlined,
@@ -34,9 +34,10 @@ const ProfileTabs = () => {
         {
           key: "1",
           label: (
-            <div className="tab-label">
-              <UserOutlined className="tab-icon" />
-                <span>Personal Information</span>
+            <div className="flex items-center gap-2 px-1">
+              <UserOutlined className="text-base" />
+              <span className="hidden sm:inline">Personal Information</span>
+              <span className="sm:hidden text-xs">Personal</span>
             </div>
           ),
           children:  (
@@ -48,9 +49,10 @@ const ProfileTabs = () => {
         {
           key: "2",
           label:  (
-            <div className="tab-label">
-              <LockOutlined className="tab-icon" />
-              <span>Change Password</span>
+            <div className="flex items-center gap-2 px-1">
+              <LockOutlined className="text-base" />
+              <span className="hidden sm:inline">Change Password</span>
+              <span className="sm:hidden text-xs">Password</span>
             </div>
           ),
           children:  (
@@ -62,9 +64,10 @@ const ProfileTabs = () => {
         {
           key: "3",
           label:  (
-            <div className="tab-label">
-              <MailOutlined className="tab-icon" />
-              <span>Email Settings</span>
+            <div className="flex items-center gap-2 px-1">
+              <MailOutlined className="text-base" />
+              <span className="hidden sm:inline">Email Settings</span>
+              <span className="sm:hidden text-xs">Email</span>
             </div>
           ),
           children:  (
@@ -76,9 +79,10 @@ const ProfileTabs = () => {
         {
           key: "4",
           label:  (
-            <div className="tab-label">
-              <SafetyOutlined className="tab-icon" />
-              <span>Security</span>
+            <div className="flex items-center gap-2 px-1">
+              <SafetyOutlined className="text-base" />
+              <span className="hidden sm:inline">Security</span>
+              <span className="sm:hidden text-xs">Security</span>
             </div>
           ),
           children:  (
@@ -90,9 +94,10 @@ const ProfileTabs = () => {
         {
           key: "5",
           label: (
-            <div className="tab-label">
-              <BellOutlined className="tab-icon" />
-              <span>Reminders</span>
+            <div className="flex items-center gap-2 px-1">
+              <BellOutlined className="text-base" />
+              <span className="hidden sm:inline">Reminders</span>
+              <span className="sm:hidden text-xs">Alerts</span>
             </div>
           ),
           children:  (
@@ -104,9 +109,10 @@ const ProfileTabs = () => {
         {
           key: "6",
           label:  (
-            <div className="tab-label">
-              <DeleteOutlined className="tab-icon danger" />
-              <span>Danger Zone</span>
+            <div className="flex items-center gap-2 px-1">
+              <DeleteOutlined className="text-base text-red-500" />
+              <span className="hidden sm:inline text-red-500">Danger Zone</span>
+              <span className="sm:hidden text-xs text-red-500">Danger</span>
             </div>
           ),
           children:  (

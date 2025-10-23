@@ -27,7 +27,7 @@ const bookSeatsAPI = async (payload) => {
 const getUserBookingAPI = async (userId) => {
     try {
         const response = await bookingsByUserId(userId);
-        return response.data;
+        return response;
     } catch (error) {
         const message = error.response?.data?.message || 'Failed to fetch user bookings';
         throw new Error(message);
