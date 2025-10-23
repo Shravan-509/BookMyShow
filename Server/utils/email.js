@@ -1,20 +1,24 @@
 const fs = require("fs");
 const path = require("path");
-const nodemailer = require("nodemailer");
+// const nodemailer = require("nodemailer");
 const QRCode = require("qrcode")
+const sgMail = require("@sendgrid/mail")
 
 const Verification = require('../models/verificationSchema');
 
+// Initialize SendGrid
+sgMail.setApiKey(process.env.SENDGRID_API_KEY)
+
 //Configure nodemailer
-const transporter = nodemailer.createTransport({
-    host: process.env.EMAIL_HOST,
-    port: process.env.EMAIL_PORT,
-    secure: process.env.EMAIL_SECURE === "true",
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD,
-    },
-})
+// const transporter = nodemailer.createTransport({
+//     host: process.env.EMAIL_HOST,
+//     port: process.env.EMAIL_PORT,
+//     secure: process.env.EMAIL_SECURE === "true",
+//     auth: {
+//         user: process.env.EMAIL_USER,
+//         pass: process.env.EMAIL_PASSWORD,
+//     },
+// })
 
 // Generate a random 6-digit code
 const generateVerificationCode = () => {
@@ -96,12 +100,21 @@ const sendVerificationEmail = async(email, code, type) => {
         // Get Email HTML from template
         const html = await getEmailTemplate(templateName, metaData);
 
-        const result = await transporter.sendMail({
-            from: `"BookMyShow" <${process.env.EMAIL_USER}>`,
+        const msg = {
             to: email,
+            from: process.env.SENDGRID_FROM_EMAIL,
             subject,
             html,
-        })
+        }
+
+        // const result = await transporter.sendMail({
+        //     from: `"BookMyShow" <${process.env.EMAIL_USER}>`,
+        //     to: email,
+        //     subject,
+        //     html,
+        // })
+
+        const result = await sgMail.send(msg);
 
         // console.log(`${templateName} email sent : ${result.messageId}`);
         return result;
@@ -128,12 +141,21 @@ const sendPasswordResetEmail = async({to, name, resetUrl}) => {
         // Get Email HTML from template
         const html = await getEmailTemplate(templateName, metaData);
 
-        const result = await transporter.sendMail({
-            from: `"BookMyShow" <${process.env.EMAIL_USER}>`,
+        // const result = await transporter.sendMail({
+        //     from: `"BookMyShow" <${process.env.EMAIL_USER}>`,
+        //     to,
+        //     subject,
+        //     html,
+        // }) 
+
+        const msg = {
             to,
+            from: process.env.SENDGRID_FROM_EMAIL,
             subject,
             html,
-        }) 
+        }
+
+        const result = await sgMail.send(msg)
         // console.log("Password reset email sent:", result.messageId);
         return result;
     } catch (error) {
@@ -174,12 +196,21 @@ const sendSecurityNotificationEmail = async (email, type, data = {} ) => {
     // Get email HTML from template
     const html = await getEmailTemplate(templateName, metaData)
 
-    const result = await transporter.sendMail({
-      from: `"BookMyShow Security" <${process.env.EMAIL_FROM}>`,
-      to: email,
-      subject,
-      html,
-    })
+    // const result = await transporter.sendMail({
+    //   from: `"BookMyShow Security" <${process.env.EMAIL_FROM}>`,
+    //   to: email,
+    //   subject,
+    //   html,
+    // })
+
+    const msg = {
+        to: email,
+        from: process.env.SENDGRID_FROM_EMAIL,
+        subject,
+        html,
+    }
+
+    const result = await sgMail.send(msg)
 
     // console.log(`✅ Security notification email sent: ${type} to ${email}`)
     return result;
@@ -256,25 +287,35 @@ const sendTicketEmail = async ({name, to, booking, show, movie, theatre, pdfBuff
         // Get Email HTML from template
         const html = await getEmailTemplate(templateName, metaData);
 
-       const mailOptions = {
-            from: `"BookMyShow" <${process.env.EMAIL_USER}>`,
+    //    const mailOptions = {
+    //         from: `"BookMyShow" <${process.env.EMAIL_USER}>`,
+    //         to,
+    //         subject,
+    //         html,
+    //         attachments: [],
+    //     };
+
+        const msg = {
             to,
+            from: process.env.SENDGRID_FROM_EMAIL,
             subject,
             html,
             attachments: [],
-        };
+        }
 
         if (pdfBuffer && Buffer.isBuffer(pdfBuffer)) 
         {
-            mailOptions.attachments.push({
+            msg.attachments.push({
                 filename: `ticket-${booking.bookingId}.pdf`,
-                content: pdfBuffer,
-                contentType: "application/pdf",
+                content: pdfBuffer.toString("base64"),
+                type: "application/pdf",
+                disposition: "attachment",
             })
         }
 
-        const result = await transporter.sendMail(mailOptions);
-        console.log("Ticket Email with PDF sent:", result.messageId);
+        // const result = await transporter.sendMail(mailOptions);
+        const result = await sgMail.send(msg)
+        // console.log("Ticket Email with PDF sent:", result.messageId);
         return result;
     } catch (error) {
         console.error(`Error sending ticket email: ${error.message}`);
