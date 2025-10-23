@@ -507,22 +507,142 @@ table th {
   margin-left: 8px;
 }
 
+/* Responsive enhancements for mobile devices */
+  @media (max-width: 640px) {
+    .date-selection-container {
+      margin-bottom: 16px;
+    }
+
+    .date-tab {
+      min-width: 60px;
+      height: 60px;
+      margin-right: 8px;
+      padding: 6px;
+    }
+
+    .date-tab-day {
+      font-size: 10px;
+    }
+
+    .date-tab-date {
+      font-size: 16px;
+    }
+
+    .date-tab-month {
+      font-size: 10px;
+    }
+
+    .date-scroll-button {
+      width: 28px;
+      height: 28px;
+    }
+  }
+
+  /* Tablet responsive styles */
+  @media (min-width: 641px) and (max-width: 1024px) {
+    .date-tab {
+      min-width: 70px;
+      height: 70px;
+    }
+
+    .date-tab-day {
+      font-size: 12px;
+    }
+
+    .date-tab-date {
+      font-size: 18px;
+    }
+
+    .date-tab-month {
+      font-size: 11px;
+    }
+  }
+
+  /* Enhanced accessibility */
+  .date-tab:focus {
+    outline: 2px solid #f84464;
+    outline-offset: 2px;
+  }
+
+  .date-tab:hover {
+    border-color: #f84464;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(248, 68, 100, 0.2);
+  }
+
+  .date-tab.selected:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(248, 68, 100, 0.3);
+  }
+
+  /* Smooth transitions */
+  .date-tab {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Improved scroll buttons */
+  .date-scroll-button {
+    transition: all 0.3s ease;
+    border: 1px solid #e8e8e8;
+  }
+
+  .date-scroll-button:hover {
+    background-color: #f84464;
+    color: white;
+    border-color: #f84464;
+    transform: scale(1.1);
+  }
+
+  /* Loading state for date tabs */
+  .date-tabs-container.loading {
+    opacity: 0.6;
+    pointer-events: none;
+  }
+
+  /* Enhanced selected state */
+  .date-tab.selected {
+    background-color: #f84464;
+    color: white;
+    border-color: #f84464;
+    box-shadow: 0 4px 12px rgba(248, 68, 100, 0.3);
+    transform: translateY(-2px);
+  }
+
+  /* Touch-friendly improvements for mobile */
+  @media (max-width: 640px) {
+    .date-tab {
+      min-height: 44px; /* Minimum touch target */
+      touch-action: manipulation;
+    }
+
+    .date-scroll-button {
+      min-width: 44px;
+      min-height: 44px;
+    }
+  }
+
 /* Theater and showtimes styling - Horizontal Layout */
+.theatre-section {
+    background-color: #fafafa;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+    transition: all 0.3s ease;
+  }
+
+.theatre-section:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+  }
+
 .theaters-container {
   display: flex;
   flex-direction: column;
 }
 
-.theater-section {
-  padding: 16px;
-  background-color: white;
-}
-
 .theater-info {
-  display: flex;
-  flex-direction: row;
-  gap: 1rem;
-}
+    margin-bottom: 12px;
+  }
 
 .theater-features {
   display: flex;
@@ -533,19 +653,74 @@ table th {
 .showtime-buttons-horizontal {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
-  align-items: center;
+  gap: 12px;
+  justify-content: flex-start;
 }
 
 .showtime-button-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+   display: inline-block;
 }
 
 .showtime-button {
-  min-width: 100px;
+  min-width: 80px;
+    height: 40px;
+    border-radius: 8px;
+    border: 1px solid #f84464;
+    color: #f84464;
+    background-color: #fff;
+    font-weight: 600;
+    transition: all 0.3s ease;
 }
+
+.showtime-button:hover {
+    background-color: #f84464;
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(248, 68, 100, 0.3);
+  }
+
+  /* Mobile theater section */
+  @media (max-width: 640px) {
+    .theatre-section {
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    .showtime-buttons-horizontal {
+      gap: 8px;
+      justify-content: center;
+    }
+
+    .showtime-button {
+      min-width: 60px;
+      height: 36px;
+      font-size: 12px;
+    }
+  }
+
+  /* Tablet theater section */
+  @media (min-width: 641px) and (max-width: 1024px) {
+    .theatre-section {
+      padding: 18px;
+    }
+
+    .showtime-button {
+      min-width: 70px;
+      height: 38px;
+    }
+  }
+
+  /* No shows message styling */
+  .no-shows-message {
+    text-align: center;
+    padding: 40px 20px;
+  }
+
+  @media (max-width: 640px) {
+    .no-shows-message {
+      padding: 30px 16px;
+    }
+  }
 
 .price-label {
   font-size: 12px;
@@ -565,11 +740,6 @@ table th {
     padding: 40px 0;
   }
 
-  .date-tab {
-    min-width: 70px;
-    height: 70px;
-  }
-
   .theater-info {
     margin-bottom: 16px;
   }
@@ -578,19 +748,6 @@ table th {
 @media (max-width: 576px) {
   .movie-banner {
     padding: 30px 0;
-  }
-
-  .date-tab {
-    min-width: 60px;
-    height: 60px;
-  }
-
-  .date-tab-date {
-    font-size: 18px;
-  }
-
-  .showtime-buttons-horizontal {
-    justify-content: flex-start;
   }
 }
 
@@ -616,6 +773,128 @@ table th {
       background-color: #dc3558 !important;
 }
 
+/* Enhanced mobile-responsive profile styles */
+.profile-tabs-container {
+  width: 100%;
+}
+
+.profile-tabs-wrapper {
+  width: 100%;
+}
+
+.mobile-profile-tabs {
+  width: 100%;
+}
+
+.mobile-profile-tabs .ant-tabs-nav {
+  margin-bottom: 16px !important;
+}
+
+.mobile-profile-tabs .ant-tabs-tab {
+  padding: 8px 12px !important;
+  margin: 0 4px !important;
+  border-radius: 8px !important;
+  transition: all 0.3s ease !important;
+  font-weight: 500 !important;
+  color: #666 !important;
+  background-color: transparent !important;
+  border: 1px solid #e8e8e8 !important;
+  min-height: 44px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.mobile-profile-tabs .ant-tabs-tab:hover {
+  background-color: #fff1f3 !important;
+  color: #f84464 !important;
+  border-color: #f84464 !important;
+}
+
+.mobile-profile-tabs .ant-tabs-tab-active {
+  background-color: #f84464 !important;
+  color: white !important;
+  border-color: #f84464 !important;
+  font-weight: 600 !important;
+}
+
+.mobile-profile-tabs .ant-tabs-tab-active span,
+.mobile-profile-tabs .ant-tabs-tab-active .anticon {
+  color: white !important;
+}
+
+.mobile-profile-tabs .ant-tabs-content-holder {
+  padding: 0 !important;
+}
+
+.mobile-profile-tabs .ant-tabs-tabpane {
+  padding: 16px 0 !important;
+}
+
+/* Mobile-specific tab navigation improvements */
+@media (max-width: 768px) {
+  .mobile-profile-tabs .ant-tabs-nav {
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+
+  .mobile-profile-tabs .ant-tabs-nav::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .mobile-profile-tabs .ant-tabs-nav-wrap {
+    overflow: visible !important;
+  }
+
+  .mobile-profile-tabs .ant-tabs-nav-list {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    min-width: max-content !important;
+  }
+
+  .mobile-profile-tabs .ant-tabs-tab {
+    flex-shrink: 0 !important;
+    min-width: 80px !important;
+    padding: 8px 8px !important;
+    margin: 0 2px !important;
+    font-size: 12px !important;
+  }
+
+  .mobile-profile-tabs .ant-tabs-tabpane {
+    padding: 12px 0 !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .mobile-profile-tabs .ant-tabs-tab {
+    min-width: 70px !important;
+    padding: 6px 4px !important;
+    font-size: 11px !important;
+  }
+}
+
+/* Enhanced touch-friendly button styles for mobile */
+@media (max-width: 768px) {
+  .ant-btn {
+    min-height: 44px !important;
+    padding: 8px 16px !important;
+    font-size: 14px !important;
+  }
+
+  .ant-btn-sm {
+    min-height: 36px !important;
+    padding: 6px 12px !important;
+    font-size: 13px !important;
+  }
+
+  .ant-btn-lg {
+    min-height: 48px !important;
+    padding: 12px 20px !important;
+    font-size: 16px !important;
+  }
+}
 
 .ticket-divider {
   position: relative;
@@ -765,5 +1044,798 @@ table th {
     text-align: center;
     justify-content: center;
     font-size: 13px;
+  }
+}
+
+
+/* Seat Layout Container Styles */
+.seat-layout-container {
+  width: 100%;
+  padding: 16px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Seat Map Viewport - Container for zoomable/pannable seat map */
+.seat-map-viewport {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  background-color: #fafafa;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* Seat Map Content - The actual seat grid that gets transformed */
+.seat-map-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px;
+  background-color: white;
+  will-change: transform;
+}
+
+/* Seat Selection Area - Container for seat selection UI */
+.seat-selection-area {
+  width: 100%;
+  padding: 16px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Custom Select Dropdown Styling */
+.custom-select {
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid #e8e8e8;
+  padding: 8px 12px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.custom-select:hover {
+  border-color: #f84464;
+  box-shadow: 0 0 0 2px rgba(248, 68, 100, 0.1);
+}
+
+.custom-select:focus {
+  border-color: #f84464;
+  box-shadow: 0 0 0 2px rgba(248, 68, 100, 0.2);
+  outline: none;
+}
+
+/* Responsive adjustments for seat layout on mobile */
+@media (max-width: 768px) {
+  .seat-layout-container {
+    padding: 12px;
+  }
+
+  .seat-map-viewport {
+    height: 350px !important;
+  }
+
+  .seat-map-content {
+    padding: 12px;
+  }
+
+  .seat-selection-area {
+    padding: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .seat-layout-container {
+    padding: 8px;
+  }
+
+  .seat-map-viewport {
+    height: 300px !important;
+  }
+
+  .seat-map-content {
+    padding: 8px;
+    min-width: 400px;
+  }
+
+  .seat-selection-area {
+    padding: 8px;
+  }
+
+  .custom-select {
+    font-size: 13px;
+    padding: 6px 10px;
+  }
+}
+
+/* Payment Summary Styles */
+.payment-summary {
+  width: 100%;
+  padding: 16px;
+  background-color: white;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.payment-summary .ant-card {
+  border-radius: 8px;
+  border: 1px solid #e8e8e8;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.payment-summary .ant-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.payment-summary .ant-card-head {
+  border-bottom: 1px solid #e8e8e8;
+  padding: 16px;
+}
+
+.payment-summary .ant-card-body {
+  padding: 16px;
+}
+
+/* Enhanced Typography */
+.payment-summary .ant-typography {
+  transition: color 0.3s ease;
+}
+
+.payment-summary .ant-typography.ant-typography-h4 {
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.payment-summary .ant-typography.ant-typography-h5 {
+  color: #374151;
+  font-weight: 500;
+}
+
+/* Mobile Payment Styles */
+.mobile-payment {
+  padding: 16px;
+}
+
+.mobile-payment .ant-card {
+  margin-bottom: 16px;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.mobile-payment .ant-card-body {
+  padding: 20px 16px;
+}
+
+.mobile-payment .space-y-3 {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mobile-payment .space-y-2 {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Mobile-specific typography improvements */
+.mobile-payment .ant-typography.ant-typography-h4 {
+  font-size: 20px;
+  line-height: 1.3;
+  margin-bottom: 20px !important;
+}
+
+.mobile-payment .ant-typography.ant-typography-h5 {
+  font-size: 18px;
+  line-height: 1.4;
+  margin-bottom: 16px !important;
+}
+
+.mobile-payment .ant-typography.ant-typography-h5:not(:first-child) {
+  margin-top: 20px !important;
+}
+
+/* Mobile card content spacing */
+.mobile-payment .ant-card .mb-4 {
+  margin-bottom: 20px !important;
+}
+
+.mobile-payment .ant-card .space-y-3 > * + * {
+  margin-top: 16px;
+}
+
+.mobile-payment .ant-card .space-y-2 > * + * {
+  margin-top: 12px;
+}
+
+/* Tablet Payment Styles */
+.tablet-payment {
+  padding: 14px;
+}
+
+.tablet-payment .ant-card {
+  margin-bottom: 14px;
+  border-radius: 8px;
+}
+
+.tablet-payment .ant-card-body {
+  padding: 14px;
+}
+
+.tablet-payment .space-y-3 {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.tablet-payment .space-y-2 {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Payment method radio styling for all devices */
+.payment-summary .ant-radio-wrapper {
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 12px !important;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.payment-summary .ant-radio-wrapper:hover {
+  border-color: #f84464;
+  background-color: #fff1f3;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(248, 68, 100, 0.1);
+}
+
+.payment-summary .ant-radio-wrapper-checked {
+  border-color: #f84464;
+  background-color: #fff1f3;
+  box-shadow: 0 2px 8px rgba(248, 68, 100, 0.15);
+}
+
+.payment-summary .ant-radio-wrapper:focus-within {
+  border-color: #f84464;
+  outline: 2px solid rgba(248, 68, 100, 0.2);
+  outline-offset: 2px;
+}
+
+/* Mobile specific radio styling */
+.mobile-payment .ant-radio-wrapper {
+  padding: 20px 16px !important;
+  margin-bottom: 12px;
+  border-radius: 12px;
+  background-color: #fafafa;
+  border: 1px solid #e5e5e5;
+}
+
+.mobile-payment .ant-radio-wrapper:hover {
+  transform: none;
+  background-color: #f5f5f5;
+  border-color: #d9d9d9;
+}
+
+.mobile-payment .ant-radio-wrapper-checked {
+  background-color: #fff1f3;
+  border-color: #f84464;
+  box-shadow: 0 2px 8px rgba(248, 68, 100, 0.1);
+}
+
+/* Mobile radio content spacing */
+.mobile-payment .ant-radio-wrapper .flex {
+  gap: 16px;
+}
+
+.mobile-payment .ant-radio-wrapper .flex-1 {
+  min-width: 0; /* Prevents text overflow */
+}
+
+.mobile-payment .ant-radio-wrapper .ant-typography {
+  margin-bottom: 4px !important;
+}
+
+.mobile-payment .ant-radio-wrapper .ant-typography:last-child {
+  margin-bottom: 0 !important;
+}
+
+/* Tablet specific radio styling */
+.tablet-payment .ant-radio-wrapper {
+  padding: 14px !important;
+  margin-bottom: 14px;
+}
+
+/* Sticky bottom bar for mobile payment */
+.mobile-payment .fixed {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: white;
+  border-top: 1px solid #e8e8e8;
+  padding: 16px;
+  z-index: 50;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Enhanced button styles */
+.payment-summary .ant-btn {
+  transition: all 0.3s ease;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.payment-summary .ant-btn-primary {
+  background: linear-gradient(135deg, #f84464 0%, #dc3558 100%);
+  border: none;
+  box-shadow: 0 2px 8px rgba(248, 68, 100, 0.3);
+}
+
+.payment-summary .ant-btn-primary:hover {
+  background: linear-gradient(135deg, #dc3558 0%, #c82333 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(248, 68, 100, 0.4);
+}
+
+.payment-summary .ant-btn-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(248, 68, 100, 0.3);
+}
+
+.payment-summary .ant-btn:focus {
+  outline: 2px solid rgba(248, 68, 100, 0.3);
+  outline-offset: 2px;
+}
+
+/* Payment status messages */
+.payment-summary .text-center {
+  text-align: center;
+}
+
+.payment-summary .py-6 {
+  padding-top: 24px;
+  padding-bottom: 24px;
+}
+
+.payment-summary .mt-3 {
+  margin-top: 12px;
+}
+
+.payment-summary .mt-1 {
+  margin-top: 4px;
+}
+
+/* Enhanced payment status styles */
+.payment-summary .ant-spin {
+  color: #f84464;
+}
+
+.payment-summary .ant-alert {
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.payment-summary .ant-alert-error {
+  border-color: #ff4d4f;
+  background-color: #fff2f0;
+}
+
+.payment-summary .ant-alert-success {
+  border-color: #52c41a;
+  background-color: #f6ffed;
+}
+
+/* Accessibility enhancements */
+.payment-summary [role="main"] {
+  outline: none;
+}
+
+.payment-summary .ant-radio-wrapper:focus-visible {
+  outline: 2px solid #f84464;
+  outline-offset: 2px;
+}
+
+/* Loading states */
+.payment-summary .ant-btn-loading {
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+.payment-summary .ant-spin-dot {
+  color: #f84464;
+}
+
+/* Grid system enhancements */
+.payment-summary .grid {
+  display: grid;
+  gap: 16px;
+}
+
+.payment-summary .grid-cols-1 {
+  grid-template-columns: 1fr;
+}
+
+.payment-summary .grid-cols-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+/* Flex utilities */
+.payment-summary .flex {
+  display: flex;
+}
+
+.payment-summary .flex-col {
+  flex-direction: column;
+}
+
+.payment-summary .flex-row {
+  flex-direction: row;
+}
+
+.payment-summary .justify-between {
+  justify-content: space-between;
+}
+
+.payment-summary .items-center {
+  align-items: center;
+}
+
+.payment-summary .gap-3 {
+  gap: 12px;
+}
+
+/* Responsive adjustments for payment page */
+@media (max-width: 1024px) {
+  .payment-summary {
+    padding: 14px;
+  }
+
+  .payment-summary .ant-card {
+    margin-bottom: 14px;
+  }
+
+  .payment-summary .ant-card-body {
+    padding: 14px;
+  }
+
+  .payment-summary .grid {
+    gap: 14px;
+  }
+
+  .payment-summary .grid-cols-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .payment-summary {
+    padding: 12px;
+  }
+
+  .payment-summary .ant-card {
+    margin-bottom: 12px;
+  }
+
+  .payment-summary .ant-card-body {
+    padding: 12px;
+  }
+
+  .payment-summary .grid {
+    gap: 12px;
+  }
+
+  .payment-summary .grid-cols-1 {
+    grid-template-columns: 1fr;
+  }
+
+  .payment-summary .grid-cols-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .payment-summary .flex-col {
+    flex-direction: column;
+  }
+
+  .payment-summary .justify-between {
+    justify-content: space-between;
+  }
+
+  .payment-summary .items-center {
+    align-items: center;
+  }
+
+  .payment-summary .gap-3 {
+    gap: 12px;
+  }
+
+  /* Enhanced mobile button styles */
+  .payment-summary .ant-btn {
+    min-height: 48px;
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .payment-summary .ant-btn-primary {
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .payment-summary {
+    padding: 12px;
+  }
+
+  .payment-summary .ant-card {
+    margin-bottom: 16px;
+    border-radius: 12px;
+  }
+
+  .payment-summary .ant-card-body {
+    padding: 18px 16px;
+  }
+
+  .mobile-payment .ant-radio-wrapper {
+    padding: 18px 16px !important;
+    margin-bottom: 12px;
+    border-radius: 12px;
+  }
+
+  .mobile-payment .fixed {
+    padding: 16px;
+  }
+
+  .payment-summary .space-y-3 {
+    gap: 16px;
+  }
+
+  .payment-summary .space-y-2 {
+    gap: 12px;
+  }
+
+  /* Enhanced small mobile styles */
+  .payment-summary .ant-typography.ant-typography-h4 {
+    font-size: 20px;
+    line-height: 1.3;
+    margin-bottom: 20px !important;
+  }
+
+  .payment-summary .ant-typography.ant-typography-h5 {
+    font-size: 18px;
+    line-height: 1.4;
+    margin-bottom: 16px !important;
+  }
+
+  .payment-summary .ant-btn {
+    min-height: 48px;
+    font-size: 16px;
+    padding: 12px 20px;
+    border-radius: 12px;
+  }
+
+  /* Mobile card content improvements */
+  .mobile-payment .ant-card .mb-4 {
+    margin-bottom: 20px !important;
+  }
+
+  .mobile-payment .ant-card .space-y-3 > * + * {
+    margin-top: 16px;
+  }
+
+  .mobile-payment .ant-card .space-y-2 > * + * {
+    margin-top: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .payment-summary {
+    padding: 8px;
+  }
+
+  .payment-summary .ant-card {
+    margin-bottom: 12px;
+    border-radius: 12px;
+  }
+
+  .payment-summary .ant-card-body {
+    padding: 16px 12px;
+  }
+
+  .mobile-payment .ant-radio-wrapper {
+    padding: 16px 12px !important;
+    margin-bottom: 10px;
+    border-radius: 12px;
+  }
+
+  .mobile-payment .fixed {
+    padding: 12px;
+  }
+
+  .payment-summary .space-y-3 {
+    gap: 14px;
+  }
+
+  .payment-summary .space-y-2 {
+    gap: 10px;
+  }
+
+  /* Ultra-small mobile typography */
+  .payment-summary .ant-typography.ant-typography-h4 {
+    font-size: 18px;
+    line-height: 1.3;
+    margin-bottom: 16px !important;
+  }
+
+  .payment-summary .ant-typography.ant-typography-h5 {
+    font-size: 16px;
+    line-height: 1.4;
+    margin-bottom: 14px !important;
+  }
+
+  .payment-summary .ant-btn {
+    min-height: 44px;
+    font-size: 15px;
+    padding: 10px 16px;
+    border-radius: 12px;
+  }
+
+  /* Compact card content */
+  .mobile-payment .ant-card .mb-4 {
+    margin-bottom: 16px !important;
+  }
+
+  .mobile-payment .ant-card .space-y-3 > * + * {
+    margin-top: 14px;
+  }
+
+  .mobile-payment .ant-card .space-y-2 > * + * {
+    margin-top: 10px;
+  }
+}
+
+/* Performance optimizations */
+.payment-summary * {
+  box-sizing: border-box;
+}
+
+.payment-summary .ant-card,
+.payment-summary .ant-btn,
+.payment-summary .ant-radio-wrapper {
+  will-change: transform;
+}
+
+.payment-summary .ant-card:hover,
+.payment-summary .ant-btn:hover,
+.payment-summary .ant-radio-wrapper:hover {
+  will-change: transform, box-shadow;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .payment-summary * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .payment-summary .ant-radio-wrapper {
+    border-width: 2px;
+  }
+  
+  .payment-summary .ant-btn-primary {
+    border: 2px solid #000;
+  }
+}
+
+/* Utility classes for dynamic styling */
+.payment-summary .w-full {
+  width: 100%;
+}
+
+.payment-summary .h-32 {
+  height: 8rem;
+}
+
+.payment-summary .min-h-48 {
+  min-height: 3rem;
+}
+
+.payment-summary .text-base {
+  font-size: 1rem;
+  line-height: 1.5rem;
+}
+
+.payment-summary .text-sm {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.payment-summary .text-xs {
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+.payment-summary .font-medium {
+  font-weight: 500;
+}
+
+.payment-summary .font-semibold {
+  font-weight: 600;
+}
+
+.payment-summary .font-bold {
+  font-weight: 700;
+}
+
+/* Custom collapse styles */
+.payment-summary .custom-collapse .ant-collapse-header {
+  padding: 0 !important;
+}
+
+.payment-summary .custom-collapse .ant-collapse-content-box {
+  padding: 0 !important;
+}
+
+/* Mobile collapse improvements */
+.mobile-payment .custom-collapse .ant-collapse-header {
+  padding: 12px 0 !important;
+}
+
+.mobile-payment .custom-collapse .ant-collapse-content-box {
+  padding: 8px 0 !important;
+}
+
+.mobile-payment .custom-collapse .ant-collapse-item {
+  border: none !important;
+  background: transparent !important;
+}
+
+/* Mobile divider improvements */
+.mobile-payment .ant-divider {
+  margin: 20px 0 !important;
+  border-color: #e5e5e5;
+}
+
+/* Mobile info section improvements */
+.mobile-payment .bg-gray-50 {
+  background-color: #f8f9fa !important;
+  border-radius: 12px;
+  padding: 16px !important;
+  margin-bottom: 20px !important;
+}
+
+.mobile-payment .bg-gray-50 .ant-typography {
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+  margin-bottom: 0 !important;
+}
+
+/* Enhanced focus styles for better accessibility */
+.payment-summary .ant-radio-wrapper:focus-within,
+.payment-summary .ant-btn:focus {
+  outline: 2px solid #f84464;
+  outline-offset: 2px;
+}
+
+/* Print styles */
+@media print {
+  .payment-summary .fixed {
+    display: none;
+  }
+  
+  .payment-summary .ant-btn {
+    display: none;
   }
 }
