@@ -16,7 +16,6 @@ import {
 
 const TwoFactorAuthentication = () => {
   const [twoFactorForm] = Form.useForm();
-  const navigate = useNavigate();
   const dispatch = useDispatch();
 
   const isOpen = useSelector(selectShowTwoFactorAuthModal);
@@ -49,7 +48,7 @@ const TwoFactorAuthentication = () => {
     >
       <div className="verification-content">
         <div className="w-24 h-24 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-md animate-pulse ring-2 ring-green-300">
-          <LockOutlined className="!text-5xl !text-green-600" />
+          <LockOutlined className="text-5xl! text-green-600!" />
       </div>
         <h3>Enter Security Code</h3>
         <p>

@@ -149,13 +149,13 @@ export const SeatLayout = ({ totalSeats, bookedSeats, selectedSeats, onSeatSelec
     <div className="seat-layout-container">
         <div className="flex justify-between items-center mb-4 px-2">
             <div className="flex gap-2">
-                <Button size="small" onClick={zoomOut} className="!min-w-[40px] !h-8">
+                <Button size="small" onClick={zoomOut} className="min-w-10! h-8!">
                     -
                 </Button>
-                <Button size="small" onClick={resetZoom} className="!min-w-[60px] !h-8 !text-xs">
+                <Button size="small" onClick={resetZoom} className="min-w-[60px]! h-8! text-xs!">
                     Reset
                 </Button>
-                <Button size="small" onClick={zoomIn} className="!min-w-[40px] !h-8">
+                <Button size="small" onClick={zoomIn} className="min-w-10! h-8!">
                     +
                 </Button>
             </div>

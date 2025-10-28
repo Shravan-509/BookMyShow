@@ -50,7 +50,7 @@ const EmailVerification = () => {
           <MailOutlined />
         </div> */}
          <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-md animate-pulse ring-2 ring-blue-300">
-          <MailOutlined className="!text-5xl !text-blue-600" />
+          <MailOutlined className="text-5xl! text-blue-600!" />
         </div>
         <h3>Verify Your Email</h3>
         <p>

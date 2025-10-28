@@ -147,10 +147,10 @@ const SeatRecommendation = ({
   if (recommendations.length === 0) return null
 
   return (
-    <Card className="mb-4 !border-blue-200 !bg-blue-50" size="small">
+    <Card className="mb-4 border-blue-200! bg-blue-50!" size="small">
       <div className="flex items-center gap-2 mb-3">
         <StarOutlined className="text-blue-600" />
-        <Title level={5} className="!mb-0 !text-blue-800">
+        <Title level={5} className="mb-0! text-blue-800!">
           Recommended Seats for {groupSize} {groupSize === 1 ? "person" : "people"}
         </Title>
       </div>
@@ -192,8 +192,8 @@ const SeatRecommendation = ({
                             onClick={() => handleQuickSelect(rec.seats, index)}
                             className={`transition-all duration-200 ${
                                 isSelected
-                                    ? "!bg-green-600 !border-green-600 hover:!bg-green-700"
-                                    : "hover:!border-blue-400 hover:!text-blue-600"
+                                    ? "bg-green-600! border-green-600! hover:bg-green-700!"
+                                    : "hover:border-blue-400! hover:text-blue-600!"
                                 }`
                             }
                         >

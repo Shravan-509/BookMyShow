@@ -58,19 +58,19 @@ const ForgotPassword = () => {
         width={600}
         destroyOnClose={true}
         className="forgot-password-modal"
-        closeIcon={<CloseCircleOutlined className="!text-white !text-lg" />}
+        closeIcon={<CloseCircleOutlined className="text-white! text-lg!" />}
     >
-        <div className="bg-gradient-to-br from-red-700 to-red-900 rounded-t-lg p-6 -mt-5 -mx-6">
+        <div className="bg-linear-to-br from-red-700 to-red-900 rounded-t-lg p-6 -mt-5 -mx-6">
             <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-bold text-white m-0">Forgot Password</h2>
                 <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center">
-                    <LockOutlined className="!text-white !text-xl" />
+                    <LockOutlined className="text-white! text-xl!" />
                 </div>
             </div>
             <div className="mt-2 text-white/80 text-sm">Don't worry! It happens to the best of us.</div>
         </div>
 
-        <div className="p-6 pt-8 bg-gradient-to-b from-gray-50 to-white rounded-b-lg"></div>
+        <div className="p-6 pt-8 bg-linear-to-b from-gray-50 to-white rounded-b-lg"></div>
         {
             !emailSent ? (
                 <Form
@@ -83,7 +83,7 @@ const ForgotPassword = () => {
                     <div className="mb-6">
                         <div className="flex items-center mb-2">
                             <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center mr-3">
-                                <MailOutlined className="!text-red-600" />
+                                <MailOutlined className="text-red-600!" />
                             </div>
                             <div>
                                 <h3 className="text-gray-800 font-medium m-0">Reset your password</h3>
@@ -99,7 +99,7 @@ const ForgotPassword = () => {
                                 description={error} 
                                 type="error" 
                                 showIcon 
-                                className="!mb-4 !border-l-4 !border-l-red-500 !shadow-sm"
+                                className="mb-4! border-l-4! border-l-red-500! shadow-sm!"
                             />
                         </Form.Item>
                     )}
@@ -112,10 +112,10 @@ const ForgotPassword = () => {
                         ]}
                     >
                         <Input 
-                            prefix={<MailOutlined className="!text-gray-400"/>} 
+                            prefix={<MailOutlined className="text-gray-400!"/>} 
                             placeholder='Enter your email' 
                             size="large"
-                            className="!py-2"
+                            className="py-2!"
                             />
                     </Form.Item>
 
@@ -127,7 +127,7 @@ const ForgotPassword = () => {
                             block 
                             size='large'
                             // className="!bg-[#f84464] hover:!bg-[#dc3558] !border-none mb-4"
-                            className="!bg-red-600 hover:!bg-red-700 !border-red-600 !h-12 !flex !items-center !justify-center"
+                            className="bg-red-600! hover:bg-red-700! border-red-600! h-12! flex! items-center! justify-center!"
                             icon={loading ? null : <SendOutlined />}
                         >
                             {loading ? "Sending..." : "Send Reset Link"}
@@ -139,7 +139,7 @@ const ForgotPassword = () => {
                                 onClick={handleCancel} 
                                 block 
                                 size="large"
-                                className="!text-gray-600 hover:!text-[#dc3558]"
+                                className="text-gray-600! hover:text-[#dc3558]!"
                             >
                                 Back to Login
                             </Button>
@@ -161,7 +161,7 @@ const ForgotPassword = () => {
                 <div className='text-center py-4'>
                     <div className='mb-8 mt-4'>
                         <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
-                            <CheckCircleOutlined className="!text-4xl !text-green-600"/>
+                            <CheckCircleOutlined className="text-4xl! text-green-600!"/>
                         </div>
                         <h3 className="text-xl font-semibold mb-3 text-gray-800">Check your email</h3>
                         <div className="bg-gray-50 rounded-lg p-4 mb-4 max-w-xs mx-auto">
@@ -177,7 +177,7 @@ const ForgotPassword = () => {
                         <Button 
                             onClick={handleResendEmail} 
                             loading={loading} 
-                            className="!text-sm !border-red-200 !text-red-600 hover:!text-red-700 hover:!border-red-300"
+                            className="text-sm! border-red-200! text-red-600! hover:text-red-700! hover:border-red-300!"
                             icon={<SendOutlined />}
                         >
                             Didn't receive the email? Resend
@@ -188,7 +188,7 @@ const ForgotPassword = () => {
                                 onClick={handleCancel} 
                                 size="large" 
                                 block
-                                className="!bg-red-600 hover:!bg-red-700 !border-red-600 !rounded-lg !h-12"
+                                className="bg-red-600! hover:bg-red-700! border-red-600! rounded-lg! h-12!"
                             >
                                 Back to Login
                             </Button>

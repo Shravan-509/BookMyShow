@@ -38,7 +38,7 @@ const Security = () => {
                     showIcon
                     closable
                     onClose={clearErrors}
-                    className="!mb-4"
+                    className="mb-4!"
                 />
         )}
 
@@ -46,7 +46,7 @@ const Security = () => {
         <div className="mb-8">
             <div className="flex justify-between items-center mb-4">
                 <div>
-                     <Title level={5} className="!mb-1">
+                     <Title level={5} className="mb-1!">
                         <SafetyOutlined className="!mr-2" />
                         Two-Factor Authentication
                     </Title>
@@ -94,7 +94,7 @@ const Security = () => {
 
         {/* Account Status */}
         <div className="mb-8">
-            <Title level={5} className="!mb-4">
+            <Title level={5} className="mb-4!">
                 Account Status
             </Title>
 
@@ -129,7 +129,7 @@ const Security = () => {
 
         {/* Security Recommendations */}
         <div>
-            <Title level={5} className="!mb-4">
+            <Title level={5} className="mb-4!">
                 Security Recommendations
             </Title>
 

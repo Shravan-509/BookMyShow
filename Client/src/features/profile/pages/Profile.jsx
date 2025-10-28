@@ -49,11 +49,11 @@ const Profile = memo(() => {
   return (
     <Layout style={{ minHeight: "100vh", backgroundColor: "#f5f5f5" }}>
       <Content style={{ margin: "16px auto", padding: "16px", maxWidth: 1024, width: "100%" }}>
-        <Title level={3} className="!text-[#f84464] !mb-4 !text-xl sm:!text-2xl px-2">
+        <Title level={3} className="text-[#f84464]! mb-4! text-xl! sm:text-2xl! px-2">
             My Profile
         </Title>
       
-        <Card className="!rounded-xl !mb-4 !shadow-sm">
+        <Card className="rounded-xl! mb-4! shadow-sm!">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-5 text-center sm:text-left">
              <Avatar 
                 size={{ xs: 64, sm: 80, md: 80 }} 
@@ -62,7 +62,7 @@ const Profile = memo(() => {
                 src="https://api.dicebear.com/7.x/miniavs/svg?seed=1" 
               />
             <div className="flex-1 min-w-0">
-              <Title level={4} className="!mb-1 !text-lg sm:!text-xl">
+              <Title level={4} className="mb-1! text-lg! sm:text-xl!">
                 {displayProfile?.name || "Loading..."}
               </Title>
               <Text type="secondary" className="block text-sm sm:text-base break-all">
@@ -78,7 +78,7 @@ const Profile = memo(() => {
         <div className="profile-tabs-container">
           <React.Suspense 
             fallback={
-            <Card className="!rounded-xl">
+            <Card className="rounded-xl!">
               <div className="flex justify-center py-8">
                 <Spin size="large" />
               </div>

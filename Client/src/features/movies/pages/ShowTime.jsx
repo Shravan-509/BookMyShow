@@ -6,7 +6,6 @@ import React, { useEffect, useRef, useState, useMemo, useCallback, memo } from '
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom'
 import { getTheatresWithShowsByMovieRequest, selectShow, selectShowError, selectShowLoading } from '../../../redux/slices/showSlice';
-import { notify } from '../../../utils/notificationUtils';
 
 const ShowTime = memo(() => {
     const params = useParams();

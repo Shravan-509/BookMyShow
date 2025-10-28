@@ -73,8 +73,7 @@ const Register = memo(() => {
     
      const handleSignup = useCallback(
         (values) => {
-            dispatch(signupRequest
-                ({
+            dispatch(signupRequest({
                     name: values.name,
                     email: values.email,
                     phone: values.phone,
@@ -106,7 +105,7 @@ const Register = memo(() => {
                 <Form.Item name="name" rules={nameRules} hasFeedback>
                     <Input 
                         id='name' 
-                        prefix={<UserOutlined className="!text-gray-400"/>} 
+                        prefix={<UserOutlined className="text-gray-400!"/>} 
                         placeholder='Full Name' 
                         size="large"
                     />
@@ -115,7 +114,7 @@ const Register = memo(() => {
                  <Form.Item name="email" rules={emailRules} hasFeedback>
                     <Input 
                         id='email' 
-                        prefix={<MailOutlined className="!text-gray-400"/>} 
+                        prefix={<MailOutlined className="text-gray-400!"/>} 
                         placeholder='Email' 
                         size="large"
                     />
@@ -124,7 +123,7 @@ const Register = memo(() => {
                 <Form.Item name="phone" rules={phoneRules} hasFeedback>
                     <Input 
                         id='phone' 
-                        prefix={<PhoneOutlined className="!text-gray-400"/>} 
+                        prefix={<PhoneOutlined className="text-gray-400!"/>} 
                         placeholder="Phone Number" 
                         size="large" 
                     />
@@ -133,7 +132,7 @@ const Register = memo(() => {
                 <Form.Item name="password" rules={passwordRules} hasFeedback>
                     <Input.Password 
                         id='password' 
-                        prefix={<LockOutlined className="!text-gray-400"/>} 
+                        prefix={<LockOutlined className="text-gray-400!"/>} 
                         placeholder="Password" 
                         size="large" 
                     />
@@ -141,7 +140,7 @@ const Register = memo(() => {
 
                  <Form.Item name="confirmPassword" dependencies={["password"]} rules={confirmPasswordRules} hasFeedback>
                     <Input.Password 
-                        prefix={<LockOutlined className="!text-gray-400"/>} 
+                        prefix={<LockOutlined className="text-gray-400!"/>} 
                         placeholder="Confirm Password" 
                         size="large" 
                     />

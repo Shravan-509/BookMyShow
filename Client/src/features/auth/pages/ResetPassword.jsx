@@ -65,16 +65,16 @@ const ResetPassword = () => {
     }
 
   return (
-    <div className='min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-black py-12 px-4 sm:px-6 lg:px-8"'>
+    <div className='min-h-screen flex items-center justify-center bg-linear-to-br from-gray-900 to-black py-12 px-4 sm:px-6 lg:px-8"'>
         <div className="absolute top-0 left-0 w-full h-64 bg-red-600 opacity-10 transform -skew-y-6">
         </div>
     
-        <Card className='!w-full !max-w-md !shadow-2xl !border-0 !overflow-hidden' styles={{ body: { padding: 0 }}}>
-            <div className="bg-gradient-to-r from-red-700 to-red-900 p-6">
+        <Card className='w-full! max-w-md! shadow-2xl! border-0! overflow-hidden!' styles={{ body: { padding: 0 }}}>
+            <div className="bg-linear-to-r from-red-700 to-red-900 p-6">
                 <div className="flex items-center justify-between">
                     <h2 className="text-2xl font-bold text-white m-0">Reset Password</h2>
                     <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center">
-                        <KeyOutlined className="!text-white !text-xl" />
+                        <KeyOutlined className="text-white! text-xl!" />
                     </div>
                 </div>
                 <p className="text-white/80 text-sm mt-2">Create a new password for your account</p>
@@ -86,7 +86,7 @@ const ResetPassword = () => {
                         // Success state
                         <div className="text-center py-8">
                             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
-                                <KeyOutlined className="!text-4xl !text-green-600" />
+                                <KeyOutlined className="text-4xl! text-green-600!" />
                             </div>
                             <h3 className="text-xl font-semibold mb-3 text-gray-800">Password Reset Successful!</h3>
                             <p className="text-gray-600 text-sm mb-6">
@@ -98,7 +98,7 @@ const ResetPassword = () => {
                                     onClick={handleBackToLogin}
                                     size="large"
                                     block
-                                    className="!bg-red-600 hover:!bg-red-700 !border-red-600 !h-12"
+                                    className="bg-red-600! hover:bg-red-700! border-red-600! h-12!"
                                 >
                                     Continue to Login
                                 </Button>
@@ -123,7 +123,7 @@ const ResetPassword = () => {
                                             description={error} 
                                             type='error' 
                                             showIcon 
-                                            className="!mb-4 !border-l-4 !border-l-red-500"
+                                            className="mb-4! border-l-4! border-l-red-500!"
                                         />
                                     </Form.Item>
                                 )
@@ -157,10 +157,10 @@ const ResetPassword = () => {
                                 hasFeedback
                             >
                                 <Input.Password 
-                                    prefix={<LockOutlined className="!text-gray-400"/>} 
+                                    prefix={<LockOutlined className="text-gray-400!"/>} 
                                     placeholder='New Password' 
                                     size='large' 
-                                    className="!py-2"
+                                    className="py-2!"
                                 />
                             </Form.Item>
 
@@ -182,10 +182,10 @@ const ResetPassword = () => {
                                 hasFeedback
                             >
                                 <Input.Password 
-                                    prefix={<LockOutlined className="!text-gray-400"/>} 
+                                    prefix={<LockOutlined className="text-gray-400!"/>} 
                                     placeholder='Confirm New Password' 
                                     size='large' 
-                                    className="!py-2"
+                                    className="py-2!"
                                 />
                             </Form.Item>
 
@@ -207,7 +207,7 @@ const ResetPassword = () => {
                                     loading={loading} 
                                     block 
                                     size='large'
-                                    className="!bg-red-600 hover:!bg-red-700 !border-red-600 !h-12"
+                                    className="bg-red-600! hover:bg-red-700! border-red-600! h-12!"
                                 >
                                     {loading ? "Resetting Password..." : "Reset Password"}
                                 </Button>
@@ -216,7 +216,7 @@ const ResetPassword = () => {
                                     <Button 
                                         type="link" 
                                         onClick={handleBackToLogin}
-                                        className="!text-gray-600 hover:!text-red-600"
+                                        className="text-gray-600! hover:text-red-600!"
                                         icon={<ArrowLeftOutlined />}
                                     >
                                         Back to Login

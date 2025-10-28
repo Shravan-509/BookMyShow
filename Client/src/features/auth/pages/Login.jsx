@@ -117,7 +117,7 @@ const Login = memo(() => {
                     <Input 
                         id='email' 
                         type='email' 
-                        prefix={<MailOutlined className="!text-gray-400" />} 
+                        prefix={<MailOutlined className="text-gray-400!" />} 
                         placeholder='Email' 
                         size="large"
                     />
@@ -125,7 +125,7 @@ const Login = memo(() => {
                 <Form.Item name="password" rules={passwordRules} hasFeedback>
                     <Input.Password 
                         id='password' 
-                        prefix={<LockOutlined className="!text-gray-400"/>} 
+                        prefix={<LockOutlined className="text-gray-400!"/>} 
                         placeholder='Password' 
                         size="large" 
                     />

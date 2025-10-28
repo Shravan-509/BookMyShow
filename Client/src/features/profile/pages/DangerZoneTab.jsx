@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState } from "react"
 import { Alert, Button, Card, Form, Input, Modal, Typography } from "antd";
 import { DeleteOutlined, LockOutlined } from "@ant-design/icons";
 import { useProfile } from "../../../hooks/useProfile";
@@ -29,18 +29,18 @@ const  DangerZoneTab = () => {
   return (
    <Card 
       title={
-        <Title level={4} className="!mb-0 !text-[#f84464]">
+        <Title level={4} className="mb-0! text-[#f84464]!">
           Danger Zone
         </Title>
       }
-      className="!rounded-xl"
+      className="rounded-xl!"
       styles={{
           body: {
             padding: '24px'
           }
       }}
     >
-       <Paragraph className="!text-gray-500 !mb-6 !text-sm">
+       <Paragraph className="text-gray-500! mb-6! text-sm!">
           These actions are irreversible. Please proceed with caution.
       </Paragraph>
       { 
@@ -52,7 +52,7 @@ const  DangerZoneTab = () => {
             showIcon
             closable
             onClose={clearErrors}
-            className="!mb-4"
+            className="mb-4!"
           />
       )}
 
@@ -86,7 +86,7 @@ const  DangerZoneTab = () => {
             danger 
             icon={<DeleteOutlined />} 
             onClick={handleDeleteAccount} 
-            className="!bg-[#f84464] hover:!bg-[#dc3558] !text-white"
+            className="bg-[#f84464]! hover:bg-[#dc3558]! text-white!"
           >
             Delete Account
           </Button>
@@ -111,7 +111,7 @@ const  DangerZoneTab = () => {
             description="Once you delete your account, all your data will be permanently removed and cannot be recovered."
             type="error"
             showIcon
-            className="!mb-6"
+            className="mb-6!"
           />
 
           <Form form={deleteForm} layout="vertical" onFinish={handleConfirmDelete}>
@@ -132,12 +132,12 @@ const  DangerZoneTab = () => {
               />
             </Form.Item>
 
-            <Form.Item className="!mt-6 !mb-0">
+            <Form.Item className="mt-6! mb-0!">
               <div className="flex gap-3 justify-end">
                 <Button 
                   onClick={handleCancelDelete}
                   block
-                  className= 'hover:!border-[#f84464] !text-gray-600 hover:!text-black'
+                  className= 'hover:border-[#f84464]! text-gray-600! hover:text-black!'
                 >
                   Cancel
                 </Button>
@@ -148,7 +148,7 @@ const  DangerZoneTab = () => {
                   block
                   loading={deleteAccountLoading}
                   icon={<DeleteOutlined />}
-                  className='!bg-[#f84464] hover:!bg-[#dc3558] !text-white'
+                  className='bg-[#f84464]! hover:bg-[#dc3558]! text-white!'
                 >
                   Delete My Account
                 </Button>

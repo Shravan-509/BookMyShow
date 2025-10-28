@@ -1,5 +1,5 @@
 
-import React, { useCallback, useEffect, useMemo, useState } from "react"
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   Button,
   Card,
@@ -52,7 +52,7 @@ const BookingCard = React.memo(function BookingCard({ booking, isMobile, onViewB
   return (
     <div className="mb-6">
       <Card 
-          className="!shadow-sm !rounded-xl !relative !border-0" 
+          className="shadow-sm! rounded-xl! relative! border-0!" 
           styles={{
             body: {
               padding: isMobile ? "16px" : "24px",
@@ -60,7 +60,7 @@ const BookingCard = React.memo(function BookingCard({ booking, isMobile, onViewB
           }}
       >
         <div className={`absolute ${isMobile ? "right-4 top-4" : "right-6 top-6"} flex items-center gap-3`}>
-          <Tag color={getStatusColor(booking.ticketStatus)} className="!text-sm !px-3 !py-1 rounded-full">
+          <Tag color={getStatusColor(booking.ticketStatus)} className="text-sm! px-3! py-1! rounded-full">
             {booking.ticketStatus}
           </Tag>
           {!isMobile && (
@@ -68,7 +68,7 @@ const BookingCard = React.memo(function BookingCard({ booking, isMobile, onViewB
               icon={<BarcodeOutlined />}
               type="default"
               size="small"
-              className="!border-[#f84464] !text-[#f84464] hover:!border-[#dc3558] hover:!text-[#dc3558]"
+              className="border-[#f84464]! text-[#f84464]! hover:border-[#dc3558]! hover:text-[#dc3558]!"
               onClick={() => onViewBookingInfo(booking)}
             >
               View Booking Info
@@ -82,7 +82,7 @@ const BookingCard = React.memo(function BookingCard({ booking, isMobile, onViewB
             <img
               alt="Movie Poster"
               src={booking.poster || "/placeholder.svg"}
-              className="!rounded-lg"
+              className="rounded-lg!"
               style={{ height: 200, width: 130, objectFit: "cover" }}
             />
 
@@ -90,10 +90,10 @@ const BookingCard = React.memo(function BookingCard({ booking, isMobile, onViewB
 
             <Flex vertical className="flex-1">
               <Space direction="vertical" className="w-full">
-                <Title level={4} className="!mb-1">
+                <Title level={4} className="mb-1!">
                   {booking.movieTitle} <span className="text-sm text-gray-500">2D</span>
                 </Title>
-                <Text strong className="!text-lg">
+                <Text strong className="text-lg!">
                   {moment(booking.showDate).format("ddd, DD MMM YYYY")} | {" "}
                   {moment(booking.showTime, "HH:mm").format("hh:mm A")}
                 </Text>
@@ -130,7 +130,7 @@ const BookingCard = React.memo(function BookingCard({ booking, isMobile, onViewB
                     <Text strong>Amount Paid</Text>
                   </Col>
                   <Col>
-                    <Text strong className="!text-xl">{formatCurrency(grandTotal)}</Text>
+                    <Text strong className="text-xl!">{formatCurrency(grandTotal)}</Text>
                   </Col>
                 </Row>
               </Space>
@@ -149,13 +149,13 @@ const BookingCard = React.memo(function BookingCard({ booking, isMobile, onViewB
               <img
                 alt="Movie Poster"
                 src={booking.poster || "/placeholder.svg?height=160&width=104&query=movie poster"}
-                className="!rounded-lg"
+                className="rounded-lg!"
                 style={{ height: 160, width: 104, objectFit: "cover" }}
               />
             </div>
 
             <div className="text-center">
-              <Title level={5} className="!mb-2">
+              <Title level={5} className="mb-2!">
                 {booking.movieTitle} <span className="text-sm text-gray-500">2D</span>
               </Title>
 
@@ -190,7 +190,7 @@ const BookingCard = React.memo(function BookingCard({ booking, isMobile, onViewB
             <Button
               icon={<BarcodeOutlined />}
               type="default"
-              className="!border-[#f84464] !text-[#f84464] hover:!border-[#dc3558] hover:!text-[#dc3558] w-full"
+              className="border-[#f84464]! text-[#f84464]! hover:border-[#dc3558]! hover:text-[#dc3558]! w-full"
               onClick={() => onViewBookingInfo(booking)}
             >
               View Booking Info & QR Code
@@ -200,7 +200,7 @@ const BookingCard = React.memo(function BookingCard({ booking, isMobile, onViewB
               bordered={false}
               ghost 
               expandIconPosition="start" 
-              className="custom-collapse !bg-transparent"
+              className="custom-collapse bg-transparent!"
               expandIcon={({ isActive }) => <DownCircleOutlined rotate={isActive ? -180 : 0} />}
             >
             
@@ -208,7 +208,7 @@ const BookingCard = React.memo(function BookingCard({ booking, isMobile, onViewB
                 header={
                   <div className="flex justify-between items-center w-full pr-4">
                     <Text strong>Amount Paid</Text>
-                    <Text strong className="!text-lg">{formatCurrency(grandTotal)}</Text>
+                    <Text strong className="text-lg!">{formatCurrency(grandTotal)}</Text>
                   </div>
                 }
                 key="1"
@@ -290,6 +290,7 @@ const OrderHistory = () => {
   const [isMobile, setIsMobile] = useState(false)
   const [selectedBooking, setSelectedBooking] = useState(null)
   const [showQRModal, setShowQRModal] = useState(false)
+  const scheduledBookings = useRef(new Set());
 
   const { userBookings: bookings, loading, error, getUserBookings } = useBooking()
 
@@ -304,14 +305,25 @@ const OrderHistory = () => {
   }, [user?._id])
 
   useEffect(() => {
-    if (bookings.length > 0) {
-      bookings.forEach((booking) => {
+    if (bookings.length === 0) return
+
+    // Load already scheduled reminders from localStorage
+    const scheduledReminders = JSON.parse(localStorage.getItem("booking_reminders") || "[]")
+    const scheduledIds = new Set(scheduledReminders.map(r => r.bookingId))
+    console.log(scheduledIds);
+    
+    bookings.forEach((booking) => {
+      if (!scheduledIds.has(booking.bookingId)) 
+      {
         const showDateTime = moment(`${booking.showDate} ${booking.showTime}`, "YYYY-MM-DD HH:mm")
-        if (showDateTime.isAfter(moment())) {
+        console.log(showDateTime)
+        if (showDateTime.isAfter(moment())) 
+        {
           scheduleBookingReminder(booking)
         }
-      })
-    }
+      }
+    })
+    
   }, [bookings])
 
   useEffect(() => {
@@ -347,7 +359,7 @@ const OrderHistory = () => {
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto mt-6 px-4">
-        <Card className="!rounded-xl">
+        <Card className="rounded-xl!">
           <Skeleton avatar paragraph={{ rows: 6 }} active />
         </Card>
       </div>
@@ -360,7 +372,7 @@ const OrderHistory = () => {
         <NoBookings />
       ) : (
         <div className="max-w-4xl mx-auto px-4">
-          {bookings.map((booking, id) => (
+          {bookings.map((booking) => (
             <BookingCard
               key={booking.bookingId || `${booking.movieTitle}-${booking.showDate}-${booking.showTime}`}
               booking={booking}
@@ -383,7 +395,7 @@ const OrderHistory = () => {
         {selectedBooking && (
           <div className="text-center space-y-4">
             <div>
-              <Title level={5} className="!mb-2">
+              <Title level={5} className="mb-2!">
                 {selectedBooking.movieTitle}
               </Title>
               <Text type="secondary" className="block">

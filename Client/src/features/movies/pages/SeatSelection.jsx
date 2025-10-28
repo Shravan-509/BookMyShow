@@ -258,14 +258,14 @@ const Booking = () => {
           <div className="mb-6 mt-5">
             <Card style={{ minHeight: isMobile ? "auto" : "600px" }}>
               <div className="flex flex-col justify-between items-start mb-6">
-                <Title level={3} className="!mb-1 !text-xl md:!text-2xl">
+                <Title level={3} className="mb-1! text-xl! md:text-2xl!">
                   {show?.movie.movieName}
                 </Title>
 
-                <Space direction="vertical" size={4} className="!mb-2">
+                <Space direction="vertical" size={4} className="mb-2!">
                   <Space size="middle" wrap>
                     <Text className="text-sm md:text-base">{show?.theatre.name}</Text>
-                    <Tag color="blue" className="!flex !gap-1 !text-xs md:!text-sm">
+                    <Tag color="blue" className="flex! gap-1! text-xs! md:text-sm!">
                       <CalendarOutlined />
                       {moment(show?.date).format("ddd, DD MMM, YYYY")}
                       <ClockCircleOutlined />
@@ -275,7 +275,7 @@ const Booking = () => {
                 </Space>
               </div>
 
-              <Steps current={currentStep} className="!mb-6" size={isMobile ? "small" : "default"}>
+              <Steps current={currentStep} className="mb-6!" size={isMobile ? "small" : "default"}>
                 <Step title={isMobile ? "Seats" : "Select Seats"} />
                 <Step title={isMobile ? "Details" : "Your Details"} />
                 <Step title="Payment" />
@@ -284,7 +284,7 @@ const Booking = () => {
               {currentStep === 0 && (
                 <div>
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-                    <Title level={4} className="!mb-0 !text-lg md:!text-xl">
+                    <Title level={4} className="mb-0! text-lg! md:text-xl!">
                       Select Number of Tickets
                     </Title>
                     <InputNumber
@@ -383,10 +383,10 @@ const Booking = () => {
                           size="large"
                           onClick={handleNextStep}
                           disabled={selectedSeats.length !== ticketCount}
-                          className={`!bg-[#f84464] transition-colors duration-200 ${
+                          className={`bg-[#f84464]! transition-colors duration-200 ${
                             selectedSeats.length !== ticketCount
                               ? "opacity-50 cursor-not-allowed"
-                              : "hover:!bg-[#dc3558]"
+                              : "hover:bg-[#dc3558]!"
                           } ${isMobile ? "w-full" : ""}`}
                         >
                           Continue
@@ -399,7 +399,7 @@ const Booking = () => {
 
               {currentStep === 1 && (
                 <div>
-                  <Title level={4} className="!mb-6">
+                  <Title level={4} className="mb-6!">
                     Your Contact Details
                   </Title>
                   <Form form={contactForm} layout="vertical" initialValues={formInitialValues}>
@@ -443,7 +443,7 @@ const Booking = () => {
                         type="primary"
                         size="large"
                         onClick={handleNextStep}
-                        className="!bg-[#f84464] hover:!bg-[#dc3558]"
+                        className="bg-[#f84464]! hover:bg-[#dc3558]!"
                       >
                         Proceed to Pay
                       </Button>
@@ -472,7 +472,7 @@ const Booking = () => {
                   size="large"
                   onClick={handleNextStep}
                   disabled={selectedSeats.length !== ticketCount}
-                  className="!bg-[#f84464] hover:!bg-[#dc3558] !min-w-[120px]"
+                  className="bg-[#f84464]! hover:bg-[#dc3558]! min-w-[120px]!"
                 >
                   Continue
                 </Button>

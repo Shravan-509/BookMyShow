@@ -29,7 +29,7 @@ return (
       onOk={handleOk}
       onCancel={handleCancel}
       okButtonProps={{
-            className: '!bg-[#f84464] hover:!bg-[#dc3558] !text-white'
+            className: 'bg-[#f84464]! hover:!bg-[#dc3558] !text-white'
         }}
         cancelButtonProps={{
             className: 'hover:!border-[#f84464] !text-gray-600 hover:!text-black'

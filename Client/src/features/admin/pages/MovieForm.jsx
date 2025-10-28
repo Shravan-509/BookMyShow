@@ -171,13 +171,13 @@ const MovieForm = ({
                         type='primary'
                         htmlType='submit'
                         size='large'
-                        className='!bg-[#f84464] hover:!bg-[#dc3558] !text-base'
+                        className='bg-[#f84464]! hover:bg-[#dc3558]! text-base!'
                     >
                         Submit
                     </Button>
                     <Button
                         block
-                        className= 'mt-4 hover:!border-[#f84464] !text-gray-600 hover:!text-black'
+                        className= 'mt-4 hover:border-[#f84464]! text-gray-600! hover:text-black!'
                         onClick={handleCancel}
                         size='large'
                     >

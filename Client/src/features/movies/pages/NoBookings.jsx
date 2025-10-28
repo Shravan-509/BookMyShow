@@ -13,8 +13,8 @@ const NoBookings = () => {
             <VideoCameraOutlined/>
         </div>
 
-        <Title className="!mb-2 !text-2xl">No Tickets Available</Title>
-        <Paragraph className="!text-gray-500 !mb-4">
+        <Title className="mb-2! !text-2xl">No Tickets Available</Title>
+        <Paragraph className="!text-gray-500 mb-4!">
             Looks like you haven't booked any tickets yet.
         </Paragraph>
 

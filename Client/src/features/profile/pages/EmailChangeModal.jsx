@@ -38,14 +38,14 @@ const EmailChangeModal = () => {
         centered
         destroyOnClose
         title={
-            <Title level={4} className="!mb-0">
+            <Title level={4} className="mb-0!">
                 Verify Email Change
             </Title>
         }
       >
         <div className="text-center py-4">
             <div className="w-24 h-24 bg-yellow-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-md animate-pulse ring-2 ring-yellow-300">
-                <SafetyCertificateOutlined className="!text-5xl !text-yellow-600"/>
+                <SafetyCertificateOutlined className="text-5xl! text-yellow-600!"/>
             </div>
 
            <Title level={5} style={{ marginBottom: 8 }}>
@@ -106,7 +106,7 @@ const EmailChangeModal = () => {
                             type="primary"
                             htmlType="submit"
                             loading={emailChangeLoading}
-                            className="!bg-[#f84464] hover:!bg-[#dc3558] border-none"
+                            className="bg-[#f84464]! hover:bg-[#dc3558]! border-none"
                         >
                             Verify Email
                         </Button>

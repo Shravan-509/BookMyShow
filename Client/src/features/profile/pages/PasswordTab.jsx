@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useEffect } from "react"
 import {Alert, Button, Card, Form, Input, Typography } from "antd"
 import { LockOutlined } from "@ant-design/icons"
 import { useProfile } from "../../../hooks/useProfile";
@@ -41,11 +41,11 @@ const PasswordChangeTab = () => {
   return (
     <Card 
         title={
-            <Title level={4} className="!mb-0 !text-[#f84464]">
+            <Title level={4} className="mb-0! text-[#f84464]!">
                 Change Password
             </Title>
         }
-        className="!rounded-xl"
+        className="rounded-xl!"
         styles={{
             body: {
                 padding: '24px'
@@ -65,7 +65,7 @@ const PasswordChangeTab = () => {
                     showIcon
                     closable
                     onClose={clearErrors}
-                    className="!mb-4"
+                    className="mb-4!"
                 />
         )}
 
@@ -138,7 +138,7 @@ const PasswordChangeTab = () => {
                     icon={<LockOutlined />}
                     loading={passwordChangeLoading}
                     size="large"
-                    className='!bg-[#f84464] hover:!bg-[#dc3558] !text-white mt-2'
+                    className='bg-[#f84464]! hover:bg-[#dc3558]! text-white! mt-2'
                 >
                     Change Password
                 </Button>

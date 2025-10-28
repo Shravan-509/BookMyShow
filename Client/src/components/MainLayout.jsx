@@ -248,7 +248,7 @@ const MainLayout = memo(({ children}) => {
                 <Button 
                     type="primary"
                     block
-                    className="!bg-[#f84464] hover:!bg-[#dc3558] !text-white !border-none"
+                    className="bg-[#f84464]! hover:bg-[#dc3558]! text-white! border-none!"
                     onClick={logout} 
                     icon={<LogoutOutlined/>}
                     style={{ marginTop: '0.5rem' }}

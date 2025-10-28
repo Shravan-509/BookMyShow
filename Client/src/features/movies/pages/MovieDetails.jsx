@@ -24,7 +24,6 @@ import {
     selectMovieLoading, 
     selectSelectedMovie 
 } from '../../../redux/slices/movieSlice';
-import { notify } from '../../../utils/notificationUtils';
 
 const MovieInfo = memo(() => {
     const params = useParams();
@@ -342,7 +341,7 @@ const MovieInfo = memo(() => {
 
                             <Space 
                                 size={isMobile ? 12 : 16} 
-                                className="!mb-4"
+                                className="mb-4!"
                                 direction={isMobile ? "vertical" : "horizontal"}
                                 style={{ width: isMobile ? "100%" : "auto" }}
                             >
@@ -407,7 +406,7 @@ const MovieInfo = memo(() => {
                                     type="primary" 
                                     size={isMobile ? "middle" : "large"}
                                     icon={<PlayCircleOutlined />} 
-                                    className='!bg-[#f84464] hover:!bg-[#dc3558]'
+                                    className='bg-[#f84464]! hover:bg-[#dc3558]!'
                                     style={{
                                         width: isMobile ? "100%" : "auto",
                                         height: isMobile ? "44px" : "48px",

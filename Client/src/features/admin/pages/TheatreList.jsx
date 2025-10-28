@@ -73,7 +73,7 @@ const TheatreList = () => {
                           data.isActive ? (
                             <Button 
                               onClick={() =>  handleStatusChange(data)}
-                              className= 'hover:!border-[#f84464] !text-gray-600 hover:!text-black'
+                              className= 'hover:border-[#f84464]! text-gray-600! hover:text-black!'
                         
                             >
                               Block
@@ -81,7 +81,7 @@ const TheatreList = () => {
                           ) : (
                             <Button 
                               onClick={() =>  handleStatusChange(data)}
-                              className= 'hover:!border-[#f84464] !text-gray-600 hover:!text-black'
+                              className= 'hover:border-[#f84464]! text-gray-600! hover:text-black!'
                         
                             >
                                 Approve

@@ -133,7 +133,7 @@ const TheatreList = () => {
             <Button 
                 type="primary" 
                 size="large"
-                className='!bg-[#f84464] hover:!bg-[#dc3558]'
+                className='bg-[#f84464]! hover:bg-[#dc3558]!'
                     onClick={() => {
                         setIsModalOpen(true);
                         setFormType("add");

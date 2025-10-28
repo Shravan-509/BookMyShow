@@ -5,7 +5,7 @@ import { useProfile } from '../../../hooks/useProfile';
 
 const {Title, Text, Paragraph} = Typography;
 
-const Personal_lnfoTab = ({userData, saving}) => {
+const Personal_InfoTab = () => {
     const [profileForm] = Form.useForm();
     const { 
             profile, 
@@ -42,11 +42,11 @@ const Personal_lnfoTab = ({userData, saving}) => {
   return (
     <Card 
         title={
-            <Title level={4} className="!mb-0 !text-[#f84464]">
+            <Title level={4} className="mb-0! text-[#f84464]!">
             Personal Information
             </Title>
         }
-        className="!rounded-xl"
+        className="rounded-xl!"
         styles={{
             body: {
                 padding: '24px'
@@ -66,7 +66,7 @@ const Personal_lnfoTab = ({userData, saving}) => {
                 showIcon
                 closable
                 onClose={clearErrors}
-                className="!mb-4"
+                className="mb-4!"
             />
         )}
 
@@ -134,7 +134,7 @@ const Personal_lnfoTab = ({userData, saving}) => {
                     icon={<SaveOutlined />}
                     loading={profileUpdateLoading}
                     size="large"
-                    className='!bg-[#f84464] hover:!bg-[#dc3558] !text-white mt-2'
+                    className='bg-[#f84464]! hover:bg-[#dc3558]! text-white! mt-2'
                 >
                     Save Changes
                 </Button>
@@ -144,4 +144,4 @@ const Personal_lnfoTab = ({userData, saving}) => {
   )
 }
 
-export default Personal_lnfoTab
+export default Personal_InfoTab

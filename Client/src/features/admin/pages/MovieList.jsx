@@ -166,7 +166,7 @@ const MovieList = () => {
             <Button 
                 type="primary" 
                 size='large'
-                className='!bg-[#f84464] hover:!bg-[#dc3558]'
+                className='bg-[#f84464]! hover:bg-[#dc3558]!'
                 onClick={() => {
                     setIsModalOpen(!isModalOpen);
                     setFormType("add");

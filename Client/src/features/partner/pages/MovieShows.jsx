@@ -6,6 +6,7 @@ import { EditOutlined, DeleteOutlined, ArrowLeftOutlined } from "@ant-design/ico
 import { useDispatch, useSelector } from "react-redux";
 import { addShowRequest, deleteShowRequest, getShowsByTheatreRequest, selectShow, selectShowError, selectShowLoading, updateShowRequest } from "../../../redux/slices/showSlice";
 import { getMoviesRequest, selectMovie } from "../../../redux/slices/movieSlice";
+import { notify } from "../../../utils/notificationUtils";
 
 const MovieShows = ({
     isShowModalOpen,
@@ -30,10 +31,15 @@ const MovieShows = ({
     useEffect(() => {
         if (!loading && shows && (view === "add" || view === "edit")) 
         {
-            setView("table");
-            setSelectedShow(null);
+            const timeoutId = setTimeout(() => {
+                setView("table");
+                setSelectedShow(null);
+            }, 0);
+
+            // Cleanup if the component unmounts before timeout
+            return () => clearTimeout(timeoutId);
         }
-    }, [loading, shows]);
+    }, [loading, shows, view]);
 
     const handleCancel= () => {
         setIsShowModalOpen(false);
@@ -182,7 +188,7 @@ const MovieShows = ({
                 <Button 
                     size="large"
                     type="primary"
-                    className='!bg-[#f84464] hover:!bg-[#dc3558]'
+                    className='bg-[#f84464]! hover:bg-[#dc3558]!'
                     onClick={() => {
                             setView("add");
                             dispatch(getMoviesRequest());
@@ -307,7 +313,7 @@ const MovieShows = ({
                                 block
                                 type="primary"
                                 htmlType="submit"
-                                className='!bg-[#f84464] hover:!bg-[#dc3558] !text-base'
+                                className='bg-[#f84464]! hover:bg-[#dc3558]! text-base!'
                             >
                                 {view === "add" ? "Add Show" : "Update Show"}
                         </Button>

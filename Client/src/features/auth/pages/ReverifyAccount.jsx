@@ -39,7 +39,7 @@ const ReverifyAccount = () => {
     >
       <div className="verification-content">
         <div className="w-24 h-24 bg-yellow-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-md animate-pulse ring-2 ring-yellow-300">
-            <ExclamationCircleOutlined className="!text-5xl !text-yellow-600"/>
+            <ExclamationCircleOutlined className="text-5xl! text-yellow-600!"/>
         </div>
         {/* <div className="verification-icon reverify-icon">
           <ExclamationCircleOutlined />

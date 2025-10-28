@@ -1,4 +1,4 @@
-import React,{ useState, useEffect } from "react"
+import React,{ useEffect } from "react"
 import { Alert, Button, Card, Form, Input, Typography } from "antd"
 import { LockOutlined, MailOutlined, EditOutlined } from "@ant-design/icons"
 import { useProfile } from "../../../hooks/useProfile";
@@ -32,7 +32,7 @@ const EmailTab = () => {
         })
     };
 
-    const handleFormChange = (values) => {
+    const handleFormChange = () => {
         // Clear errors when user starts typing
         if (emailChangeError) {
             clearErrors()
@@ -42,11 +42,11 @@ const EmailTab = () => {
   return (
     <Card
         title={
-        <Title level={4} className="!mb-0 !text-[#f84464]">
+        <Title level={4} className="mb-0! text-[#f84464]!">
           Email Settings
         </Title>
       }
-      className="!rounded-xl"
+      className="rounded-xl!"
       styles={{
           body: {
             padding: '24px'
@@ -59,8 +59,8 @@ const EmailTab = () => {
 
         {/* Current Email */}
         <div className="mb-6 p-4 rounded-md bg-[#f6f8fa] border border-[#d9d9d9]">
-            <Text strong className="!text-gray-700 !mr-2">Current Email: </Text>
-            <Text code className="!text-base">{profile?.email}</Text>
+            <Text strong className="text-gray-700! mr-2!">Current Email: </Text>
+            <Text code className="text-base!">{profile?.email}</Text>
         </div>
 
         {
@@ -72,7 +72,7 @@ const EmailTab = () => {
                     showIcon
                     closable
                     onClose={clearErrors}
-                    className="!mb-4"
+                    className="mb-4!"
                 />
         )}
 
@@ -128,7 +128,7 @@ const EmailTab = () => {
                     icon={<EditOutlined />}
                     loading={emailChangeLoading}
                     size="large"
-                    className='!bg-[#f84464] hover:!bg-[#dc3558] !text-white'
+                    className='bg-[#f84464]! hover:bg-[#dc3558]! text-white!'
                 >
                     Request Email Change
                 </Button>

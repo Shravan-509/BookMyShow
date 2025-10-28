@@ -50,7 +50,7 @@ const ReminderSettingsTab = () => {
           </div>
         }
       >
-        <Space direction="vertical" className="w-full" size="large">
+        <Space direction="vertical" className="w-full!" size="large">
           <div className="flex items-center justify-between">
             <div>
               <Text strong>Email Reminders</Text>
@@ -102,7 +102,7 @@ const ReminderSettingsTab = () => {
       >
         {upcomingReminders.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            <BellOutlined className="text-4xl mb-2" />
+            <BellOutlined className="text-4xl! mb-2!" />
             <div>No upcoming reminders</div>
             <div className="text-sm">Book a movie to get reminders</div>
           </div>

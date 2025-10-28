@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState, useRef} from 'react';
+import React, { useCallback, useEffect, useMemo, useState} from 'react';
 import { Alert, Button, Card, Collapse, Divider, Radio, Space, Spin, Typography } from 'antd'
 import { 
     BankOutlined, 
@@ -13,7 +13,7 @@ import {
     WalletOutlined 
 } from '@ant-design/icons';
 import moment from 'moment';
-import { bookSeat, createPaymentIntent, createRazorPayOrder } from '../../../api/booking';
+import { bookSeat, createRazorPayOrder } from '../../../api/booking';
 import { useAuth } from '../../../hooks/useAuth';
 import { useBooking } from '../../../hooks/useBooking';
 import { useNavigate } from 'react-router-dom';
@@ -416,7 +416,7 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
             role="main"
             aria-label="Payment Summary"
         >
-            <Title level={4} className="!mb-4 !text-lg md:!text-xl">
+            <Title level={4} className="mb-4! text-lg! md:text-xl!">
                 Payment Summary
             </Title>
 
@@ -426,37 +426,37 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
             {/* Payment Status */}
             {
                 (paymentStatus === "processing" || paymentStatus === "success" || paymentStatus === "failed") && (
-                    <Card className="!mb-6 !border-blue-200 !bg-blue-50">
+                    <Card className="mb-6! border-blue-200! bg-blue-50!">
                         {renderPaymentStatus()}
                     </Card>
                 )
             }
-            <Card className="!mb-4 !shadow-sm">
+            <Card className="mb-4! shadow-sm!">
                 <div className='mb-4'>
-                    <Title level={5} className="!mb-2 !text-base md:!text-lg">
+                    <Title level={5} className="mb-2! text-base! md:text-lg!">
                         {show.movie.movieName}
                     </Title>
-                    <Space direction="vertical" size={2} className="!mb-0">
-                        <Text type="secondary" className="!text-sm md:!text-base">
+                    <Space direction="vertical" size={2} className="mb-0!">
+                        <Text type="secondary" className="text-sm! md:text-base!">
                             {show.theatre.name}
                         </Text>
-                        <Text type="secondary" className="!text-sm md:!text-base">
+                        <Text type="secondary" className="text-sm! md:text-base!">
                             Seats - {seats.join(', ')} ({seats.length} Tickets)
                         </Text>
-                        <Text type="secondary" className="!text-sm md:!text-base">
+                        <Text type="secondary" className="text-sm! md:text-base!">
                         {moment(show.date).format("ddd, DD MMM, YYYY")} | {moment(show.time, "HH:mm").format("hh:mm A")}
                         </Text>
                     </Space>
                 </div>
             </Card>
 
-            <Card className="!mb-4 !shadow-sm">
+            <Card className="mb-4! shadow-sm!">
                 <div className="space-y-3 mb-4">
                     <div className="flex justify-between items-center">
-                        <Text className="!text-sm md:!text-base !text-gray-800">
+                        <Text className="text-sm! md:text-base! text-gray-800!">
                             Ticket Price ({seats.length} × ₹{show.ticketPrice})
                         </Text>
-                        <Text className="!text-sm md:!text-base !font-medium !text-gray-900">
+                        <Text className="text-sm! md:text-base! font-medium! text-gray-900!">
                             ₹{ticketAmount.toFixed(2)}
                         </Text>
                     </div>
@@ -465,37 +465,37 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
                         bordered={false}
                         ghost 
                         expandIconPosition="start" 
-                        className="custom-collapse !bg-transparent !p-0"
-                        expandIcon={({ isActive }) => <DownCircleOutlined rotate={isActive ? -180 : 0} className="!text-gray-500"/>}
+                        className="custom-collapse bg-transparent! p-0!"
+                        expandIcon={({ isActive }) => <DownCircleOutlined rotate={isActive ? -180 : 0} className="text-gray-500!"/>}
                     >
                         <Panel
                             header={
                                 <div className="flex justify-between w-full">
-                                    <Text className="!text-sm md:!text-base !text-gray-800">
+                                    <Text className="text-sm! md:text-base! text-gray-800!">
                                         Convenience Fee
                                         </Text>
-                                    <Text className="!text-sm md:!text-base !font-medium !text-gray-900">
+                                    <Text className="text-sm! md:text-base! font-medium! text-gray-900!">
                                         ₹{(convenienceFee).toFixed(2)}
                                     </Text>
                                 </div>
                             }
                             key="1"
-                            className="!border-0"
+                            className="border-0!"
                         >
                             <div className="space-y-2 pl-0 pt-2 border-t border-gray-100">
-                                <div className="!flex !justify-between">
-                                    <Text type='secondary' className="!text-xs md:!text-sm">
+                                <div className="flex! justify-between!">
+                                    <Text type='secondary' className="text-xs! md:text-sm!">
                                         Base Amount
                                     </Text>
-                                    <Text type='secondary' className="!text-xs md:!text-sm">
+                                    <Text type='secondary' className="text-xs! md:text-sm!">
                                         ₹{baseAmount.toFixed(2)}
                                     </Text>
                                 </div>
                                 <div className="flex justify-between">
-                                    <Text type='secondary' className="!text-xs md:!text-sm">
+                                    <Text type='secondary' className="text-xs! md:text-sm!">
                                         Integrated GST (IGST) @18%
                                     </Text>
-                                    <Text type='secondary' className="!text-xs md:!text-sm">
+                                    <Text type='secondary' className="text-xs! md:text-sm!">
                                         ₹{gst.toFixed(2)}
                                     </Text>
                                 </div>
@@ -504,25 +504,25 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
                     </Collapse>
                 </div>
 
-                <Divider className="!my-4" />
+                <Divider className="my-4!" />
 
                 <div className='flex justify-between items-center'>
-                    <Title level={5} className="!mb-0 !text-base md:!text-lg">
+                    <Title level={5} className="mb-0! text-base! md:text-lg!">
                         Amount Payable
                     </Title>
-                    <Title level={5} className="!mb-0 !text-lg md:!text-xl !text-[#f84464]">
+                    <Title level={5} className="mb-0! text-lg! md:text-xl! text-[#f84464]!">
                         ₹{totalAmount.toFixed(2)}
                     </Title>
                 </div>
             </Card>
 
-            <Card className="!mb-4 !shadow-sm">
-                <Title level={5} className="!mb-4 !text-base md:!text-lg">
+            <Card className="mb-4! shadow-sm!">
+                <Title level={5} className="mb-4! text-base! md:text-lg!">
                     Select Payment Method
                 </Title>
                 <Radio.Group 
                     value={paymentMethod} 
-                    className="!w-full" 
+                    className="w-full!" 
                     onChange={(e) => setPaymentMethod(e.target.value)}
                     aria-label="Payment method selection"
                 >
@@ -538,7 +538,7 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
                                 key={method.key}
                                 value={method.key}
                                 disabled={method.disabled || isProcessingPayment}
-                                className="!border !p-3 md:!p-4 !rounded-lg hover:!border-[#f84464] transition-colors !w-full !m-0"
+                                className="border! p-3! md:p-4! rounded-lg! hover:border-[#f84464]! transition-colors w-full! m-0!"
                                 aria-describedby={`${method.key}-description`}
                             >
                                 <div className="flex items-center gap-3">
@@ -547,7 +547,7 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
                                     </div>
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2">
-                                        <Text strong className="!text-sm md:!text-base">
+                                        <Text strong className="text-sm! md:text-base!">
                                             {method.title}
                                         </Text>
                                         {method.popular && (
@@ -561,7 +561,7 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
                                         </div>
                                         <Text 
                                             type="secondary" 
-                                            className="!text-xs md:!text-sm block mt-1"
+                                            className="text-xs! md:text-sm! block mt-1"
                                             id={`${method.key}-description`}
                                         >
                                             {method.description}
@@ -576,12 +576,12 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
 
             <div className="bg-gray-50 p-3 md:p-4 rounded-lg mb-6">
                 <div className="flex items-start gap-2">
-                    <InfoCircleOutlined className="!text-gray-500 !flex-shrink-0 !mt-1" />
-                    <Paragraph type="secondary" className="!text-xs md:!text-sm !mb-0">
+                    <InfoCircleOutlined className="text-gray-500! shrink-0! mt-1!" />
+                    <Paragraph type="secondary" className="text-xs! md:text-sm! mb-0!">
                         By proceeding, you agree to our{" "}
                         <a 
                             href="#" 
-                            className="!text-blue-600 hover:!text-blue-800 !underline"
+                            className="text-blue-600! hover:text-blue-800! underline!"
                             aria-label="Read Terms and Conditions"
                         >
                             Terms & Conditions
@@ -589,7 +589,7 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
                         and{" "}
                         <a 
                             href="#" 
-                            className="!text-blue-600 hover:!text-blue-800 !underline"
+                            className="text-blue-600! hover:text-blue-800! underline!"
                             aria-label="Read Cancellation Policy"
                         >
                             Cancellation Policy
@@ -609,7 +609,7 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
                     size="large" 
                     onClick={handlePreviousStep}
                     disabled={isProcessingPayment}
-                    className={`${isMobile ? "order-2" : ""} !min-h-[48px] !w-full ${isMobile ? "!w-full" : "!w-auto"}`}
+                    className={`${isMobile ? "order-2" : ""} min-h-[48px]! w-full! ${isMobile ? "w-full!" : "w-auto!"}`}
                     aria-label="Go back to seat selection"
                 >
                     Back
@@ -620,8 +620,8 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
                     loading={isProcessingPayment}
                     disabled={isProcessingPayment}
                     onClick= {handleRazorPay}
-                    className={`!bg-[#f84464] hover:!bg-[#dc3558] ${isMobile ? "order-1" : ""} !min-h-[48px] ${
-                        isMobile ? "!text-base !font-semibold !w-full" : "!w-auto"
+                    className={`bg-[#f84464]! hover:bg-[#dc3558]! ${isMobile ? "order-1" : ""} min-h-[48px]! ${
+                        isMobile ? "text-base! font-semibold! w-full!" : "w-auto!"
                     }`}
                     aria-label={`Pay ₹${totalAmount.toFixed(2)} using ${paymentMethod}`}
                 >
@@ -655,7 +655,7 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
                             loading={isProcessingPayment}
                             disabled={isProcessingPayment}
                             onClick={handleRazorPay}
-                            className="!bg-[#f84464] hover:!bg-[#dc3558] w-full !min-h-[48px] !text-base !font-semibold"
+                            className="bg-[#f84464]! hover:bg-[#dc3558]! w-full min-h-[48px]! text-base! font-semibold!"
                             aria-label={`Pay ₹${totalAmount.toFixed(2)} using ${paymentMethod}`}
                         >
                             {isProcessingPayment ? "Processing..." : `Pay Now ₹${totalAmount.toFixed(2)}`}
