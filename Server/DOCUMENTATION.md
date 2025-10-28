@@ -1397,7 +1397,7 @@ This comprehensive documentation covers all aspects of the BookMyShow backend sy
 
 ## ![MIT License](https://img.shields.io/badge/license-MIT-green.svg)
 
-This project is open-source and available under the [MIT License](./LICENSE).
+This project is open-source and available under the [MIT License](../LICENSE).
 
 ---
 

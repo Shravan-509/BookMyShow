@@ -886,16 +886,6 @@ npm run build
 
 ## Acknowledgements
 
-- [React Documentation](https://react.dev)
-- [Vite Documentation](https://vitejs.dev)
-- [Redux Toolkit Documentation](https://redux-toolkit.js.org)
-- [Redux-Saga Documentation](https://redux-saga.js.org)
-- [React Router Documentation](https://reactrouter.com)
-- [Ant Design Documentation](https://ant.design)
-- [Tailwind CSS Documentation](https://tailwindcss.com)
-
-## Acknowledgements
-
 This frontend project leverages the following open-source libraries and frameworks to deliver a modern, performant, and responsive user experience:
 
 | Technology                                                       | Description                                                      |

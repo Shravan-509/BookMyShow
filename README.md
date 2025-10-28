@@ -818,17 +818,12 @@ npm run seed         # Seed database (if available)
 
 ---
 
-## 📝 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
----
-
 ## 📞 Support
 
 For support, email bkmyshowsup@gmail.com or open an issue on GitHub.
 
 ---
+
 
 ## 🧠 Author
 
@@ -837,6 +832,11 @@ For support, email bkmyshowsup@gmail.com or open an issue on GitHub.
 
 GitHub: [@Shravan-509](https://github.com/Shravan-509)
 
+---
+
+## 📝 License
+
+This project is open-source and available under the [MIT License](./LICENSE).
 ---
 
 **Last Updated**: October 2024  
