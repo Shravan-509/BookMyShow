@@ -11,7 +11,7 @@ const movieSlice = createSlice({
     name : "movie",
     initialState,
     reducers: {
-        getMoviesRequest: (state, action) => {
+        getMoviesRequest: (state) => {
             state.loading = true
             state.error = null
         },
@@ -26,7 +26,7 @@ const movieSlice = createSlice({
             state.error = action.payload 
         },
 
-        addMovieRequest: (state, action) => {
+        addMovieRequest: (state) => {
             state.loading = true
             state.error = null
         },
@@ -41,7 +41,7 @@ const movieSlice = createSlice({
             state.error = action.payload
         },
 
-        updateMovieRequest: (state, action) => {
+        updateMovieRequest: (state) => {
             state.loading = true
             state.error = null
         },
@@ -57,7 +57,7 @@ const movieSlice = createSlice({
         },
 
         
-        deleteMovieRequest: (state, action) => {
+        deleteMovieRequest: (state) => {
             state.loading = true
             state.error = null
         },
@@ -72,7 +72,7 @@ const movieSlice = createSlice({
             state.error = action.payload
         },
 
-        getMovieByIdRequest: (state, action) => {
+        getMovieByIdRequest: (state) => {
             state.loading = true
             state.error = null
         },

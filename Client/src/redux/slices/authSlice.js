@@ -25,7 +25,7 @@ const authSlice = createSlice({
         },
 
         // Login actions
-        loginRequest: (state, action) => {
+        loginRequest: (state) => {
             state.loading = true
             state.error = null
         },
@@ -42,11 +42,11 @@ const authSlice = createSlice({
         },
 
         // Signup actions
-        signupRequest: (state, action) => {
+        signupRequest: (state) => {
             state.loading = true
             state.error = null
         },
-        signupSuccess: (state, action) => {
+        signupSuccess: (state) => {
             state.loading = false
             state.error = null
         },
@@ -71,6 +71,10 @@ const authSlice = createSlice({
         // Clear Errors
         clearErrors: (state) => {
             state.error = null
+        },
+
+        setLoading: (state) =>{
+            state.loading = false
         }
     },
     extraReducers: (builder) => {
@@ -92,7 +96,8 @@ export const {
     signupFailure,
     logout,
     setUserData,
-    clearErrors
+    clearErrors,
+    setLoading
 } = authSlice.actions;
 
 export const selectAuth = (state) => state.auth;

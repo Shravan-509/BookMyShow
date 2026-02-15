@@ -1,23 +1,8 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import {
-  Button,
-  Card,
-  Col,
-  Divider,
-  Flex,
-  QRCode,
-  Row,
-  Skeleton,
-  Space,
-  Tag,
-  Typography,
-  Collapse,
-  Modal,
-} from "antd"
+import { Button, Card, Col, Divider, Flex, QRCode, Row, Skeleton, Space, Tag, Typography, Collapse, Modal } from "antd"
 import {
   BarcodeOutlined,
-  DownOutlined,
   CalendarOutlined,
   ClockCircleOutlined,
   EnvironmentOutlined,
@@ -78,7 +63,7 @@ const BookingCard = React.memo(function BookingCard({ booking, isMobile, onViewB
 
         {/* Desktop layout */}
         {!isMobile && (
-          <Flex wrap="wrap" gap={24}>
+          <Flex wrap="wrap" gap={24} align="stretch">
             <img
               alt="Movie Poster"
               src={booking.poster || "/placeholder.svg"}
@@ -86,7 +71,9 @@ const BookingCard = React.memo(function BookingCard({ booking, isMobile, onViewB
               style={{ height: 200, width: 130, objectFit: "cover" }}
             />
 
-            <div className="ticket-divider" />
+            <div style={{ display: "flex" }}>
+              <div className="ticket-divider" />
+            </div>
 
             <Flex vertical className="flex-1">
               <Space direction="vertical" className="w-full">
@@ -310,13 +297,11 @@ const OrderHistory = () => {
     // Load already scheduled reminders from localStorage
     const scheduledReminders = JSON.parse(localStorage.getItem("booking_reminders") || "[]")
     const scheduledIds = new Set(scheduledReminders.map(r => r.bookingId))
-    console.log(scheduledIds);
     
     bookings.forEach((booking) => {
       if (!scheduledIds.has(booking.bookingId)) 
       {
         const showDateTime = moment(`${booking.showDate} ${booking.showTime}`, "YYYY-MM-DD HH:mm")
-        console.log(showDateTime)
         if (showDateTime.isAfter(moment())) 
         {
           scheduleBookingReminder(booking)

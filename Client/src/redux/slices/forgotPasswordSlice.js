@@ -14,12 +14,12 @@ const forgotPasswordSlice = createSlice({
     initialState,
     reducers: {
         //Forgot Password Actions
-        forgotPasswordRequest: (state, action) => {
+        forgotPasswordRequest: (state) => {
             state.loading = true;
             state.error = null;
             state.emailSent = false;
         },
-        forgotPasswordSuccess: (state, action) => {
+        forgotPasswordSuccess: (state) => {
             state.loading = false;
             state.emailSent = true;
             state.error = null; 
@@ -31,12 +31,12 @@ const forgotPasswordSlice = createSlice({
         },
 
         //Reset Password Actions
-        resetPasswordRequest: (state, action) => {
+        resetPasswordRequest: (state) => {
             state.resetLoading = true;
             state.resetError = null;
             state.resetSuccess = false;
         },
-        resetPasswordSuccess: (state, action) => {
+        resetPasswordSuccess: (state) => {
             state.resetLoading = false;
             state.resetError = null;
             state.resetSuccess = true;

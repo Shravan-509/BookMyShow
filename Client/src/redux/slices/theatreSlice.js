@@ -10,7 +10,7 @@ const theatreSlice = createSlice({
     name : "theatre",
     initialState,
     reducers: {
-        getTheatresRequest: (state, action) => {
+        getTheatresRequest: (state) => {
             state.loading = true
             state.error = null
         },
@@ -25,7 +25,7 @@ const theatreSlice = createSlice({
             state.error = action.payload 
         },
 
-        addTheatreRequest: (state, action) => {
+        addTheatreRequest: (state) => {
             state.loading = true
             state.error = null
         },
@@ -40,7 +40,7 @@ const theatreSlice = createSlice({
             state.error = action.payload
         },
 
-        updateTheatreRequest: (state, action) => {
+        updateTheatreRequest: (state) => {
             state.loading = true
             state.error = null
         },
@@ -56,7 +56,7 @@ const theatreSlice = createSlice({
         },
 
         
-        deleteTheatreRequest: (state, action) => {
+        deleteTheatreRequest: (state) => {
             state.loading = true
             state.error = null
         },

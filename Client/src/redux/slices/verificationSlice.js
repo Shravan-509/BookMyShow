@@ -18,7 +18,7 @@ const verificationSlice = createSlice({
     initialState,
     reducers: {
         // Email verify actions
-        verifyEmailRequest : (state, action) => {
+        verifyEmailRequest : (state) => {
             state.loading = true
             state.error = null
         },
@@ -33,7 +33,7 @@ const verificationSlice = createSlice({
         },
 
         // Two-Factor Authentication actions
-        verifyTwoFactorRequest : (state, action) => {
+        verifyTwoFactorRequest : (state) => {
             state.loading = true
             state.error = null
         },
@@ -48,7 +48,7 @@ const verificationSlice = createSlice({
         },
 
         // Reverify Account actions
-        reverifyAccountRequest : (state, action) => {
+        reverifyAccountRequest : (state) => {
             state.loading = true
             state.error = null
         },
@@ -66,7 +66,7 @@ const verificationSlice = createSlice({
         },
 
         // Resend Verification Code actions
-        resendCodeRequest : (state, action) => {
+        resendCodeRequest : (state) => {
             state.loading = true
             state.error = null
             state.resendDisabled = true
