@@ -27,6 +27,7 @@ import {
     showReauthenticationModal, 
     
 } from "../slices/profileSlice";
+import { ProfileAPI } from "../../api/profile";
 
 
 // Profile API Calls
@@ -110,7 +111,7 @@ const deleteAccountAPI = async(password) => {
 // Worker Sagas
 function* fetchProfileSaga() {
     try{ 
-            const response = yield call(fetchProfileAPI);
+            const response = yield call(ProfileAPI.fetchProfile);
             if(response.success)
             {
                 yield put(fetchProfileSuccess(response.user));
@@ -128,8 +129,9 @@ function* fetchProfileSaga() {
         }
         catch(error)
         {
-            yield put(fetchProfileFailure(error.message));
-            notify("error", "Profile fetch error. Please try again.", error?.message);
+            const errorMessage = error.response?.data?.message || error.message
+            yield put(fetchProfileFailure(errorMessage));
+            notify("error", "Profile fetch error. Please try again.", errorMessage);
             
             // If unauthorized, logout user
             if (error?.message.includes("Unauthorized")) 
@@ -141,7 +143,7 @@ function* fetchProfileSaga() {
 
 function* updateProfileSaga(action) {
     try{ 
-            const response = yield call(updateProfileAPI, action.payload);
+            const response = yield call(ProfileAPI.updateProfile, action.payload);
             if(response.success)
             {
                 yield put(updateProfileSuccess(response.user));
@@ -159,14 +161,15 @@ function* updateProfileSaga(action) {
         }
         catch(error)
         {
-            yield put(updateProfileFailure(error.message));
-            notify("error", "Profile update error. Please try again.", error?.message);
+            const errorMessage = error.response?.data?.message || error.message
+            yield put(updateProfileFailure(errorMessage));
+            notify("error", "Profile update error. Please try again.", errorMessage);
         }
 }
 
 function* changePasswordSaga(action) {
     try{ 
-            const response = yield call(changePasswordAPI, action.payload);
+            const response = yield call(ProfileAPI.changePassword, action.payload);
             if(response.success)
             {
                 yield put(changePasswordSuccess());
@@ -191,17 +194,17 @@ function* changePasswordSaga(action) {
         }
         catch(error)
         {
-            yield put(changePasswordFailure(error.message));
-            notify("error", "Password change error. Please try again.", error?.message);
+            const errorMessage = error.response?.data?.message || error.message
+            yield put(changePasswordFailure(errorMessage));
+            notify("error", "Password change error. Please try again.", errorMessage);
         }
 }
 
 function* requestEmailChangeSaga(action) {
     try{ 
-            const response = yield call(requestEmailChangeAPI, action.payload.newEmail);
+            const response = yield call(ProfileAPI.requestEmailChange, action.payload.newEmail);
             if(response.success)
             {
-                
                 yield put(
                     requestEmailChangeSuccess({
                         newEmail: action.payload.newEmail,
@@ -220,15 +223,16 @@ function* requestEmailChangeSaga(action) {
         }
         catch(error)
         {
-            yield put(requestEmailChangeFailure(error.message));
-            notify("error", "Email change request error. Please try again.", error?.message);
+            const errorMessage = error.response?.data?.message || error.message
+            yield put(requestEmailChangeFailure(errorMessage));
+            notify("error", "Email change request error. Please try again.", errorMessage);
         }
 }
 
 
 function* verifyEmailChangeSaga(action) {
     try{ 
-            const response = yield call(verifyEmailChangeAPI, action.payload);
+            const response = yield call(ProfileAPI.verifyEmailChange, action.payload);
             if(response.success)
             {
                 const newEmail = response.data.email;
@@ -262,14 +266,15 @@ function* verifyEmailChangeSaga(action) {
         }
         catch(error)
         {
-            yield put(verifyEmailChangeFailure(error.message));
+            const errorMessage = error.response?.data?.message || error.message
+            yield put(verifyEmailChangeFailure(errorMessage));
             notify("error", "Email change verification error. Please try again.", error?.message);
         }
 }
 
 function* toggle2FASaga() {
     try{ 
-            const response = yield call(toggle2FAAPI);
+            const response = yield call(ProfileAPI.toggle2FA);
             if(response.success)
             {
                 const twoFactorStatus = response.twoFactorEnabled
@@ -294,14 +299,15 @@ function* toggle2FASaga() {
         }
         catch(error)
         {
-            yield put(toggle2FAFailure(error.message));
-            notify("error", "2FA toggle error. Please try again.", error?.message);
+            const errorMessage = error.response?.data?.message || error.message
+            yield put(toggle2FAFailure(errorMessage));
+            notify("error", "2FA toggle error. Please try again.", errorMessage);
         }
 }
 
 function* deleteAccountSaga(action) {
     try{ 
-            const response = yield call(deleteAccountAPI, action.payload.password);
+            const response = yield call(ProfileAPI.deleteAccount, action.payload.password);
             if(response.success)
             {
                 yield put(deleteAccountSuccess());
@@ -319,8 +325,9 @@ function* deleteAccountSaga(action) {
         }
         catch(error)
         {
-            yield put(deleteAccountFailure(error.message));
-            notify("error", "Account deletion error", error?.message);
+            const errorMessage = error.response?.data?.message || error.message
+            yield put(deleteAccountFailure(errorMessage));
+            notify("error", "Account deletion error", errorMessage);
         }
 }
 

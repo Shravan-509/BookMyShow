@@ -17,9 +17,9 @@ import {
     setResendCountdown
 } from "../slices/verificationSlice";
 import { setActiveTab } from "../slices/uiSlice";
-import { message } from "antd";
-import { checkAuthStatus, loginSuccess } from "../slices/authSlice";
+import { checkAuthStatus, loginSuccess, setLoading } from "../slices/authSlice";
 import { notify } from "../../utils/notificationUtils";
+import { VerificationAPI } from "../../api/verification";
 
 //API Calls
 const verifyEmailApi = async (payload) => {
@@ -91,13 +91,14 @@ function* handleVerifyEmail(action) {
             throw new Error("Unable to verify: missing user identification. Please try the verification process again.")
         }
 
-        const response = yield call(verifyEmailApi, verificationData);
+        const response = yield call(VerificationAPI.verifyEmail, verificationData);
 
         if(response.success)
         {
             yield put(verifyEmailSuccess());
             yield put(setActiveTab("login")); //Reset and go back to login
             notify("success", "Email verified successfully! You can now log in.");
+            yield put(setLoading())
         }
         else
         {
@@ -106,8 +107,9 @@ function* handleVerifyEmail(action) {
         }
 
     } catch (error) {
-        yield put(verifyEmailFailure(error.message));
-        notify("error", "Error in Email Verification. Please try again.", error?.message);  
+        const errorMessage = error.response?.data?.message || error.message
+        yield put(verifyEmailFailure(errorMessage));
+        notify("error", "Error in Email Verification. Please try again.", errorMessage);  
     }
 }
 
@@ -135,7 +137,7 @@ function* handleVerifyTwoFactor(action) {
             throw new Error("Session expired. Please log in again.")
         }
 
-        const data = yield call(verifyTwoFactorApi, verificationData);
+        const data = yield call(VerificationAPI.verifyTwoFactor, verificationData);
 
         if(data.success)
         {
@@ -157,15 +159,16 @@ function* handleVerifyTwoFactor(action) {
         }
 
     } catch (error) {
-        yield put(verifyTwoFactorFailure(error.message));
-        notify("error", "Error in Two-Factor Authentication. Please try again.", error?.message); 
+        const errorMessage = error.response?.data?.message || error.message
+        yield put(verifyTwoFactorFailure(errorMessage));
+        notify("error", "Error in Two-Factor Authentication. Please try again.", errorMessage); 
     } 
 }
 
 function* handleReverifyAccount(action) {
     try {
         const tempUserId = yield select((state) => state.verification.tempUserId);
-        const data = yield call(reverifyAccountApi, {
+        const data = yield call(VerificationAPI.reverifyAccount, {
            email: action.payload.email
         })
 
@@ -190,14 +193,15 @@ function* handleReverifyAccount(action) {
         }
 
     } catch (error) {
-        yield put(reverifyAccountFailure(error.message));
-        notify("error", "Error in Reverification request. Please try again.", error?.message);
+        const errorMessage = error.response?.data?.message || error.message
+        yield put(reverifyAccountFailure(errorMessage));
+        notify("error", "Error in Reverification request. Please try again.", errorMessage);
     }
 }
 
 function* handleResendCode(action) {
     try {
-        const {type} = action.payload;
+        const { type } = action.payload;
         const tempUserId = yield select((state) => state.verification.tempUserId);
         const verificationEmail = yield select((state) => state.verification.verificationEmail);
         
@@ -223,7 +227,7 @@ function* handleResendCode(action) {
             throw new Error("Unable to resend code: missing user information")
         }
 
-        const response = yield call(resendCodeApi, type, resendData);
+        const response = yield call(VerificationAPI.resendCode, type, resendData);
 
         if(response.success)
         {
@@ -243,8 +247,9 @@ function* handleResendCode(action) {
         }
         
     } catch (error) {
-        yield put(resendCodeFailure(error.message));
-        notify("error", "Error in Code Resend. Please try again.", error?.message);
+        const errorMessage = error.response?.data?.message || error.message
+        yield put(resendCodeFailure(errorMessage));
+        notify("error", "Error in Code Resend. Please try again.", errorMessage);
     }
 }
 

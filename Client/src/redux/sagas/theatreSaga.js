@@ -14,8 +14,8 @@ import {
     updateTheatreRequest, 
     updateTheatreSuccess
     } from "../slices/theatreSlice";
-import moment from "moment";
 import { notify } from "../../utils/notificationUtils";
+import { TheatreAPI } from "../../api/theatre";
 
 // Theatre API calls
 const fetchTheatresAPI = async () => {
@@ -62,7 +62,7 @@ const deleteTheatreAPI = async (id) => {
 function* getTheatresSaga() {
     try{
         
-        const response = yield call(fetchTheatresAPI);
+        const response = yield call(TheatreAPI.fetch);
         if(response.success)
         {
             yield put(getTheatresSuccess(response.data));
@@ -78,14 +78,15 @@ function* getTheatresSaga() {
     }
     catch(error)
     {
-        yield put(getTheatresFailure(error.message));
-        notify("error", "Error fetching theatres. Please try again.", error?.message);
+        const errorMessage = error.response?.data?.message || error.message
+        yield put(getTheatresFailure(errorMessage));
+        notify("error", "Error fetching theatres. Please try again.", errorMessage);
     }
 }
 
 function* addTheatreSaga(action) {
     try{ 
-        const response = yield call(addTheatreAPI, action.payload);
+        const response = yield call(TheatreAPI.create, action.payload);
         if(response.success)
         {
             yield put(addTheatreSuccess(response.message));
@@ -102,14 +103,16 @@ function* addTheatreSaga(action) {
     }
     catch(error)
     {
-        yield put(addTheatreFailure(error.message));
-        notify("error", "Error adding theatre. Please try again.", error?.message);
+        const errorMessage = error.response?.data?.message || error.message
+        yield put(addTheatreFailure(errorMessage));
+        notify("error", "Error adding theatre. Please try again.", errorMessage);
     }
 }
 
 function* updateTheatreSaga(action) {
+    const {id, theatre} = action.payload;
     try{ 
-        const response = yield call(updateTheatreAPI, action.payload);
+        const response = yield call(TheatreAPI.update, id, theatre);
         if(response.success)
         {
             yield put(updateTheatreSuccess(response.data));
@@ -126,21 +129,22 @@ function* updateTheatreSaga(action) {
     }
     catch(error)
     {
-        yield put(updateTheatreFailure(error.message));
-        notify("error", "Error updating theatre. Please try again.", error?.message);  
+        const errorMessage = error.response?.data?.message || error.message
+        yield put(updateTheatreFailure(errorMessage));
+        notify("error", "Error updating theatre. Please try again.", errorMessage);  
     }
 }
 
 function* deleteTheatreSaga(action) {
     try{ 
-        const response = yield call(deleteTheatreAPI, action.payload);
+        const response = yield call(TheatreAPI.delete, action.payload);
          if(response.success)
         {
             yield put(deleteTheatreSuccess(response.data));
             // Show success message
             notify("success", response.message);
 
-             yield put(getTheatresRequest());
+            yield put(getTheatresRequest());
         }
         else
         {
@@ -150,8 +154,9 @@ function* deleteTheatreSaga(action) {
     }
     catch(error)
     {
-        yield put(deleteTheatreFailure(error.message));
-        notify("error", "Error deleting theatre. Please try again.", error?.message);  
+        const errorMessage = error.response?.data?.message || error.message
+        yield put(deleteTheatreFailure(errorMessage));
+        notify("error", "Error deleting theatre. Please try again.", errorMessage);  
     }
 }
 

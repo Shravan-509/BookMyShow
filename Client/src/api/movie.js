@@ -1,46 +1,48 @@
-import { axiosInstance } from ".";
+import { axiosInstance } from "."
 
-export const getMovies = async () => {
+export class MovieAPI {
+  static async fetch() {
     try {
-        const response = await axiosInstance.get("/movies");
-        return response?.data;
+      const response = await axiosInstance.get("/movies")
+      return response?.data
     } catch (error) {
-        return error;
+      throw error
     }
-};
+  }
 
-export const updateMovie = async (id, payload) => {
+  static async create(payload) {
     try {
-        const response = await axiosInstance.patch(`/movies/${id}`, payload);
-        return response?.data;
+      const response = await axiosInstance.post("/movies", payload)
+      return response?.data
     } catch (error) {
-        return error;
+      throw error
     }
-};
+  }
 
-export const deleteMovie = async (id) => {
+  static async update(id, payload) {
     try {
-        const response = await axiosInstance.delete(`/movies/${id}`);
-        return response?.data;
+      const response = await axiosInstance.patch(`/movies/${id}`, payload)
+      return response?.data
     } catch (error) {
-        return error;
+      throw error
     }
-};
+  }
 
-export const addMovie = async (payload) => {
+  static async delete(id) {
     try {
-        const response = await axiosInstance.post('/movies', payload);
-        return response?.data;
+      const response = await axiosInstance.delete(`/movies/${id}`)
+      return response?.data
     } catch (error) {
-        return error;
+      throw error
     }
-};
+  }
 
-export const getMovieById = async (id) => {
+  static async fetchById(id) {
     try {
-        const response = await axiosInstance.get(`/movies/${id}`);
-        return response?.data;
+      const response = await axiosInstance.get(`/movies/${id}`)
+      return response?.data
     } catch (error) {
-        return error;
+      throw error
     }
-};
+  }
+}

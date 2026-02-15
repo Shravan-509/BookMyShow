@@ -9,6 +9,7 @@ import {
     resetPasswordFailure
 } from "../slices/forgotPasswordSlice";
 import { notify } from "../../utils/notificationUtils";
+import { ForgotPasswordAPI } from "../../api/forgotPassword";
 
 // Forgot Password API calls
 const forgotPasswordAPI = async (email) => {
@@ -35,30 +36,32 @@ const resetPasswordAPI = async (resetData) => {
 function* handleForgotPassword(action) {
     try{
         const email = action.payload;
-        const data = yield call(forgotPasswordAPI, email);
+        const data = yield call(ForgotPasswordAPI.forgotPassword, email);
         yield put(forgotPasswordSuccess(data));
          // Show success message
         notify("success", "Reset Password Link sent to your email!");
     }
     catch(error)
     {
-        yield put(forgotPasswordFailure(error.message));
-        notify("error", "Reset failed!", error?.message);
+        const errorMessage = error.response?.data?.message || error.message
+        yield put(forgotPasswordFailure(errorMessage));
+        notify("error", "Reset failed!", errorMessage);
     }
 }
 
 function* handleResetPassword(action) {
     try{
         
-        const data = yield call(resetPasswordAPI, action.payload);
+        const data = yield call(ForgotPasswordAPI.resetPassword, action.payload);
         yield put(resetPasswordSuccess(data));
         // Show success message
         notify("success", "Password Reset successful!");
     }
     catch(error)
     {
-        yield put(resetPasswordFailure(error.message));
-        notify("error", "Password Reset failed!", error?.message);
+        const errorMessage = error.response?.data?.message || error.message
+        yield put(resetPasswordFailure(errorMessage));
+        notify("error", "Password Reset failed!", errorMessage);
     }
 }
 

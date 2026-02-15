@@ -1,4 +1,4 @@
-import { takeLatest, put, call, select } from "redux-saga/effects";
+import { takeLatest, put, call } from "redux-saga/effects";
 import Cookies from "js-cookie";
 import { axiosInstance } from "../../api/index";
 import { 
@@ -7,8 +7,7 @@ import {
     loginFailure, 
     loginRequest, 
     loginSuccess, 
-    logout, 
-    setUserData, 
+    logout,
     signupFailure, 
     signupRequest, 
     signupSuccess 
@@ -21,6 +20,7 @@ import {
     setVerificationEmail
 } from "../slices/verificationSlice";
 import { notify } from "../../utils/notificationUtils";
+import { AuthAPI } from "../../api/auth";
 
 
 // Account Login API calls
@@ -71,7 +71,7 @@ const logoutApi = async () => {
 function* handleCheckAuthStatus() {
     try{
         // Get user data with cookie
-        const userData = yield call(checkAuthApi);
+        const userData = yield call(AuthAPI.checkAuth);
 
         //If successful user is authenticated
         yield put(
@@ -95,7 +95,7 @@ function* handleCheckAuthStatus() {
 
 function* handleLogin(action) {
     try{
-        const data = yield call(loginApi, action.payload);
+        const data = yield call(AuthAPI.login, action.payload);
         
         if(data.requiresTwoFactor)
         {
@@ -123,22 +123,25 @@ function* handleLogin(action) {
     catch(error)
     {
         // Check if the error is due to Unverified Account
-        if(error.code === "UNVERIFIED_ACCOUNT")
+        const errorCode = error.response?.data?.code
+        const errorMessage = error.response?.data?.message || error.message
+
+        if(errorCode === "UNVERIFIED_ACCOUNT")
         {
             yield put(setLoginError("Your account is not verified. Please verify your email to continue."))
             yield put(setVerificationEmail(action.payload.email))
         }
         else
         {
-            yield put(loginFailure(error.message));
-            notify("error", "Login failed. Please try again", error.message);
+            yield put(loginFailure(errorMessage));
+            notify("error", "Login failed. Please try again", errorMessage);
         }
     }
 }
 
 function* handleSignup(action) {
     try{
-        const data = yield call(signupApi, action.payload);
+        const data = yield call(AuthAPI.register, action.payload);
         yield put(signupSuccess());
 
         // Show Email verification screen
@@ -151,22 +154,24 @@ function* handleSignup(action) {
     }
     catch(error)
     {
-        yield put(signupFailure(error.message));
-        notify("error", "Signup failed. Please try again", error.message);
+        const errorMessage = error.response?.data?.message || error.message
+        yield put(signupFailure(errorMessage));
+        notify("error", "Signup failed. Please try again", errorMessage);
     }
 }
 
-function* handleLogout(action) {
+function* handleLogout() {
     try{
         // Call logout API to clear the server-side session or cookie
-        yield call(logoutApi);
+        yield call(AuthAPI.logout);
 
         //show success message
         notify("success", "Logged out Successfully");
     }
     catch(error)
     {
-        notify("error", "Logout failed", error.message);
+        const errorMessage = error.response?.data?.message || error.message
+        notify("error", "Logout failed", errorMessage);
     }
 }
 

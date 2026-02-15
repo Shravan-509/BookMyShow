@@ -21,6 +21,7 @@ import {
     getTheatresWithShowsByMovieRequest, 
     } from "../slices/showSlice";
 import { notify } from "../../utils/notificationUtils";
+import { ShowAPI } from "../../api/show";
 
 // Show API calls
 const addShowAPI = async (show) => {
@@ -87,7 +88,7 @@ export const getTheatresWithShowsByMovieAPI = async (movie) =>  {
 // Worker Sagas
 function* addShowSaga(action) {
     try{ 
-        const response = yield call(addShowAPI, action.payload);
+        const response = yield call(ShowAPI.create, action.payload);
         if(response.success)
         {
             yield put(addShowSuccess(response.message));
@@ -106,14 +107,16 @@ function* addShowSaga(action) {
     }
     catch(error)
     {
-        yield put(addShowFailure(error.message));
-        notify("error", "Error adding show. Please try again.", error?.message);
+        const errorMessage = error.response?.data?.message || error.message
+        yield put(addShowFailure(errorMessage));
+        notify("error", "Error adding show. Please try again.", errorMessage);
     }
 }
 
 function* updateShowSaga(action) {
+    const { id, show } = action.payload;
     try{ 
-        const response = yield call(updateShowAPI, action.payload);
+        const response = yield call(ShowAPI.update, id, show);
         if(response.success)
         {
             yield put(updateShowSuccess(response.data));
@@ -132,15 +135,16 @@ function* updateShowSaga(action) {
     }
     catch(error)
     {
-        yield put(updateShowFailure(error.message));
-        notify("error", "Error updating show. Please try again.", error?.message);  
+        const errorMessage = error.response?.data?.message || error.message
+        yield put(updateShowFailure(errorMessage));
+        notify("error", "Error updating show. Please try again.", errorMessage);  
     }
 }
 
 function* deleteShowSaga(action) {
     const { showId, theatreId } = action.payload;
     try{ 
-        const response = yield call(deleteShowAPI, showId);
+        const response = yield call(ShowAPI.delete, showId);
          if(response.success)
         {
             yield put(deleteShowSuccess(response.data));
@@ -160,14 +164,15 @@ function* deleteShowSaga(action) {
     }
     catch(error)
     {
-        yield put(deleteShowFailure(error.message));
-        notify("error", "Error deleting show. Please try again.", error?.message);  
+        const errorMessage = error.response?.data?.message || error.message
+        yield put(deleteShowFailure(errorMessage));
+        notify("error", "Error deleting show. Please try again.", errorMessage);  
     }
 }
 
 function* getShowByIdSaga(action) {
     try{ 
-        const response = yield call(getShowByIdAPI, action.payload);
+        const response = yield call(ShowAPI.fetchById, action.payload);
         if(response.success)
         {
             yield put(getShowByIdSuccess(response.data));
@@ -183,14 +188,15 @@ function* getShowByIdSaga(action) {
     }
     catch(error)
     {
-        yield put(getShowByIdFailure(error.message));
-        notify("error", "Error fetching show details. Please try again.", error?.message);  
+        const errorMessage = error.response?.data?.message || error.message 
+        yield put(getShowByIdFailure(errorMessage));
+        notify("error", "Error fetching show details. Please try again.", errorMessage);  
     }
 }
 
 function* getShowByTheatreSaga(action) {
     try{ 
-        const response = yield call(getShowsByTheatreAPI, action.payload);
+        const response = yield call(ShowAPI.fetchByTheatre, action.payload);
         if(response.success)
         {
             yield put(getShowsByTheatreSuccess(response.data));
@@ -208,14 +214,15 @@ function* getShowByTheatreSaga(action) {
     }
     catch(error)
     {
-        yield put(getShowsByTheatreFailure(error.message));
-        notify("error", "Error fetching show details. Please try again.", error?.message);  
+        const errorMessage = error.response?.data?.message || error.message
+        yield put(getShowsByTheatreFailure(errorMessage));
+        notify("error", "Error fetching show details. Please try again.", errorMessage);  
     }
 }
 
 function* getTheatresWithShowsByMovieSaga(action) {
     try{ 
-        const response = yield call(getTheatresWithShowsByMovieAPI, action.payload);
+        const response = yield call(ShowAPI.fetchTheatresByMovie, action.payload);
         if(response.success)
         {
             yield put(getTheatresWithShowsByMovieSuccess(response.data));
@@ -231,8 +238,9 @@ function* getTheatresWithShowsByMovieSaga(action) {
     }
     catch(error)
     {
-        yield put(getTheatresWithShowsByMovieFailure(error.message));
-        notify("error", "Error fetching show details. Please try again.", error?.message);  
+        const errorMessage = error.response?.data?.message || error.message
+        yield put(getTheatresWithShowsByMovieFailure(errorMessage));
+        notify("error", "Error fetching show details. Please try again.", errorMessage);  
     }
 }
 
