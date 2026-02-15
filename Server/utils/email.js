@@ -2,12 +2,13 @@ const fs = require("fs");
 const path = require("path");
 // const nodemailer = require("nodemailer");
 const QRCode = require("qrcode")
-const sgMail = require("@sendgrid/mail")
+// const sgMail = require("@sendgrid/mail")
+const brevo = require("@getbrevo/brevo");
 
 const Verification = require('../models/verificationSchema');
 
 // Initialize SendGrid
-sgMail.setApiKey(process.env.SENDGRID_API_KEY)
+// sgMail.setApiKey(process.env.SENDGRID_API_KEY)
 
 //Configure nodemailer
 // const transporter = nodemailer.createTransport({
@@ -19,6 +20,13 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY)
 //         pass: process.env.EMAIL_PASSWORD,
 //     },
 // })
+
+// Initialize Brevo
+const brevoClient = new brevo.TransactionalEmailsApi();
+
+// Configure API key
+const apiKeyAuth = brevoClient.authentications["apiKey"];
+apiKeyAuth.apiKey = process.env.BREVO_API_KEY;
 
 // Generate a random 6-digit code
 const generateVerificationCode = () => {
@@ -100,27 +108,39 @@ const sendVerificationEmail = async(email, code, type) => {
         // Get Email HTML from template
         const html = await getEmailTemplate(templateName, metaData);
 
-        const msg = {
-            to: email,
-            from: process.env.SENDGRID_FROM_EMAIL,
-            subject,
-            html,
-        }
+        // const msg = {
+        //     to: email,
+        //     from: process.env.SENDGRID_FROM_EMAIL,
+        //     subject,
+        //     html,
+        // }
 
         // const result = await transporter.sendMail({
-        //     from: `"BookMyShow" <${process.env.EMAIL_USER}>`,
+        //     from: `"BookMyShow" <${process.env.EMAIL_FROM}>`,
         //     to: email,
         //     subject,
         //     html,
         // })
 
-        const result = await sgMail.send(msg);
+        const sendEmail = {
+            sender: {
+                name: "BookMyShow",
+                email: process.env.BREVO_EMAIL_FROM
+            },
+            to: [{ email }],
+            subject: subject,
+            htmlContent: html
+        };
+
+        // const result = await sgMail.send(msg);
+
+        const result = brevoClient.sendTransacEmail(sendEmail);
 
         // console.log(`${templateName} email sent : ${result.messageId}`);
         return result;
         
     } catch (error) {
-        console.error(`Error sending email: ${error.message}`);
+        console.error(`Error sending email: ${error}`);
         throw error;        
     }  
 }
