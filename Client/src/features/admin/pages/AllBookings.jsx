@@ -7,6 +7,7 @@ import { SearchOutlined, DollarOutlined, ShoppingOutlined, UserOutlined } from "
 import { getAllBookingsRequest, selectAllBookings, selectBookingLoading } from "../../../redux/slices/bookingSlice"
 import moment from "moment";
 import { useDispatch, useSelector } from "react-redux"
+import RupeeIcon from "../../../assets/RupeeIcon"
 
 const { RangePicker } = DatePicker
 
@@ -161,7 +162,7 @@ const AllBookings = () => {
             <Statistic
               title="Total Revenue"
               value={totalRevenue}
-              prefix={<DollarOutlined />}
+              prefix={<RupeeIcon style={{ fontSize: '22px' }}/>}
               precision={2}
               valueStyle={{ color: "#cf1322" }}
             />
