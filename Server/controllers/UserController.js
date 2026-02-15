@@ -450,6 +450,21 @@ const deleteAccount = async(req, res, next) => {
 
 }
 
+const getAllUsers = async (req, res, next) => {
+  try {
+    const users = await User.find().select("-password -__v -resetToken -resetTokenExpiry").sort({ createdAt: -1 })
+
+    res.send({
+      success: true,
+      message: "All users fetched successfully",
+      data: users,
+    })
+  } catch (error) {
+    res.status(400)
+    next(error)
+  }
+}
+
 module.exports = {
     userInfo, 
     updateProfile,
@@ -457,5 +472,6 @@ module.exports = {
     requestEmailChange,
     verifyEmailChange,
     toggle2FA,
-    deleteAccount
+    deleteAccount,
+    getAllUsers
 }

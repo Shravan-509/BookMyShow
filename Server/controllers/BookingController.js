@@ -292,10 +292,231 @@ const getBookingsByUserId = async(req, res, next) => {
     }
 };
 
+const getAllBookings = async (req, res, next) => {
+  try {
+    const populatedBookings = await Booking.find()
+      .sort({ createdAt: -1 })
+      .populate("user", "name email phone")
+      .populate({
+        path: "show",
+        populate: {
+          path: "movie",
+          model: "movies",
+        },
+      })
+      .populate({
+        path: "show",
+        populate: {
+          path: "theatre",
+          model: "theatres",
+        },
+      })
+
+    const simplifiedBookings = populatedBookings.map((booking) => {
+      const show = booking.show
+      const movie = show?.movie
+      const theatre = show?.theatre
+      const user = booking.user
+
+      return {
+        _id: booking._id,
+        userName: user?.name,
+        userEmail: user?.email,
+        userPhone: user?.phone,
+        movieTitle: movie?.movieName,
+        theatreName: theatre?.name,
+        poster: movie?.poster,
+        showDate: show?.date,
+        showTime: show?.time,
+        seats: booking.seats,
+        ticketPrice: show?.ticketPrice,
+        convenienceFee: booking?.convenienceFee,
+        gstPercent: booking?.gstPercent,
+        ticketStatus: booking?.ticketStatus,
+        seatType: booking?.seatType,
+        bookingId: booking?.bookingId,
+        bookingTime: booking?.createdAt,
+        paymentMethod: booking?.paymentMethod,
+        amount: booking?.amount,
+      }
+    })
+
+    return res.send({
+      success: true,
+      message: "All bookings fetched successfully",
+      data: simplifiedBookings,
+    })
+  } catch (error) {
+    res.status(400)
+    next(error)
+  }
+}
+
+const getBookingsByTheatre = async (req, res, next) => {
+  try {
+    const { theatreId } = req.params
+
+    const Show = require("../models/showSchema")
+
+    // Find all shows for this theatre
+    const shows = await Show.find({ theatre: theatreId }).select("_id")
+    const showIds = shows.map((show) => show._id)
+
+    // Find all bookings for these shows
+    const populatedBookings = await Booking.find({ show: { $in: showIds } })
+      .sort({ createdAt: -1 })
+      .populate("user", "name email phone")
+      .populate({
+        path: "show",
+        populate: {
+          path: "movie",
+          model: "movies",
+        },
+      })
+      .populate({
+        path: "show",
+        populate: {
+          path: "theatre",
+          model: "theatres",
+        },
+      })
+
+    const simplifiedBookings = populatedBookings.map((booking) => {
+      const show = booking.show
+      const movie = show?.movie
+      const theatre = show?.theatre
+      const user = booking.user
+
+      return {
+        _id: booking._id,
+        userName: user?.name,
+        userEmail: user?.email,
+        userPhone: user?.phone,
+        movieTitle: movie?.movieName,
+        theatreName: theatre?.name,
+        poster: movie?.poster,
+        showDate: show?.date,
+        showTime: show?.time,
+        seats: booking.seats,
+        ticketPrice: show?.ticketPrice,
+        convenienceFee: booking?.convenienceFee,
+        gstPercent: booking?.gstPercent,
+        ticketStatus: booking?.ticketStatus,
+        seatType: booking?.seatType,
+        bookingId: booking?.bookingId,
+        bookingTime: booking?.createdAt,
+        paymentMethod: booking?.paymentMethod,
+        amount: booking?.amount,
+      }
+    })
+
+    return res.send({
+      success: true,
+      message: "Theatre bookings fetched successfully",
+      data: simplifiedBookings,
+    })
+  } catch (error) {
+    res.status(400)
+    next(error)
+  }
+}
+
+const getRevenueByOwner = async (req, res, next) => {
+  try {
+    const { ownerId } = req.params
+
+    const Theatre = require("../models/theatreSchema")
+    const Show = require("../models/showSchema")
+
+    // Find all theatres owned by this partner
+    const theatres = await Theatre.find({ owner: ownerId }).select("_id name")
+    const theatreIds = theatres.map((theatre) => theatre._id)
+
+    // Find all shows for these theatres
+    const shows = await Show.find({ theatre: { $in: theatreIds } }).select("_id")
+    const showIds = shows.map((show) => show._id)
+
+    // Find all bookings for these shows
+    const bookings = await Booking.find({ show: { $in: showIds } }).populate({
+      path: "show",
+      populate: {
+        path: "theatre",
+        model: "theatres",
+      },
+    })
+
+    // Calculate revenue metrics
+    const totalRevenue = bookings.reduce((sum, booking) => sum + booking.amount, 0)
+    const totalBookings = bookings.length
+    const totalTickets = bookings.reduce((sum, booking) => sum + booking.seats.length, 0)
+
+    // Revenue by theatre
+    const revenueByTheatre = {}
+    bookings.forEach((booking) => {
+      const theatreId = booking.show?.theatre?._id?.toString()
+      const theatreName = booking.show?.theatre?.name
+
+      if (!revenueByTheatre[theatreId]) {
+        revenueByTheatre[theatreId] = {
+          theatreId,
+          theatreName,
+          revenue: 0,
+          bookings: 0,
+          tickets: 0,
+        }
+      }
+
+      revenueByTheatre[theatreId].revenue += booking.amount
+      revenueByTheatre[theatreId].bookings += 1
+      revenueByTheatre[theatreId].tickets += booking.seats.length
+    })
+
+    // Revenue by month (last 6 months)
+    const revenueByMonth = {}
+    const now = new Date()
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
+      revenueByMonth[monthKey] = 0
+    }
+
+    bookings.forEach((booking) => {
+      const bookingDate = new Date(booking.createdAt)
+      const monthKey = `${bookingDate.getFullYear()}-${String(bookingDate.getMonth() + 1).padStart(2, "0")}`
+      if (revenueByMonth.hasOwnProperty(monthKey)) {
+        revenueByMonth[monthKey] += booking.amount
+      }
+    })
+
+    return res.send({
+      success: true,
+      message: "Revenue data fetched successfully",
+      data: {
+        summary: {
+          totalRevenue,
+          totalBookings,
+          totalTickets,
+          averageBookingValue: totalBookings > 0 ? totalRevenue / totalBookings : 0,
+        },
+        revenueByTheatre: Object.values(revenueByTheatre),
+        revenueByMonth: Object.entries(revenueByMonth).map(([month, revenue]) => ({
+          month,
+          revenue,
+        })),
+      },
+    })
+  } catch (error) {
+    res.status(400)
+    next(error)
+  }
+}
 
 module.exports = {
     validateSeats,
     bookSeat,
     createOrder,
-    getBookingsByUserId
+    getBookingsByUserId,
+    getAllBookings,
+    getBookingsByTheatre,
+    getRevenueByOwner
 }
