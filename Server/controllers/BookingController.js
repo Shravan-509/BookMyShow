@@ -210,7 +210,7 @@ const bookSeat = async (req, res, next) => {
                 {
                     await sendTicketEmail({
                         name: userDoc.name,
-                        to: toEmail,
+                        email: toEmail,
                         booking: newBooking.toObject(),
                         show: reservedShow.toObject(),
                         movie: reservedShow.movie,

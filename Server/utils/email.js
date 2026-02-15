@@ -1,25 +1,9 @@
 const fs = require("fs");
 const path = require("path");
-// const nodemailer = require("nodemailer");
 const QRCode = require("qrcode")
-// const sgMail = require("@sendgrid/mail")
 const brevo = require("@getbrevo/brevo");
 
 const Verification = require('../models/verificationSchema');
-
-// Initialize SendGrid
-// sgMail.setApiKey(process.env.SENDGRID_API_KEY)
-
-//Configure nodemailer
-// const transporter = nodemailer.createTransport({
-//     host: process.env.EMAIL_HOST,
-//     port: process.env.EMAIL_PORT,
-//     secure: process.env.EMAIL_SECURE === "true",
-//     auth: {
-//         user: process.env.EMAIL_USER,
-//         pass: process.env.EMAIL_PASSWORD,
-//     },
-// })
 
 // Initialize Brevo
 const brevoClient = new brevo.TransactionalEmailsApi();
@@ -59,7 +43,7 @@ const getEmailTemplate = async(templateName, metaData) => {
         const templatePath = path.join(__dirname, "email_templates", `${templateName}.html`)
         let template = await fs.promises.readFile(templatePath, "utf-8");
 
-        //Replace all placeholders with actual values
+        // Replace all placeholders with actual values
         Object.keys(metaData).forEach((key) => {
             const regex = new RegExp(`{{${key}}}`, "g");
             template = template.replace(regex, metaData[key]);
@@ -108,20 +92,6 @@ const sendVerificationEmail = async(email, code, type) => {
         // Get Email HTML from template
         const html = await getEmailTemplate(templateName, metaData);
 
-        // const msg = {
-        //     to: email,
-        //     from: process.env.SENDGRID_FROM_EMAIL,
-        //     subject,
-        //     html,
-        // }
-
-        // const result = await transporter.sendMail({
-        //     from: `"BookMyShow" <${process.env.EMAIL_FROM}>`,
-        //     to: email,
-        //     subject,
-        //     html,
-        // })
-
         const sendEmail = {
             sender: {
                 name: "BookMyShow",
@@ -131,8 +101,6 @@ const sendVerificationEmail = async(email, code, type) => {
             subject: subject,
             htmlContent: html
         };
-
-        // const result = await sgMail.send(msg);
 
         const result = brevoClient.sendTransacEmail(sendEmail);
 
@@ -146,12 +114,12 @@ const sendVerificationEmail = async(email, code, type) => {
 }
 
 // Send password reset email
-const sendPasswordResetEmail = async({to, name, resetUrl}) => {
+const sendPasswordResetEmail = async({email, name, resetUrl}) => {
     try {
         let templateName = "password-reset";
         let subject = "Password Reset Request";
         
-        //Prepare metadta for template
+        // Prepare metadta for template
         const metaData = {
             name: name,
             resetUrl: resetUrl,
@@ -161,21 +129,17 @@ const sendPasswordResetEmail = async({to, name, resetUrl}) => {
         // Get Email HTML from template
         const html = await getEmailTemplate(templateName, metaData);
 
-        // const result = await transporter.sendMail({
-        //     from: `"BookMyShow" <${process.env.EMAIL_USER}>`,
-        //     to,
-        //     subject,
-        //     html,
-        // }) 
-
-        const msg = {
-            to,
-            from: process.env.SENDGRID_FROM_EMAIL,
-            subject,
-            html,
-        }
-
-        const result = await sgMail.send(msg)
+        const sendEmail = {
+            sender: {
+                name: "BookMyShow",
+                email: process.env.BREVO_EMAIL_FROM
+            },
+            to: [{ email }],
+            subject: subject,
+            htmlContent: html
+        };
+        
+        const result = brevoClient.sendTransacEmail(sendEmail);
         // console.log("Password reset email sent:", result.messageId);
         return result;
     } catch (error) {
@@ -216,22 +180,17 @@ const sendSecurityNotificationEmail = async (email, type, data = {} ) => {
     // Get email HTML from template
     const html = await getEmailTemplate(templateName, metaData)
 
-    // const result = await transporter.sendMail({
-    //   from: `"BookMyShow Security" <${process.env.EMAIL_FROM}>`,
-    //   to: email,
-    //   subject,
-    //   html,
-    // })
+    const sendEmail = {
+            sender: {
+                name: "BookMyShow",
+                email: process.env.BREVO_EMAIL_FROM
+            },
+            to: [{ email }],
+            subject: subject,
+            htmlContent: html
+        };
 
-    const msg = {
-        to: email,
-        from: process.env.SENDGRID_FROM_EMAIL,
-        subject,
-        html,
-    }
-
-    const result = await sgMail.send(msg)
-
+    const result = brevoClient.sendTransacEmail(sendEmail);
     // console.log(`✅ Security notification email sent: ${type} to ${email}`)
     return result;
   } catch (error) {
@@ -241,7 +200,7 @@ const sendSecurityNotificationEmail = async (email, type, data = {} ) => {
 }
 
 // Send security notification email
-const sendTicketEmail = async ({name, to, booking, show, movie, theatre, pdfBuffer}) => {
+const sendTicketEmail = async ({name, email, booking, show, movie, theatre, pdfBuffer}) => {
   try {
         let templateName = "movie-ticket";
         let subject = `Your BookMyShow Ticket - ${booking.bookingId}`;
@@ -277,7 +236,7 @@ const sendTicketEmail = async ({name, to, booking, show, movie, theatre, pdfBuff
         const qrPayload = booking?.bookingId;        
         const qrCodeUrl = await QRCode.toDataURL(qrPayload, { margin: 1, scale: 6 })
         
-        //Prepare metadta for template
+        // Prepare metadta for template
         const metaData = {
             name: name,
             bookingId: booking.bookingId,
@@ -307,34 +266,26 @@ const sendTicketEmail = async ({name, to, booking, show, movie, theatre, pdfBuff
         // Get Email HTML from template
         const html = await getEmailTemplate(templateName, metaData);
 
-    //    const mailOptions = {
-    //         from: `"BookMyShow" <${process.env.EMAIL_USER}>`,
-    //         to,
-    //         subject,
-    //         html,
-    //         attachments: [],
-    //     };
-
-        const msg = {
-            to,
-            from: process.env.SENDGRID_FROM_EMAIL,
-            subject,
-            html,
-            attachments: [],
-        }
+        const sendEmail = {
+            sender: {
+                name: "BookMyShow",
+                email: process.env.BREVO_EMAIL_FROM
+            },
+            to: [{ email }],
+            subject: subject,
+            htmlContent: html,
+            attachment: []
+        };
 
         if (pdfBuffer && Buffer.isBuffer(pdfBuffer)) 
         {
-            msg.attachments.push({
-                filename: `ticket-${booking.bookingId}.pdf`,
-                content: pdfBuffer.toString("base64"),
-                type: "application/pdf",
-                disposition: "attachment",
+            sendEmail.attachment.push({
+                name: `ticket-${booking.bookingId}.pdf`,
+                content: pdfBuffer.toString("base64")
             })
         }
 
-        // const result = await transporter.sendMail(mailOptions);
-        const result = await sgMail.send(msg)
+        const result = brevoClient.sendTransacEmail(sendEmail);
         // console.log("Ticket Email with PDF sent:", result.messageId);
         return result;
     } catch (error) {
