@@ -1,7 +1,7 @@
 import { useDispatch, useSelector } from "react-redux"
 import { useNavigate } from "react-router-dom";
 import { loginRequest, logout, selectAuth, selectAuthError, selectAuthLoading, selectisAuthenticated, selectUser, signupRequest } from "../redux/slices/authSlice";
-
+import { persistor } from "../redux/store";
 export const useAuth = () => {
     const dispatch = useDispatch();
     const Navigate = useNavigate();
@@ -22,7 +22,8 @@ export const useAuth = () => {
     }
 
     //logout function
-    const handlelogout = () => {
+    const handlelogout = async () => {
+        await persistor.purge(); 
         dispatch(logout());
         Navigate("/", { replace : true });
     }

@@ -38,7 +38,7 @@ const profileSlice = createSlice({
     initialState,
     reducers: {
         // Fetch Profile
-        fetchProfileRequest: (state, action) => {
+        fetchProfileRequest: (state) => {
             state.loading = true
             state.error = null
         },
@@ -53,7 +53,7 @@ const profileSlice = createSlice({
         },
 
         // Update Profile
-        updateProfileRequest: (state, action) => {
+        updateProfileRequest: (state) => {
             state.profileUpdateLoading = true
             state.profileUpdateError = null
         },
@@ -68,11 +68,11 @@ const profileSlice = createSlice({
         },
 
         // Change Password
-        changePasswordRequest: (state, action) => {
+        changePasswordRequest: (state) => {
             state.passwordChangeLoading = true
             state.passwordChangeError = null
         },
-        changePasswordSuccess: (state, action) => {
+        changePasswordSuccess: (state) => {
             state.passwordChangeLoading = false
             state.passwordChangeError = null
         },
@@ -82,7 +82,7 @@ const profileSlice = createSlice({
         },
 
         // Email Change
-        requestEmailChangeRequest: (state, action) => {
+        requestEmailChangeRequest: (state) => {
             state.emailChangeLoading = true
             state.emailChangeError = null
         },
@@ -98,7 +98,7 @@ const profileSlice = createSlice({
         },
 
         // Verify Email Change
-        verifyEmailChangeRequest: (state, action) => {
+        verifyEmailChangeRequest: (state) => {
             state.emailChangeLoading = true
             state.emailChangeError = null
         },
@@ -115,7 +115,7 @@ const profileSlice = createSlice({
         },
 
         // Toggle 2FA
-        toggle2FARequest: (state, action) => {
+        toggle2FARequest: (state) => {
             state.securityLoading = true
             state.securityError = null
         },
@@ -130,11 +130,11 @@ const profileSlice = createSlice({
         },
 
         // Delete Account
-        deleteAccountRequest: (state, action) => {
+        deleteAccountRequest: (state) => {
             state.deleteAccountLoading = true
             state.deleteAccountError = null
         },
-        deleteAccountSuccess: (state, action) => {
+        deleteAccountSuccess: (state) => {
             state.deleteAccountLoading = false
             state.deleteAccountError = null
         },
@@ -167,7 +167,7 @@ const profileSlice = createSlice({
             state.deleteAccountError = null
         },
 
-        resetProfileState: (state) => {
+        resetProfileState: () => {
             return initialState
         }
     }

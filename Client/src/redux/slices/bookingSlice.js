@@ -5,7 +5,13 @@ const initialState = {
     error: null,
     validationResult: null,
     bookingData: null,
-    userBookings: [],   
+    userBookings: [],  
+    allBookings: [],
+    theatreBookings: [],
+    revenueData: null, 
+    razorpayOrder: null,
+    isPaymentProcessing: false,
+    paymentError: null,
 };
 
 const bookingSlice = createSlice({
@@ -13,7 +19,7 @@ const bookingSlice = createSlice({
     initialState,
     reducers: {
         // Validate Seat Booking actions
-        validateSeatBookingRequest: (state, action) => {
+        validateSeatBookingRequest: (state) => {
             state.loading = true
             state.error = null
             state.validationResult = null
@@ -30,7 +36,7 @@ const bookingSlice = createSlice({
         },
 
          // Book Seat actions
-        bookSeatsRequest: (state, action) => {
+        bookSeatsRequest: (state) => {
             state.loading = true
             state.error = null
         },
@@ -46,7 +52,7 @@ const bookingSlice = createSlice({
         },
 
         // Get User Bookings actions
-        getUserBookingsRequest: (state, action) => {
+        getUserBookingsRequest: (state) => {
             state.loading = true
             state.error = null
         },
@@ -71,7 +77,64 @@ const bookingSlice = createSlice({
          clearBookingData: (state) => {
             state.bookingData = null
             state.error = null
-        }
+        },
+
+        // Get All Bookings actions
+        getAllBookingsRequest: (state) => {
+            state.loading = true
+            state.error = null
+        },
+        getAllBookingsSuccess: (state, action) => {
+            state.loading = false
+            state.allBookings = action.payload
+        },
+        getAllBookingsFailure: (state, action) => {
+            state.loading = false
+            state.error = action.payload
+        },
+
+        // Get Theatre Bookings actions
+        getTheatreBookingsRequest: (state) => {
+            state.loading = true
+            state.error = null
+        },
+        getTheatreBookingsSuccess: (state, action) => {
+            state.loading = false
+            state.theatreBookings = action.payload
+        },
+        getTheatreBookingsFailure: (state, action) => {
+            state.loading = false
+            state.error = action.payload
+        },
+
+        // Get Bookings Revenue actions
+        getRevenueDataRequest: (state) => {
+            state.loading = true
+            state.error = null
+        },
+        getRevenueDataSuccess: (state, action) => {
+            state.loading = false
+            state.revenueData = action.payload
+        },
+        getRevenueDataFailure: (state, action) => {
+            state.loading = false
+            state.error = action.payload
+        },
+
+        createRazorpayOrderRequest: (state) => {
+            state.isPaymentProcessing = true
+            state.paymentError = null
+        },
+        createRazorpayOrderSuccess: (state, action) => {
+            state.isPaymentProcessing = false
+            state.razorpayOrder = action.payload
+            state.paymentError = null
+        },
+        createRazorpayOrderFailure: (state, action) => {
+            state.isPaymentProcessing = false
+            state.razorpayOrder = null
+            state.paymentError = action.payload
+        },
     }
 });
 
@@ -87,8 +150,20 @@ export const {
     getUserBookingsRequest,
     getUserBookingsSuccess,
     getUserBookingsFailure,
+    getAllBookingsRequest,
+    getAllBookingsSuccess,
+    getAllBookingsFailure,
+    getTheatreBookingsRequest,
+    getTheatreBookingsSuccess,
+    getTheatreBookingsFailure,
+    getRevenueDataRequest,
+    getRevenueDataSuccess,
+    getRevenueDataFailure,
+    createRazorpayOrderRequest,
+    createRazorpayOrderSuccess,
+    createRazorpayOrderFailure,
     clearValidationResult,
-    clearBookingData
+    clearBookingData,
 } = bookingSlice.actions;
 
 // Export selectors
@@ -97,5 +172,13 @@ export const selectBookingError = (state) => state.booking.error
 export const selectValidationResult = (state) => state.booking.validationResult
 export const selectBookingData = (state) => state.booking.bookingData
 export const selectUserBookings = (state) => state.booking.userBookings
+
+export const selectAllBookings = (state) => state.booking.allBookings
+export const selectTheatreBookings = (state) => state.booking.theatreBookings
+export const selectRevenueData = (state) => state.booking.revenueData
+
+export const selectRazorpayOrder = (state) => state.booking.razorpayOrder
+export const selectIsPaymentProcessing = (state) => state.booking.isPaymentProcessing
+export const selectPaymentError = (state) => state.booking.paymentError
 
 export default bookingSlice.reducer;

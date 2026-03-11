@@ -1,21 +1,30 @@
-import { axiosInstance } from ".";
+import { axiosInstance } from "."
 
-export const UserInfo = async () => {
+export class UserAPI {
+  static async fetchProfile() {
     try {
-        const response = await axiosInstance.get("/users");
-        return response.data;
+      const response = await axiosInstance.get("/users")
+      return response.data
     } catch (error) {
-        return error
-        
+      throw error
     }
-}
+  }
 
-export const UserLogout = async () => {
+  static async logout() {
     try {
-        const response = await axiosInstance.post("/users/logout");
-        return response.data;
+      const response = await axiosInstance.post("/users/logout")
+      return response.data
     } catch (error) {
-        return error
-        
+      throw error
     }
+  }
+
+  static async fetchAllUsers() {
+    try {
+      const response = await axiosInstance.get("/users/admin/all")
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  }
 }

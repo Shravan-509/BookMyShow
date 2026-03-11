@@ -4,20 +4,22 @@ const initialState = {
     loading: false,
     error: null,
     show: [],
-    selectedShow: null
+    selectedShow: null,
+    success: false
 };
 
 const showSlice = createSlice({
     name : "show",
     initialState,
     reducers: {
-        addShowRequest: (state, action) => {
+        addShowRequest: (state) => {
             state.loading = true
             state.error = null
         },
         addShowSuccess: (state, action) => {
             state.loading = false
             state.show = action.payload
+            state.success = true
             state.error = null
         },
         addShowFailure: (state, action) => {
@@ -26,13 +28,14 @@ const showSlice = createSlice({
             state.error = action.payload
         },
 
-        updateShowRequest: (state, action) => {
+        updateShowRequest: (state) => {
             state.loading = true
             state.error = null
         },
         updateShowSuccess: (state, action) => {
             state.loading = false
             state.show = action.payload
+            state.success = true;
             state.error = null
         },
         updateShowFailure: (state, action) => {
@@ -41,13 +44,14 @@ const showSlice = createSlice({
             state.error = action.payload
         },
 
-        deleteShowRequest: (state, action) => {
+        deleteShowRequest: (state) => {
             state.loading = true
             state.error = null
         },
         deleteShowSuccess: (state, action) => {
             state.loading = false
             state.show = action.payload
+            state.success = true;
             state.error = null
         },
         deleteShowFailure: (state, action) => {
@@ -56,7 +60,7 @@ const showSlice = createSlice({
             state.error = action.payload
         },
 
-        getShowByIdRequest: (state, action) => {
+        getShowByIdRequest: (state) => {
             state.loading = true
             state.error = null
         },
@@ -71,7 +75,7 @@ const showSlice = createSlice({
             state.error = action.payload
         },
 
-        getShowsByTheatreRequest: (state, action) => {
+        getShowsByTheatreRequest: (state) => {
             state.loading = true
             state.error = null
         },
@@ -86,7 +90,7 @@ const showSlice = createSlice({
             state.error = action.payload 
         },
 
-        getTheatresWithShowsByMovieRequest: (state, action) => {
+        getTheatresWithShowsByMovieRequest: (state) => {
             state.loading = true
             state.error = null
         },

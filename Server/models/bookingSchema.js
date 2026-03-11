@@ -63,5 +63,7 @@ const bookingSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
+// paymentStatus
+
 const Booking= mongoose.model("bookings", bookingSchema);
 module.exports = Booking;

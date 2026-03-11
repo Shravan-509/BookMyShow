@@ -1,66 +1,84 @@
-import { axiosInstance } from ".";
+import { axiosInstance } from "."
 
-export const RegisterUser = async (payload) => {
+export class AuthAPI {
+  static async register(payload) {
     try {
-        const response = await axiosInstance.post("/auth/register", payload);
-        return response.data;
+      const response = await axiosInstance.post("/auth/register", payload)
+      return response.data
     } catch (error) {
-        return error;
+      throw error
     }
-};
+  }
 
-export const VerifyEmail = async (payload) => {
+  static async verifyEmail(payload) {
     try {
-        const response = await axiosInstance.post("/auth/verify-email", payload);
-        return response.data;
+      const response = await axiosInstance.post("/auth/verify-email", payload)
+      return response.data
     } catch (error) {
-        return error;
+      throw error
     }
-};
+  }
 
-export const ResendVerification = async (valu) => {
+  static async resendVerification(payload) {
     try {
-        const response = await axiosInstance.post("/auth/resend-verification", payload);
-        return response.data;
+      const response = await axiosInstance.post("/auth/resend-verification", payload)
+      return response.data
     } catch (error) {
-        return error;
+      throw error
     }
-};
+  }
 
-export const LoginUser = async (payload) => {
+  static async login(payload) {
     try {
-        const response = await axiosInstance.post("/auth/login", payload);
-        return response.data;
+      const response = await axiosInstance.post("/auth/login", payload)
+      return response.data
     } catch (error) {
-        return error;
+      throw error
     }
-};
+  }
 
-
-export const Verify2FA = async (payload) => {
+  static async verify2FA(payload) {
     try {
-        const response = await axiosInstance.post("/auth/verify-2fa", payload);
-        return response.data;
+      const response = await axiosInstance.post("/auth/verify-2fa", payload)
+      return response.data
     } catch (error) {
-        return error;
+      throw error
     }
-};
+  }
 
-
-export const Resend2FA = async (payload) => {
+  static async resend2FA(payload) {
     try {
-        const response = await axiosInstance.post("/auth/resend-2fa", payload);
-        return response.data;
+      const response = await axiosInstance.post("/auth/resend-2fa", payload)
+      return response.data
     } catch (error) {
-        return error;
+      throw error
     }
-};
+  }
 
-export const ReverifyEmail = async (payload) => {
+  static async reverifyEmail(payload) {
     try {
-        const response = await axiosInstance.post("/auth/request-reverification", payload);
-        return response.data;
+      const response = await axiosInstance.post("/auth/request-reverification", payload)
+      return response.data
     } catch (error) {
-        return error;
+      throw error
     }
-};
+  }
+
+  static async checkAuth() {
+    try {
+      const response = await axiosInstance.get("/users/profile")
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  }
+
+  static async logout() {
+    try {
+      const response = await axiosInstance.post("/auth/logout")
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  }
+}

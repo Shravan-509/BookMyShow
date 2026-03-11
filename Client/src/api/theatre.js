@@ -1,39 +1,40 @@
-import { axiosInstance } from ".";
+import { axiosInstance } from "."
 
-
-export const addTheatre = async (payload) => {
+export class TheatreAPI {
+  static async create(payload) {
     try {
-        const response = await axiosInstance.post('/theatres', payload);
-        return response?.data;
+      const response = await axiosInstance.post("/theatres", payload)
+      return response?.data
     } catch (error) {
-        return error;
+      throw error
     }
-};
+  }
 
-export const updateTheatre = async (id, payload) => {
+  static async update(id, payload) {
     try {
-        const response = await axiosInstance.patch(`/theatres/${id}`, payload);
-        return response?.data;
+      const response = await axiosInstance.patch(`/theatres/${id}`, payload)
+      return response?.data
     } catch (error) {
-        return error;
+      throw error
     }
-};
+  }
 
-export const deleteTheatre = async (id) => {
+  static async delete(id) {
     try {
-        const response = await axiosInstance.delete(`/theatres/${id}`);
-        return response?.data;
+      const response = await axiosInstance.delete(`/theatres/${id}`)
+      return response?.data
     } catch (error) {
-        return error;
+      throw error
     }
-};
+  }
 
-// getTheatresByOwner & getTheatresForAdmin merged to one dynamic to get Theatres info
-export const getTheatres = async () => {
+  // getTheatresByOwner & getTheatresForAdmin merged to one dynamic to get Theatres info
+  static async fetch() {
     try {
-        const response = await axiosInstance.get("/theatres");
-        return response?.data;
+      const response = await axiosInstance.get("/theatres")
+      return response?.data
     } catch (error) {
-        return error;
+      throw error
     }
-};
+  }
+}

@@ -28,18 +28,18 @@ const MovieShows = ({
         dispatch(getShowsByTheatreRequest(selectedTheatre._id))
     }, [dispatch])
 
-    useEffect(() => {
-        if (!loading && shows && (view === "add" || view === "edit")) 
-        {
-            const timeoutId = setTimeout(() => {
-                setView("table");
-                setSelectedShow(null);
-            }, 0);
+    // useEffect(() => {
+    //     if (!loading && shows && (view === "add" || view === "edit")) 
+    //     {
+    //         const timeoutId = setTimeout(() => {
+    //             setView("table");
+    //             setSelectedShow(null);
+    //         }, 0);
 
-            // Cleanup if the component unmounts before timeout
-            return () => clearTimeout(timeoutId);
-        }
-    }, [loading, shows, view]);
+    //         // Cleanup if the component unmounts before timeout
+    //         return () => clearTimeout(timeoutId);
+    //     }
+    // }, [loading, shows, view]);
 
     const handleCancel= () => {
         setIsShowModalOpen(false);
@@ -59,6 +59,10 @@ const MovieShows = ({
         {
             dispatch(updateShowRequest({ id: selectedShow._id, show}));
         }
+
+        // Move back only after submit
+        setView("table");
+        setSelectedShow(null);
     }
 
     const handleDelete = (showId) => {

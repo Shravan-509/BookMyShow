@@ -539,7 +539,7 @@ const forgotPassword = async(req, res, next) => {
         const resetUrl = `${process.env.PUBLIC_APP_URL}/no-auth/reset-password?token=${resetToken}`;
        
          // Send Password Reset email
-        await sendPasswordResetEmail({to: user.email, name: user.name, resetUrl});
+        await sendPasswordResetEmail({email: user.email, name: user.name, resetUrl});
 
          return res.status(200).json({
             success: true,

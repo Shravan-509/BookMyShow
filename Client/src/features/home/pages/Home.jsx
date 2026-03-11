@@ -5,10 +5,11 @@ import { Col, Input, Row, Card, Button, Spin } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
 import Title from "antd/es/typography/Title";
 import moment from "moment";
-import Meta from "antd/es/card/Meta";
 import { getMoviesRequest, selectMovie, selectMovieError, selectMovieLoading } from "../../../redux/slices/movieSlice";
 import { notify } from "../../../utils/notificationUtils";
 import { useAuth } from "../../../hooks/useAuth";
+
+const { Meta } = Card; 
 
 const MovieCard = React.memo(({ movie, onMovieClick }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -156,7 +157,7 @@ const Home = () => {
         }
         else
         {
-          notify("warning", "Only users can view movie details.");
+          notify("warning", "Please login as a User to book the tickets!");
         } 
     }, 
     [user, navigate]
@@ -209,8 +210,8 @@ const Home = () => {
             value={searchText}
             enterButton= {
               <Button
-                icon={<SearchOutlined className="!text-white" />}
-                className="!bg-[#f84464] hover:!bg-[#dc3558] !text-white !border-none"
+                icon={<SearchOutlined className="text-white!" />}
+                className="bg-[#f84464]! hover:bg-[#dc3558]! text-white! border-none!"
               />
             }
             size="large"

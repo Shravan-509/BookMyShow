@@ -16,7 +16,7 @@ const uiSlice = createSlice({
         setLoginError: (state, action) => {
             state.loginError = action.payload
         },
-        clearLoginError: (state, action) => {
+        clearLoginError: (state) => {
             state.loginError = ""
         },
         setShowForgotPasswordModal: (state, action) => {

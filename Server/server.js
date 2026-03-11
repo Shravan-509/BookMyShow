@@ -8,7 +8,7 @@ const helmet = require("helmet")
 const compression = require("compression")
 const mongoSanitize = require("express-mongo-sanitize")
 
-const connectDB = require('./config/db');
+const connectDB = require('./config/db'); 
 const authRoute = require('./routes/authRoute');
 const userRoute = require('./routes/userRoute');
 const movieRoute = require("./routes/movieRoute");
@@ -21,6 +21,9 @@ const { validateJWT } = require("./middlewares/authorization");
 const app = express();
 
 const isProd = process.env.NODE_ENV === "production";
+
+// REQUIRED for cloud deployments
+app.set("trust proxy", 1);
 
 //Rate limiter
 const limiter = rateLimit({

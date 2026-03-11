@@ -1,4 +1,4 @@
-import { takeLatest, put, call } from "redux-saga/effects";
+import { takeEvery, put, call } from "redux-saga/effects";
 import { axiosInstance } from "../../api/index";
 import { 
     addMovieFailure, 
@@ -19,6 +19,7 @@ import {
     } from "../slices/movieSlice";
 import moment from "moment";
 import { notify } from "../../utils/notificationUtils";
+import { MovieAPI } from "../../api/movie";
 
 // Movie API calls
 const fetchMoviesAPI = async () => {
@@ -61,7 +62,7 @@ const deleteMovieAPI = async (id) => {
     }
 };
 
-export const getMovieByIdAPI = async (id) => {
+const getMovieByIdAPI = async (id) => {
     try {
         const response = await axiosInstance.get(`/movies/${id}`);
         return response?.data;
@@ -76,7 +77,7 @@ export const getMovieByIdAPI = async (id) => {
 function* getMoviesSaga() {
     try{
         
-        const response = yield call(fetchMoviesAPI);
+        const response = yield call(MovieAPI.fetch);
         if(response.success)
         {
             const formattedData = response.data.map(movie => ({
@@ -97,14 +98,15 @@ function* getMoviesSaga() {
     }
     catch(error)
     {
-        yield put(getMoviesFailure(error.message));
-        notify("error", "Error fetching movies. Please try again.", error?.message);
+        const errorMessage = error.response?.data?.message || error.message
+        yield put(getMoviesFailure(errorMessage));
+        notify("error", "Error fetching movies. Please try again.", errorMessage);
     }
 }
 
 function* addMovieSaga(action) {
     try{ 
-        const response = yield call(addMovieAPI, action.payload);
+        const response = yield call(MovieAPI.create, action.payload);
         if(response.success)
         {
             yield put(addMovieSuccess(response.message));
@@ -121,14 +123,16 @@ function* addMovieSaga(action) {
     }
     catch(error)
     {
-        yield put(addMovieFailure(error.message));
-        notify("error", "Error adding movie. Please try again.", error?.message);
+        const errorMessage = error.response?.data?.message || error.message
+        yield put(addMovieFailure(errorMessage));
+        notify("error", "Error adding movie. Please try again.", errorMessage);
     }
 }
 
 function* updateMovieSaga(action) {
     try{ 
-        const response = yield call(updateMovieAPI, action.payload);
+        const {id, movie} = action.payload
+        const response = yield call(MovieAPI.update, id, movie);
         if(response.success)
         {
             yield put(updateMovieSuccess(response.data));
@@ -145,14 +149,15 @@ function* updateMovieSaga(action) {
     }
     catch(error)
     {
-        yield put(updateMovieFailure(error.message));
-        notify("error", "Error updating movie. Please try again.", error?.message);  
+        const errorMessage = error.response?.data?.message || error.message
+        yield put(updateMovieFailure(errorMessage));
+        notify("error", "Error updating movie. Please try again.", errorMessage);  
     }
 }
 
 function* deleteMovieSaga(action) {
     try{ 
-        const response = yield call(deleteMovieAPI, action.payload);
+        const response = yield call(MovieAPI.delete, action.payload);
          if(response.success)
         {
             yield put(deleteMovieSuccess(response.data));
@@ -169,14 +174,15 @@ function* deleteMovieSaga(action) {
     }
     catch(error)
     {
-        yield put(deleteMovieFailure(error.message));
-        notify("error", "Error deleting movie. Please try again.", error?.message);  
+        const errorMessage = error.response?.data?.message || error.message
+        yield put(deleteMovieFailure(errorMessage));
+        notify("error", "Error deleting movie. Please try again.", errorMessage);  
     }
 }
 
 function* getMovieByIdSaga(action) {
     try{ 
-        const response = yield call(getMovieByIdAPI, action.payload);
+        const response = yield call(MovieAPI.fetchById, action.payload);
         if(response.success)
         {
             yield put(getMovieByIdSuccess(response.data));
@@ -192,17 +198,18 @@ function* getMovieByIdSaga(action) {
     }
     catch(error)
     {
-        yield put(getMovieByIdFailure(error.message));
-        notify("error", "Error fetching movie details. Please try again.", error?.message);  
+        const errorMessage = error.response?.data?.message || error.message
+        yield put(getMovieByIdFailure(eerrorMessage));
+        notify("error", "Error fetching movie details. Please try again.", errorMessage);  
     }
 }
 
 
 // Watcher Saga
 export function* movieSaga(){
-    yield takeLatest(getMoviesRequest.type, getMoviesSaga);
-    yield takeLatest(addMovieRequest.type, addMovieSaga);
-    yield takeLatest(updateMovieRequest.type, updateMovieSaga);
-    yield takeLatest(deleteMovieRequest.type, deleteMovieSaga);
-    yield takeLatest(getMovieByIdRequest.type, getMovieByIdSaga)
+    yield takeEvery(getMoviesRequest.type, getMoviesSaga);
+    yield takeEvery(addMovieRequest.type, addMovieSaga);
+    yield takeEvery(updateMovieRequest.type, updateMovieSaga);
+    yield takeEvery(deleteMovieRequest.type, deleteMovieSaga);
+    yield takeEvery(getMovieByIdRequest.type, getMovieByIdSaga)
 }

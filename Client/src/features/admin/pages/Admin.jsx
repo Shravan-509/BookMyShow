@@ -1,8 +1,9 @@
-import React from 'react'
+import AllBookings from './AllBookings'
 import MovieList from './MovieList'
 import TheatreList from './TheatreList'
 import { Tabs } from 'antd'
 import Title from 'antd/es/typography/Title'
+import UserManagement from './UserManagement'
 
 const Admin = () => {
   const tabItems = [
@@ -15,7 +16,17 @@ const Admin = () => {
       key: "theatres",
       label: "Theatres",
       children: <TheatreList/>
-    }
+    },
+    {
+      key: "bookings",
+      label: "All Bookings",
+      children: <AllBookings />,
+    },
+    {
+      key: "users",
+      label: "User Management",
+      children: <UserManagement />,
+    },
   ]
 
   return (
