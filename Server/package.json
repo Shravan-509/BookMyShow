@@ -24,7 +24,7 @@
     "mongodb": "^7.1.0",
     "mongoose": "^9.2.1",
     "node-cache": "^5.1.2",
-    "nodemailer": "^8.0.1",
+    "nodemailer": "^8.0.5",
     "pdfkit": "^0.17.2",
     "qrcode": "^1.5.4",
     "razorpay": "^2.9.6",
