@@ -12,7 +12,7 @@ import {
     MobileOutlined, 
     WalletOutlined 
 } from '@ant-design/icons';
-import moment from 'moment';
+import { format } from 'date-fns';
 import { 
     selectValidationResult, validateSeatBookingRequest,
     selectRazorpayOrder, selectIsPaymentProcessing, selectPaymentError, createRazorpayOrderRequest,
@@ -23,6 +23,7 @@ import { useBooking } from '../../../hooks/useBooking';
 import { useNavigate } from 'react-router-dom';
 import { notify } from '../../../utils/notificationUtils';
 import { useDispatch, useSelector } from 'react-redux';
+import { formatDate, formatParsedTime } from '../../../utils/dateFormatter';
 const { Title ,Text, Paragraph } = Typography;
 const { Panel } = Collapse; 
 const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID;
@@ -517,7 +518,8 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
                             Seats - {seats.join(', ')} ({seats.length} Tickets)
                         </Text>
                         <Text type="secondary" className="text-sm! md:text-base!">
-                        {moment(show.date).format("ddd, DD MMM, YYYY")} | {moment(show.time, "HH:mm").format("hh:mm A")}
+                            {formatDate(show?.date, "EEE, dd MMM, yyyy")} | {" "}
+                            {formatParsedTime(show?.time)}
                         </Text>
                     </Space>
                 </div>

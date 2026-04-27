@@ -10,7 +10,7 @@ import {
   cancelReminder,
 } from "../../../utils/reminderUtils"
 import { notify } from "../../../utils/notificationUtils"
-import moment from "moment"
+import { formatDate, formatParsedTime } from "../../../utils/dateFormatter"
 
 const { Title, Text } = Typography
 const { Option } = Select
@@ -128,15 +128,16 @@ const ReminderSettingsTab = () => {
                   title={
                     <div className="flex items-center gap-2">
                       <Text strong>{reminder.movieTitle}</Text>
-                      <Tag color="blue">{moment(reminder.showTime, "HH:mm").format("hh:mm A")}</Tag>
+                      <Tag color="blue">{formatParsedTime(reminder.showTime)}</Tag>
                     </div>
                   }
                   description={
                     <div>
                       <div>{reminder.theatreName}</div>
                       <div className="text-xs text-gray-500">
-                        Show: {moment(reminder.showDate).format("MMM DD, YYYY")} • Reminder:{" "}
-                        {moment(reminder.reminderTime).format("MMM DD, hh:mm A")} • Seats: {reminder.seats.join(", ")}
+                        Show: {formatDate(reminder.showDate, "MMM dd, yyyy")} • Reminder:{" "}
+                        {formatDate(reminder.reminderTime, "MMM DD")} {" "}
+                        {formatTime(reminder.reminderTime, "hh:mm a")} • Seats: {reminder.seats.join(", ")}
                       </div>
                     </div>
                   }

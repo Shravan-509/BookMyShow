@@ -11,8 +11,8 @@ import {
   selectBookingLoading,
 } from "../../../redux/slices/bookingSlice"
 
-import moment from "moment"
 import RupeeIcon from "../../../assets/RupeeIcon"
+import { formatDate, formatDateTime } from "../../../utils/dateFormatter"
 
 const { Option } = Select
 
@@ -73,7 +73,7 @@ const TheatreBookings = () => {
       dataIndex: "showDate",
       key: "showDate",
       width: 120,
-      render: (date) => moment(date).format("DD MMM YYYY"),
+      render: (date) => formatDate(date, "dd MMM yyyy"),
     },
     {
       title: "Show Time",
@@ -112,7 +112,7 @@ const TheatreBookings = () => {
       dataIndex: "bookingTime",
       key: "bookingTime",
       width: 160,
-      render: (time) => moment(time).format("DD MMM YYYY HH:mm"),
+      render: (time) => formatDateTime(time, "dd MMM yyyy HH:mm"),
     },
   ]
 

@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useEffect, useState, useCallback, useMemo } from "react"
-import moment from "moment"
+import { format } from 'date-fns';
 
 import { Link, useParams } from "react-router-dom"
 import {
@@ -39,6 +39,7 @@ import {
 } from "../../../redux/slices/showSlice"
 import { notify } from "../../../utils/notificationUtils"
 import SeatRecommendation from "../../../components/SeatRecommendation"
+import { formatDate, formatParsedTime, formatTime } from "../../../utils/dateFormatter";
 const { Title, Text } = Typography
 const { Step } = Steps
 
@@ -192,7 +193,8 @@ const Booking = () => {
         </Text>
         <div className="text-sm text-gray-600 mt-1">{show?.theatre.name}</div>
         <div className="text-sm text-gray-600">
-          {moment(show?.date).format("ddd, DD MMM, YYYY")} | {moment(show?.time, "HH:mm").format("hh:mm A")}
+          {formatDate(show?.date, "EEE, dd MMM, YYYY")} | {" "}
+          {formatParsedTime(show?.time)}
         </div>
       </div>
 
@@ -250,7 +252,7 @@ const Booking = () => {
     show && (
       <main className="min-h-screen p-4 md:p-6 lg:p-12 bg-gray-50">
         <div className="max-w-4xl mx-auto">
-          <Link to={`/movie/${show?.movie._id}/${moment().format("YYYYMMDD")}`}>
+          <Link to={`/movie/${show?.movie._id}/${format(new Date(), "yyyyMMdd")}`}>
             <ArrowLeftOutlined className="h-4 w-4 mr-2" />
             Back to Theatre
           </Link>
@@ -267,9 +269,9 @@ const Booking = () => {
                     <Text className="text-sm md:text-base">{show?.theatre.name}</Text>
                     <Tag color="blue" className="flex! gap-1! text-xs! md:text-sm!">
                       <CalendarOutlined />
-                      {moment(show?.date).format("ddd, DD MMM, YYYY")}
+                      {formatDate(show?.date, "EEE, dd MMM, yyyy")}
                       <ClockCircleOutlined />
-                      {moment(show?.time, "HH:mm").format("hh:mm A")}
+                      {formatParsedTime(show?.time)}
                     </Tag>
                   </Space>
                 </Space>
@@ -472,7 +474,7 @@ const Booking = () => {
                   size="large"
                   onClick={handleNextStep}
                   disabled={selectedSeats.length !== ticketCount}
-                  className="bg-[#f84464]! hover:bg-[#dc3558]! min-w-[120px]!"
+                  className="bg-[#f84464]! hover:bg-[#dc3558]! min-w-30!"
                 >
                   Continue
                 </Button>

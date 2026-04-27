@@ -13,7 +13,7 @@ import {
     EyeOutlined
 } from '@ant-design/icons';
 const { Title, Paragraph, Text } = Typography;
-import moment from "moment";
+import { format, parseISO } from 'date-fns';
 import { formatDuration } from '../../../utils/format-duration';
 
 const ShowTime = React.lazy(() => import("./ShowTime"));
@@ -65,7 +65,13 @@ const MovieInfo = memo(() => {
     }, [movie?.duration])
 
     const formattedReleaseDate = useMemo(() => {
-        return movie?.releaseDate ? moment(movie.releaseDate).format("DD MMM, YYYY") : ""
+        if (!movie?.releaseDate) return "";
+        const d =
+            typeof movie.releaseDate === "string"
+            ? parseISO(movie.releaseDate)
+            : new Date(movie.releaseDate);
+
+        return format(d, "dd MMM, yyyy");
     }, [movie?.releaseDate])
 
     const genreTags = useMemo(() => {

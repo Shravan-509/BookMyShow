@@ -17,7 +17,7 @@ import {
     updateMovieRequest, 
     updateMovieSuccess
     } from "../slices/movieSlice";
-import moment from "moment";
+import { format } from 'date-fns';
 import { notify } from "../../utils/notificationUtils";
 import { MovieAPI } from "../../api/movie";
 
@@ -82,7 +82,7 @@ function* getMoviesSaga() {
         {
             const formattedData = response.data.map(movie => ({
                 ...movie,
-                releaseDate: moment(movie.releaseDate).format("YYYY-MM-DD")
+                releaseDate: format(movie.releaseDate, "yyyy-MM-dd")
             }));
             yield put(getMoviesSuccess(formattedData));
         

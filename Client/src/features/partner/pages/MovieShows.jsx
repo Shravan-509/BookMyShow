@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { Button, Col, Form, Input, InputNumber, Modal, Popconfirm, Row, Select, Spin, Table, Tooltip } from "antd";
 import Title from "antd/es/typography/Title";
-import moment from "moment";
+import { format, parse } from 'date-fns';
 import { EditOutlined, DeleteOutlined, ArrowLeftOutlined } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 import { addShowRequest, deleteShowRequest, getShowsByTheatreRequest, selectShow, selectShowError, selectShowLoading, updateShowRequest } from "../../../redux/slices/showSlice";
 import { getMoviesRequest, selectMovie } from "../../../redux/slices/movieSlice";
 import { notify } from "../../../utils/notificationUtils";
+import { formatDate, formatParsedTime } from "../../../utils/dateFormatter";
 
 const MovieShows = ({
     isShowModalOpen,
@@ -81,15 +82,15 @@ const MovieShows = ({
             key : "date",
             dataIndex: "date",
             render: (text, data) => {
-                return moment(text).format("MMM Do YYYY")
+                return formatDate(text, "MMM do yyyy")
             } 
         },
         {
             title: "Show Time",
             key : "time",
             dataIndex: "time",
-            render: (text, data) => {
-                return moment(text, "HH:mm").format("hh:mm A")
+            render: (text) => {
+                return formatParsedTime(text);
             } 
         },
         {
@@ -129,7 +130,7 @@ const MovieShows = ({
                                     setView("edit");
                                     setSelectedShow({
                                         ...data,
-                                        date: moment(data.date).format("YYYY-MM-DD"),
+                                        date: formatDate(data.date, "yyyy-MM-dd"),
                                         movie: data.movie._id
                                     });
                                     dispatch(getMoviesRequest());

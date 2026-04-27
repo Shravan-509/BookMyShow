@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Button, Spin, Table, Tag, Tooltip } from 'antd'
-import moment from 'moment';
+import { format } from 'date-fns';
 import {useDispatch, useSelector} from "react-redux";
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import MovieForm from './MovieForm';
 import DeleteMovie from './DeleteMovie';
 import { getMoviesRequest, selectMovie, selectMovieError, selectMovieLoading } from '../../../redux/slices/movieSlice';
 import { notify } from '../../../utils/notificationUtils';
+import { formatDate } from '../../../utils/dateFormatter';
 
 const MovieList = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -105,7 +106,7 @@ const MovieList = () => {
             key : "releaseDate",
             dataIndex: "releaseDate",
             render : (text, data) => {
-                return moment(data.releaseDate).format("DD-MM-YYYY")
+                return formatDate(data.releaseDate, "dd-MM-yyy")
             },
             responsive: ['xs', 'sm', 'md', 'lg', 'xl']
         },

@@ -8,7 +8,6 @@ import {
   EnvironmentOutlined,
   DownCircleOutlined,
 } from "@ant-design/icons"
-import moment from "moment"
 const { Text, Title } = Typography
 const { Panel } = Collapse
 import armChairUrl from "../../../assets/arm_chair.svg"
@@ -17,6 +16,9 @@ import NoBookings from "./NoBookings"
 import { scheduleBookingReminder } from "../../../utils/reminderUtils"
 import { notify } from "../../../utils/notificationUtils"
 import { useBooking } from "../../../hooks/useBooking"
+import {formatDate, formatParsedTime, formatTime} from "../../../utils/dateFormatter"
+import { isAfter, parse } from "date-fns"
+
 
 // Color mapping for ticket status
 const getStatusColor = (status) => {
@@ -81,8 +83,8 @@ const BookingCard = React.memo(function BookingCard({ booking, isMobile, onViewB
                   {booking.movieTitle} <span className="text-sm text-gray-500">2D</span>
                 </Title>
                 <Text strong className="text-lg!">
-                  {moment(booking.showDate).format("ddd, DD MMM YYYY")} | {" "}
-                  {moment(booking.showTime, "HH:mm").format("hh:mm A")}
+                  {formatDate(booking.showDate, "EEE, dd MMM yyyy")} | {" "}
+                  {formatParsedTime(booking.showTime)}
                 </Text>
                 <Text type="secondary">{booking.theatreName}</Text>
                 <Text type="secondary">Quantity : {seatCount}</Text>
@@ -149,11 +151,11 @@ const BookingCard = React.memo(function BookingCard({ booking, isMobile, onViewB
               <div className="flex flex-col gap-2 text-sm">
                 <div className="flex items-center gap-1 justify-center">
                   <CalendarOutlined className="text-gray-500" />
-                  <Text strong>{moment(booking.showDate).format("ddd, DD MMM YYYY")}</Text>
+                  <Text strong>{formatDate(booking.showDate, "EEE, dd MMM yyyy")}</Text>
                 </div>
                 <div className="flex items-center gap-1 justify-center">
                   <ClockCircleOutlined className="text-gray-500" />
-                  <Text strong>{moment(booking.showTime, "HH:mm").format("hh:mm A")}</Text>
+                  <Text strong>{formatParsedTime(booking.showTime)}</Text>
                 </div>
                 <div className="flex items-center gap-1 justify-center">
                   <EnvironmentOutlined className="text-gray-500" />
@@ -220,8 +222,8 @@ const BookingCard = React.memo(function BookingCard({ booking, isMobile, onViewB
               <div className="text-center">
                 <Text className="text-xs text-gray-500 block">BOOKING DATE & TIME</Text>
                 <Text className="text-sm font-medium">
-                  {moment(booking.bookingTime).format("MMM DD YYYY")} {" "}
-                  {moment(booking.bookingTime).format("hh:mm A")}
+                  {formatDate(booking.bookingTime, "MMM dd yyyy")}{" "}
+                  {formatTime(booking.bookingTime, "hh:mm a")}
                 </Text>
               </div>
 
@@ -252,8 +254,8 @@ const BookingCard = React.memo(function BookingCard({ booking, isMobile, onViewB
             <div style={{ margin: "0px 50px 0px 0px" }}>
               <Text style={{ fontSize: "10px", fontWeight: 400, color: "rgb(102, 102, 102)" }}>BOOKING DATE & TIME</Text>
               <div style={{ fontSize: "12px", fontWeight: 400, color: "rgb(51, 51, 51)" }}>
-                {moment(booking.bookingTime).format("MMM DD YYYY")} {" "}
-                {moment(booking.bookingTime).format("hh:mm A")}
+                {formatDate(booking.bookingTime, "MMM dd yyyy")}{" "}
+                {formatTime(booking.bookingTime, "hh:mm a")}
               </div>
             </div>
 
@@ -301,8 +303,8 @@ const OrderHistory = () => {
     bookings.forEach((booking) => {
       if (!scheduledIds.has(booking.bookingId)) 
       {
-        const showDateTime = moment(`${booking.showDate} ${booking.showTime}`, "YYYY-MM-DD HH:mm")
-        if (showDateTime.isAfter(moment())) 
+        const showDateTime = parse(`${booking.showDate} ${booking.showTime}`, "yyyy-MM-dd HH:mm", new Date())
+        if (isAfter(showDateTime, new Date())) 
         {
           scheduleBookingReminder(booking)
         }
@@ -387,8 +389,8 @@ const OrderHistory = () => {
                 {selectedBooking.theatreName}
               </Text>
               <Text type="secondary" className="block">
-                {moment(selectedBooking.showDate).format("ddd, DD MMM YYYY")} | {" "}
-                {moment(selectedBooking.showTime, "HH:mm").format("hh:mm A")}
+                {formatDate(selectedBooking.showDate, "EEE, dd MMM, yyyy")} | {" "}
+                {formatParsedTime(selectedBooking.showTime)}
               </Text>
             </div>
 

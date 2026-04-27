@@ -1,10 +1,11 @@
 import { EnvironmentOutlined, LeftOutlined, RightOutlined, ClockCircleOutlined, InfoCircleOutlined } from '@ant-design/icons'
 import { Button, Card, Col, Divider, Empty, Popover, Row, Spin, Typography, Alert, Skeleton, Tag } from 'antd'
 const { Title, Text } = Typography;
-import moment from 'moment'
+import { addDays, compareAsc, format, isSameDay, isToday, isTomorrow, parse, parseISO } from 'date-fns';
 import React, { useEffect, useRef, useState, useMemo, useCallback, memo } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom'
+import { formatParsedTime } from "../../../utils/dateFormatter"
 import { getTheatresWithShowsByMovieRequest, selectShow, selectShowError, selectShowLoading } from '../../../redux/slices/showSlice';
 
 const ShowTime = memo(() => {
@@ -12,7 +13,7 @@ const ShowTime = memo(() => {
     const dispatch = useDispatch();
     const dateScrollRef = useRef(null);
     const navigate = useNavigate();
-    const [selectedDate, setSelectedDate] = useState(moment().format("YYYY-MM-DD"));
+    const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
     const [deviceType, setDeviceType] = useState('desktop')
     const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024)
 
@@ -50,7 +51,7 @@ const ShowTime = memo(() => {
 
     // Generate dates for the next 7 days (memoized)
     const dates = useMemo(() => 
-        Array.from({ length: 7 }, (_, i) => moment().add(i, "days")), 
+        Array.from({ length: 7 }, (_, i) => addDays(new Date(), i)), 
         []
     )
     
@@ -62,21 +63,14 @@ const ShowTime = memo(() => {
     }, [])
     
     const getDateLabel = useCallback((date) => {
-        const today = moment();
-        const tomorrow = moment().add(1, "day")
-
-        if (date.isSame(today, "day")) {
-            return "Today"
-        } else if (date.isSame(tomorrow, "day")) {
-            return "Tomorrow"
-        } else {
-            return date.format("ddd")
-        }
+        if(isToday(date)) return "Today";
+        if(isTomorrow(date)) return "Tomorrow";
+        return format(date, "EEE")
     }, [])
     
     const handleDateSelect = useCallback((date) => {
-        setSelectedDate(moment(date).format("YYYY-MM-DD"));
-        navigate(`/movie/${params.id}/${moment(date).format("YYYYMMDD")}`)
+        setSelectedDate(format(date, "yyyy-MM-dd"));
+        navigate(`/movie/${params.id}/${format(date, "yyyyMMdd")}`)
     }, [navigate, params.id])
 
     // Enhanced loading state
@@ -141,11 +135,11 @@ const ShowTime = memo(() => {
                 {dates.map((date, index) => (
                     <div
                         key={index}
-                        className={`date-tab ${moment(selectedDate).isSame(date, "day") ? "selected" : ""}`}
+                        className={`date-tab ${isSameDay(parseISO(selectedDate), date) ? "selected" : ""}`}
                         onClick={() => handleDateSelect(date)}
                         role="button"
                         tabIndex={0}
-                        aria-label={`Select ${getDateLabel(date)}, ${date.format("MMM D")}`}
+                        aria-label={`Select ${getDateLabel(date)}, ${format(date, "MMM d")}`}
                         onKeyDown={(e) => {
                             if (e.key === 'Enter' || e.key === ' ') {
                                 e.preventDefault()
@@ -157,10 +151,10 @@ const ShowTime = memo(() => {
                             {getDateLabel(date)}
                         </div>
                         <div className="date-tab-date">
-                            {date.format("D")}
+                            {format(date, "d")}
                         </div>
                         <div className="date-tab-month">
-                            {date.format("MMM")}
+                            {format(date, "MMM")}
                         </div>
                     </div>
                 ))}
@@ -232,7 +226,10 @@ const ShowTime = memo(() => {
                                     <Col xs={24} sm={isMobile ? 24 : 16} md={12}>
                                         <div className="showtime-buttons-horizontal">
                                             {[...theatre.shows]
-                                                .sort((a, b) => moment(a.time, "HH:mm") - moment(b.time, "HH:mm"))
+                                                .sort((a, b) => compareAsc(
+                                                    parse(a.time, "HH:mm", new Date()),  
+                                                    parse(b.time, "HH:mm", new Date())
+                                                ))
                                                 .map((singleShow, showIndex) => (
                                                     <div key={showIndex} className="showtime-button-container">
                                                         <Popover 
@@ -256,7 +253,7 @@ const ShowTime = memo(() => {
                                                                 onClick={() => navigate(`/booking/${singleShow._id}`)}
                                                                 size={isMobile ? "small" : "middle"}
                                                             >
-                                                                {moment(singleShow.time, "HH:mm").format("hh:mm A")}
+                                                                {formatParsedTime(singleShow.time)}
                                                             </Button>
                                                         </Popover>
                                                     </div>

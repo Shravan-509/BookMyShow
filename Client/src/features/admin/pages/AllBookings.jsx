@@ -5,9 +5,9 @@ import { Table, Tag, Input, DatePicker, Space, Card, Statistic, Row, Col, messag
 import { SearchOutlined, DollarOutlined, ShoppingOutlined, UserOutlined } from "@ant-design/icons"
 
 import { getAllBookingsRequest, selectAllBookings, selectBookingLoading } from "../../../redux/slices/bookingSlice"
-import moment from "moment";
 import { useDispatch, useSelector } from "react-redux"
 import RupeeIcon from "../../../assets/RupeeIcon"
+import { formatDate, formatDateTime, isWithinDateRange } from "../../../utils/dateFormatter"
 
 const { RangePicker } = DatePicker
 
@@ -43,11 +43,7 @@ const AllBookings = () => {
     {
      
       filtered = filtered.filter((booking) => {
-        const bookingDate = moment(booking.bookingTime);
-        const startDate = moment(dateRange[0].toDate())  // convert dayjs → Date → moment
-        const endDate = moment(dateRange[1].toDate())
-  
-        return bookingDate.isSameOrAfter(startDate, "day") && bookingDate.isSameOrBefore(endDate, "day")
+        isWithinDateRange(booking.bookingTime, dateRange[0].toDate(), dateRange[1].toDate())
       })
     }
 
@@ -97,7 +93,7 @@ const AllBookings = () => {
       dataIndex: "showDate",
       key: "showDate",
       width: 120,
-      render: (date) => moment(date).format("DD MMM YYYY"),
+      render: (date) => formatDate(date, "dd MMM yyyy"),
     },
     {
       title: "Show Time",
@@ -136,7 +132,7 @@ const AllBookings = () => {
       dataIndex: "bookingTime",
       key: "bookingTime",
       width: 160,
-      render: (time) => moment(time).format("DD MMM YYYY HH:mm"),
+      render: (time) => formatDateTime(time),
     },
   ]
 

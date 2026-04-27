@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { Col, Input, Row, Card, Button, Spin } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
 import Title from "antd/es/typography/Title";
-import moment from "moment";
+import { format } from 'date-fns';
 import { getMoviesRequest, selectMovie, selectMovieError, selectMovieLoading } from "../../../redux/slices/movieSlice";
 import { notify } from "../../../utils/notificationUtils";
 import { useAuth } from "../../../hooks/useAuth";
@@ -152,7 +152,7 @@ const Home = () => {
 
       if(user?.role === "user")
         {
-          const targetPath = `/movie/${movieId}/${moment().format("YYYYMMDD")}`
+          const targetPath = `/movie/${movieId}/${format(new Date(), ("yyyyMMdd"))}`
           navigate(targetPath);
         }
         else

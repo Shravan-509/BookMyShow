@@ -1,5 +1,13 @@
 import { notify } from "./notificationUtils"
-import moment from "moment"
+import {
+  format,
+  parse,
+  parseISO,
+  isAfter,
+  isBefore,
+  sub,
+  compareAsc,
+} from "date-fns";
 
 /**
  * Booking reminder utility functions
@@ -8,6 +16,7 @@ import moment from "moment"
 // Store reminders in localStorage (in production, this would be in a database)
 const REMINDERS_KEY = "booking_reminders"
 
+// ---------------- SETTINGS ----------------
 export const getReminderSettings = () => {
   const settings = localStorage.getItem("reminder_settings")
   return settings
@@ -23,36 +32,47 @@ export const saveReminderSettings = (settings) => {
   localStorage.setItem("reminder_settings", JSON.stringify(settings))
 }
 
+// ---------------- HELPERS ----------------
+
+const getShowDateTime = (booking) => {
+  return parse(
+    `${booking.showDate} ${booking.showTime}`,
+    "yyyy-MM-dd HH:mm",
+    new Date()
+  );
+};
+
+// ---------------- SCHEDULE ----------------
 export const scheduleBookingReminder = (booking) => {
   const reminders = getScheduledReminders()
   const settings = getReminderSettings()
 
   if (!settings.emailReminders && !settings.pushReminders) return
 
-  const showDateTime = moment(`${booking.showDate} ${booking.showTime}`, "YYYY-MM-DD HH:mm")
-  const now = moment()
+  const showDateTime = getShowDateTime(booking)
+  const now = new Date()
 
   // Calculate reminder time based on user preference
   let reminderTime
   switch (settings.reminderTiming) {
     case "30min":
-      reminderTime = showDateTime.clone().subtract(30, "minutes")
+      reminderTime = sub(showDateTime, { minutes : 30 })
       break
     case "1hour":
-      reminderTime = showDateTime.clone().subtract(1, "hour")
+      reminderTime = sub(showDateTime, { hours : 1 })
       break
     case "2hours":
-      reminderTime = showDateTime.clone().subtract(2, "hours")
+      reminderTime = sub(showDateTime, { hours : 2 })
       break
     case "1day":
-      reminderTime = showDateTime.clone().subtract(1, "day")
+      reminderTime = sub(showDateTime, { days : 1 })
       break
     default:
-      reminderTime = showDateTime.clone().subtract(2, "hours")
+      reminderTime = sub(showDateTime, { hours : 2 })
   }
 
   // Only schedule if reminder time is in the future
-  if (reminderTime.isAfter(now)) 
+  if (isAfter(reminderTime, now)) 
     {
     const reminder = {
       id: `reminder_${booking.bookingId}`,
@@ -71,26 +91,30 @@ export const scheduleBookingReminder = (booking) => {
   }
 }
 
+// ---------------- GET ----------------
 export const getScheduledReminders = () => {
   const reminders = localStorage.getItem(REMINDERS_KEY)
   return reminders ? JSON.parse(reminders) : []
 }
 
+// ---------------- CHECK + TRIGGER ----------------
 export const checkAndTriggerReminders = () => {
   const reminders = getScheduledReminders()
-  const now = moment()
+  const now = new Date()
   const updatedReminders = []
 
   reminders.forEach((reminder) => {
-    if (!reminder.isTriggered && moment(reminder.reminderTime).isBefore(now)) {
+    const reminderTime = parseISO(reminder.reminderTime);
+    if (!reminder.isTriggered && isBefore(reminderTime, now)) {
       // Trigger the reminder
       triggerReminder(reminder)
       reminder.isTriggered = true
     }
 
     // Keep reminders for shows that haven't passed yet
-    const showDateTime = moment(`${reminder.showDate} ${reminder.showTime}`, "YYYY-MM-DD HH:mm")
-    if (showDateTime.isAfter(now)) {
+    const showDateTime = getShowDateTime(reminder)
+    if (isAfter(showDateTime, now)) 
+    {
       updatedReminders.push(reminder)
     }
   })
@@ -98,9 +122,17 @@ export const checkAndTriggerReminders = () => {
   localStorage.setItem(REMINDERS_KEY, JSON.stringify(updatedReminders))
 }
 
+// ---------------- TRIGGER ----------------
 const triggerReminder = (reminder) => {
-  const showTime = moment(reminder.showTime, "HH:mm").format("hh:mm A")
-  const showDate = moment(reminder.showDate).format("MMM DD, YYYY")
+  const showTime = format(
+    parse(reminder.showTime, "HH:mm", new Date()),
+    "hh:mm a"
+  );
+
+  const showDate = format(
+    new Date(reminder.showDate),
+    "MMM dd, yyyy"
+  );
 
   notify(
     "info",
@@ -109,17 +141,23 @@ const triggerReminder = (reminder) => {
   )
 }
 
+// ---------------- CANCEL ----------------
 export const cancelReminder = (bookingId) => {
   const reminders = getScheduledReminders()
   const updatedReminders = reminders.filter((r) => r.bookingId !== bookingId)
   localStorage.setItem(REMINDERS_KEY, JSON.stringify(updatedReminders))
 }
 
+// ---------------- UPCOMING ----------------
 export const getUpcomingReminders = () => {
   const reminders = getScheduledReminders()
-  const now = moment()
+  const now = new Date()
 
   return reminders
-    .filter((r) => !r.isTriggered && moment(r.reminderTime).isAfter(now))
-    .sort((a, b) => moment(a.reminderTime).diff(moment(b.reminderTime)))
-}
+    .filter(
+      (r) => !r.isTriggered && isAfter(parseISO(r.reminderTime), now)
+    )
+    .sort((a, b) => 
+      compareAsc(parseISO(a.reminderTime), parseISO(b.reminderTime))
+    )
+  }

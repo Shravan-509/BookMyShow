@@ -4,8 +4,9 @@ import { useEffect, useState } from "react"
 import { Table, Tag, Input, Card, Statistic, Row, Col, message, Badge, Space } from "antd"
 import { SearchOutlined, UserOutlined, TeamOutlined, CheckCircleOutlined, CloseCircleOutlined } from "@ant-design/icons"
 import { getAllUsersRequest } from "../../../redux/slices/userSlice"
-import moment from "moment"
+import { format } from 'date-fns';
 import { useDispatch, useSelector } from "react-redux"
+import { formatDate, formatTime } from "../../../utils/dateFormatter"
 
 const UserManagement = () => {
   const dispatch = useDispatch()
@@ -97,14 +98,14 @@ const UserManagement = () => {
       dataIndex: "createdAt",
       key: "createdAt",
       width: 160,
-      render: (date) => moment(date).format("DD MMM YYYY"),
+      render: (date) => formatDate(date, "dd MMM yyyy"),
     },
     {
       title: "Last Updated",
       dataIndex: "updatedAt",
       key: "updatedAt",
       width: 160,
-      render: (date) => moment(date).format("DD MMM YYYY HH:mm"),
+      render: (date) => formatTime(date, "dd MMM yyyy HH:mm"),
     },
   ]
 
