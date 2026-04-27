@@ -8,7 +8,8 @@ const Theatre = require('../models/theatreSchema');
 
 const userInfo = async (req, res, next) => {
     try {
-        const { userId } = req?.body;
+        console.log(req);
+        const userId = req.userId;
         const user = await User.findById(userId).select("-password -__v -resetToken -resetTokenExpiry");
         if (!user) 
         {
@@ -32,7 +33,8 @@ const userInfo = async (req, res, next) => {
 
 const updateProfile = async (req, res, next) => {
     try {
-        const { userId, name, phone } = req?.body;
+        const userId = req.userId;    
+        const { name, phone } = req?.body;
 
         // Validation
         if(!name || !phone) 
@@ -82,7 +84,8 @@ const updateProfile = async (req, res, next) => {
 
 const changePassword = async (req, res, next) => {
     try {
-        const { userId, currentPassword, newPassword } = req?.body;
+        const userId = req.userId;
+        const { currentPassword, newPassword } = req?.body;
 
         // Validation
         if(!currentPassword || !newPassword) 
@@ -169,7 +172,8 @@ const changePassword = async (req, res, next) => {
 
 const requestEmailChange = async (req, res, next) => {
     try {
-        const { userId, newEmail, password } = req?.body;
+        const userId = req.userId; 
+        const { newEmail, password } = req?.body;
 
         // Validation
         if(!newEmail || !password) 
@@ -244,7 +248,8 @@ const requestEmailChange = async (req, res, next) => {
 
 const verifyEmailChange = async (req, res, next) => {
     try {
-        const { userId, code, newEmail } = req?.body;
+        const userId = req.userId; 
+        const { code, newEmail } = req?.body;
 
         // Validation
         if(!code || !newEmail) 
@@ -353,7 +358,8 @@ const verifyEmailChange = async (req, res, next) => {
 
 const toggle2FA = async (req, res, next) => {
     try {
-        const { userId } = req?.body;
+        const userId = req.userId;
+          
         // Find User
         const user = await User.findByIdAndUpdate(userId)
 

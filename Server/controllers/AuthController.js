@@ -402,7 +402,8 @@ const verify2FA = async(req, res, next) => {
 
 const resend2FA = async(req, res, next) => {
     try {
-        const {userId, email} = req?.body;
+        const userId = req.userId;   
+        const { email } = req?.body;   
         
         // Validation
         if (!userId || !email) 

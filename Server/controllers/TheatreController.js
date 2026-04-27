@@ -77,7 +77,7 @@ const deleteTheatre = async(req, res, next) => {
 const getTheatres = async(req, res, next) => {
     try {
         // Fetch user info from DB
-        const user = await User.findById(req.body.userId);
+        const user = await User.findById(req.userId);
         if(!user)
         {
             return res.send({

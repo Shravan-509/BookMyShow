@@ -157,7 +157,7 @@ const bookSeat = async (req, res, next) => {
             const bookingId = generateBookingId();
             const newBooking = new Booking({
                 show: showId,
-                user: req.body.userId,
+                user: req.userId,
                 seats,
                 seatType: seatType || "Standard",
                 transactionId,
