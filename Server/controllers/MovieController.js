@@ -27,7 +27,7 @@ const addMovie = async(req, res, next) => {
 const getMovies = async(req, res, next) => {
     try 
     {
-        const movies = await Movie.find();
+        const movies = await Movie.find().sort({ releaseDate: -1 });;
         return res.send({
                 success: true,
                 message: "All movies has been fetched",
