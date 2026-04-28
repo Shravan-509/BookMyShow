@@ -1,4 +1,5 @@
-import {createSlice} from "@reduxjs/toolkit";
+import { createSlice } from "@reduxjs/toolkit";
+import { createSelector } from "reselect";
 
 const initialState = {
     loading: false,
@@ -166,19 +167,38 @@ export const {
     clearBookingData,
 } = bookingSlice.actions;
 
-// Export selectors
-export const selectBookingLoading = (state) => state.booking.loading
-export const selectBookingError = (state) => state.booking.error
-export const selectValidationResult = (state) => state.booking.validationResult
-export const selectBookingData = (state) => state.booking.bookingData
-export const selectUserBookings = (state) => state.booking.userBookings
+// Base selector
+const selectBookingState = (state) => state.booking;
 
-export const selectAllBookings = (state) => state.booking.allBookings
-export const selectTheatreBookings = (state) => state.booking.theatreBookings
-export const selectRevenueData = (state) => state.booking.revenueData
+// Memoized selectors using reselect
+export const selectBookingLoading = createSelector([selectBookingState], (booking) => booking.loading);
+export const selectBookingError = createSelector([selectBookingState], (booking) => booking.error);
+export const selectValidationResult = createSelector([selectBookingState], (booking) => booking.validationResult);
+export const selectBookingData = createSelector([selectBookingState], (booking) => booking.bookingData);
+export const selectUserBookings = createSelector([selectBookingState], (booking) => booking.userBookings);
 
-export const selectRazorpayOrder = (state) => state.booking.razorpayOrder
-export const selectIsPaymentProcessing = (state) => state.booking.isPaymentProcessing
-export const selectPaymentError = (state) => state.booking.paymentError
+export const selectAllBookings = createSelector([selectBookingState], (booking) => booking.allBookings);
+export const selectTheatreBookings = createSelector([selectBookingState], (booking) => booking.theatreBookings);
+export const selectRevenueData = createSelector([selectBookingState], (booking) => booking.revenueData);
+
+export const selectRazorpayOrder = createSelector([selectBookingState], (booking) => booking.razorpayOrder);
+export const selectIsPaymentProcessing = createSelector([selectBookingState], (booking) => booking.isPaymentProcessing);
+export const selectPaymentError = createSelector([selectBookingState], (booking) => booking.paymentError);
+
+// Complex memoized selectors
+export const selectConfirmedBookings = createSelector(
+  [selectUserBookings],
+  (bookings) => bookings ? bookings.filter(b => b.status === 'confirmed') : []
+);
+
+export const selectTotalRevenue = createSelector(
+  [selectRevenueData],
+  (revenue) => revenue ? revenue.reduce((sum, r) => sum + (r.amount || 0), 0) : 0
+);
+
+export const selectBookingCount = createSelector(
+  [selectAllBookings],
+  (bookings) => bookings ? bookings.length : 0
+);
 
 export default bookingSlice.reducer;

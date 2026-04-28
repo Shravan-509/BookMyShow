@@ -1,4 +1,5 @@
-import {createSlice} from "@reduxjs/toolkit";
+import { createSlice } from "@reduxjs/toolkit";
+import { createSelector } from "reselect";
 
 const initialState = {
     loading: false,
@@ -129,11 +130,25 @@ export const {
     getTheatresWithShowsByMovieFailure
 } = showSlice.actions;
 
-// Export selectors
-export const selectShowLoading = (state) => state.show.loading
-export const selectShowError = (state) => state.show.resetLoading
-export const selectShow = (state) => state.show.show
-export const selectSelectedShow = (state) => state.show.selectedShow
+// Base selector
+const selectShowState = (state) => state.show;
+
+// Memoized selectors using reselect
+export const selectShowLoading = createSelector([selectShowState], (show) => show.loading);
+export const selectShowError = createSelector([selectShowState], (show) => show.resetLoading);
+export const selectShow = createSelector([selectShowState], (show) => show.show);
+export const selectSelectedShow = createSelector([selectShowState], (show) => show.selectedShow);
+
+// Complex memoized selectors
+export const selectShowCount = createSelector(
+  [selectShow],
+  (shows) => shows ? shows.length : 0
+);
+
+export const selectUpcomingShows = createSelector(
+  [selectShow],
+  (shows) => shows ? shows.filter(s => new Date(s.date) > new Date()) : []
+);
 
 // export const {logout} = authSlice.actions;
 export default showSlice.reducer;

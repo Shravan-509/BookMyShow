@@ -1,4 +1,5 @@
-import {createSlice} from "@reduxjs/toolkit";
+import { createSlice } from "@reduxjs/toolkit";
+import { createSelector } from "reselect";
 
 const initialState = {
     loading: false,
@@ -82,12 +83,26 @@ export const {
     clearEmailSent
 } = forgotPasswordSlice.actions;
 
-// Export selectors
-export const selectForgotPasswordLoading = (state) => state.forgotPassword.loading
-export const selectResetPasswordLoading = (state) => state.forgotPassword.resetLoading
-export const selectForgotPasswordError = (state) => state.forgotPassword.error
-export const selectResetPasswordError = (state) => state.forgotPassword.resetError
-export const selectEmailSent = (state) => state.forgotPassword.emailSent
-export const selectResetSuccess = (state) => state.forgotPassword.resetSuccess
+// Base selector
+const selectForgotPasswordState = (state) => state.forgotPassword;
+
+// Memoized selectors using reselect
+export const selectForgotPasswordLoading = createSelector([selectForgotPasswordState], (fp) => fp.loading);
+export const selectResetPasswordLoading = createSelector([selectForgotPasswordState], (fp) => fp.resetLoading);
+export const selectForgotPasswordError = createSelector([selectForgotPasswordState], (fp) => fp.error);
+export const selectResetPasswordError = createSelector([selectForgotPasswordState], (fp) => fp.resetError);
+export const selectEmailSent = createSelector([selectForgotPasswordState], (fp) => fp.emailSent);
+export const selectResetSuccess = createSelector([selectForgotPasswordState], (fp) => fp.resetSuccess);
+
+// Complex memoized selectors
+export const selectPasswordFlowComplete = createSelector(
+  [selectEmailSent, selectResetSuccess],
+  (emailSent, resetSuccess) => emailSent && resetSuccess
+);
+
+export const selectAnyPasswordError = createSelector(
+  [selectForgotPasswordError, selectResetPasswordError],
+  (forgotError, resetError) => forgotError || resetError
+);
 
 export default forgotPasswordSlice.reducer;

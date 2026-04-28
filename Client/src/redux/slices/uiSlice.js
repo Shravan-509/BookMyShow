@@ -1,4 +1,5 @@
-import {createSlice} from "@reduxjs/toolkit";
+import { createSlice } from "@reduxjs/toolkit";
+import { createSelector } from "reselect";
 
 const initialState = {
     activeTab: "login",
@@ -33,9 +34,18 @@ export const {
     setShowForgotPasswordModal
 } = uiSlice.actions;
 
-//Export selectors
-export const selectActiveTab = (state) => state.ui.activeTab;
-export const selectLoginError = (state) => state.ui.loginError;
-export const selectShowForgotPasswordModal = (state) => state.ui.showForgotPasswordModal;
+// Base selector
+const selectUiState = (state) => state.ui;
+
+// Memoized selectors using reselect
+export const selectActiveTab = createSelector([selectUiState], (ui) => ui.activeTab);
+export const selectLoginError = createSelector([selectUiState], (ui) => ui.loginError);
+export const selectShowForgotPasswordModal = createSelector([selectUiState], (ui) => ui.showForgotPasswordModal);
+
+// Complex memoized selector
+export const selectUiErrorExists = createSelector(
+  [selectLoginError],
+  (loginError) => !!loginError
+);
 
 export default uiSlice.reducer;

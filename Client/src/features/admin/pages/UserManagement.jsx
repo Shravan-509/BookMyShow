@@ -3,21 +3,22 @@
 import { useEffect, useState } from "react"
 import { Table, Tag, Input, Card, Statistic, Row, Col, message, Badge, Space } from "antd"
 import { SearchOutlined, UserOutlined, TeamOutlined, CheckCircleOutlined, CloseCircleOutlined } from "@ant-design/icons"
-import { getAllUsersRequest } from "../../../redux/slices/userSlice"
+import { getAllUsersRequest, selectAllUsers, selectUserLoading, selectUsersByRole } from "../../../redux/slices/userSlice"
 import { format } from 'date-fns';
 import { useDispatch, useSelector } from "react-redux"
 import { formatDate, formatTime } from "../../../utils/dateFormatter"
 
 const UserManagement = () => {
   const dispatch = useDispatch()
-  const { allUsers: users, loading } = useSelector((state) => state.user)
+  const users = useSelector(selectAllUsers)
+  const loading = useSelector(selectUserLoading)
+  const userByRole = useSelector(selectUsersByRole)
   const [filteredUsers, setFilteredUsers] = useState([])
   const [searchText, setSearchText] = useState("")
 
   useEffect(() => {
     dispatch(getAllUsersRequest())
   }, [dispatch])
-
 
   useEffect(() => {
     if (searchText) {

@@ -1,4 +1,5 @@
-import {createSlice} from "@reduxjs/toolkit";
+import { createSlice } from "@reduxjs/toolkit";
+import { createSelector } from 'reselect';
 
 const initialState = {
     loading: false,
@@ -117,10 +118,25 @@ export const {
     resetMovieState
 } = movieSlice.actions;
 
-// Export selectors
-export const selectMovieLoading = (state) => state.movie.loading
-export const selectMovieError = (state) => state.movie.resetLoading
-export const selectMovie = (state) => state.movie.movie
-export const selectSelectedMovie = (state) => state.movie.selectedMovie
+// Base selector
+const selectMovieState = (state) => state.movie;
+
+// Memoized selectors using reselect
+export const selectMovieLoading = createSelector([selectMovieState], (movie) => movie.loading);
+export const selectMovieError = createSelector([selectMovieState], (movie) => movie.error);
+export const selectMovie = createSelector([selectMovieState], (movie) => movie.movie);
+export const selectSelectedMovie = createSelector([selectMovieState], (movie) => movie.selectedMovie);
+
+// Complex selector - movies with availability
+export const selectAvailableMovies = createSelector(
+  [selectMovie],
+  (movies) => movies && movies.filter(m => m && m.releaseDate)
+);
+
+// Memoized movie count
+export const selectMovieCount = createSelector(
+  [selectMovie],
+  (movies) => movies ? movies.length : 0
+);
 
 export default movieSlice.reducer;

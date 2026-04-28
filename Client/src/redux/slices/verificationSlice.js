@@ -1,4 +1,5 @@
-import {createSlice} from "@reduxjs/toolkit";
+import { createSlice } from "@reduxjs/toolkit";
+import { createSelector } from "reselect";
 
 const initialState = {
     verificationEmail: "",
@@ -154,16 +155,25 @@ export const {
     setResendCountdown, // New action
 } = verificationSlice.actions;
 
-// Export selectors
-export const selectVerification = (state) => state.verification
-export const selectVerificationEmail = (state) => state.verification.verificationEmail
-export const selectTempUserId = (state) => state.verification.tempUserId
-export const selectShowEmailVerificationModal = (state) => state.verification.showEmailVerificationModal
-export const selectShowTwoFactorAuthModal = (state) => state.verification.showTwoFactorAuthModal
-export const selectShowReverifyAccountModal = (state) => state.verification.showReverifyAccountModal
-export const selectResendDisabled = (state) => state.verification.resendDisabled
-export const selectCountdown = (state) => state.verification.countdown
-export const selectVerificationLoading = (state) => state.verification.loading
-export const selectVerificationError = (state) => state.verification.error
+// Base selector
+const selectVerificationState = (state) => state.verification;
+
+// Memoized selectors using reselect
+export const selectVerification = createSelector([selectVerificationState], (verification) => verification);
+export const selectVerificationEmail = createSelector([selectVerificationState], (verification) => verification.verificationEmail);
+export const selectTempUserId = createSelector([selectVerificationState], (verification) => verification.tempUserId);
+export const selectShowEmailVerificationModal = createSelector([selectVerificationState], (verification) => verification.showEmailVerificationModal);
+export const selectShowTwoFactorAuthModal = createSelector([selectVerificationState], (verification) => verification.showTwoFactorAuthModal);
+export const selectShowReverifyAccountModal = createSelector([selectVerificationState], (verification) => verification.showReverifyAccountModal);
+export const selectResendDisabled = createSelector([selectVerificationState], (verification) => verification.resendDisabled);
+export const selectCountdown = createSelector([selectVerificationState], (verification) => verification.countdown);
+export const selectVerificationLoading = createSelector([selectVerificationState], (verification) => verification.loading);
+export const selectVerificationError = createSelector([selectVerificationState], (verification) => verification.error);
+
+// Complex memoized selector
+export const selectAnyModalOpen = createSelector(
+  [selectShowEmailVerificationModal, selectShowTwoFactorAuthModal, selectShowReverifyAccountModal],
+  (email, twoFactor, reverify) => email || twoFactor || reverify
+);
 
 export default verificationSlice.reducer;

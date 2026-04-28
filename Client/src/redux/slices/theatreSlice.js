@@ -1,4 +1,5 @@
-import {createSlice} from "@reduxjs/toolkit";
+import { createSlice } from "@reduxjs/toolkit";
+import { createSelector } from "reselect";
 
 const initialState = {
     loading: false,
@@ -96,9 +97,36 @@ export const {
     deleteTheatreFailure
 } = theatreSlice.actions;
 
-// Export selectors
-export const selectTheatreLoading = (state) => state.theatre.loading
-export const selectTheatreError = (state) => state.theatre.resetLoading
-export const selectTheatre = (state) => state.theatre.theatre
+// Base selector
+const selectTheatreState = (state) => state.theatre;
+
+// Memoized selectors using reselect
+export const selectTheatreLoading = createSelector([selectTheatreState], (theatre) => theatre.loading);
+export const selectTheatreError = createSelector([selectTheatreState], (theatre) => theatre.resetLoading);
+export const selectTheatre = createSelector([selectTheatreState], (theatre) => theatre.theatre);
+
+// Complex memoized selectors
+export const selectTheatreCount = createSelector(
+  [selectTheatre],
+  (theatres) => theatres ? theatres.length : 0
+);
+
+export const selectTheatresByCity = createSelector(
+  [selectTheatre],
+  (theatres) => {
+    if (!theatres) return {};
+    return theatres.reduce((acc, theatre) => {
+      const city = theatre.city || 'Unknown';
+      if (!acc[city]) acc[city] = [];
+      acc[city].push(theatre);
+      return acc;
+    }, {});
+  }
+);
+
+export const selectSelectedTheatre = createSelector(
+  [selectTheatreState],
+  (theatre) => theatre.selectedTheatre
+);
 
 export default theatreSlice.reducer;

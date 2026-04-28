@@ -1,4 +1,5 @@
 import {createSlice} from "@reduxjs/toolkit";
+import { createSelector } from "reselect";
 
 const initialState = {
     user : null,
@@ -100,12 +101,22 @@ export const {
     setLoading
 } = authSlice.actions;
 
-export const selectAuth = (state) => state.auth;
-export const selectUser = (state) => state.auth.user;
-export const selectisAuthenticated = (state) => state.auth.isAuthenticated;
-export const selectAuthLoading = (state) => state.auth.loading;
-export const selectAuthError = (state) => state.auth.error;
+// Base selector
+const selectAuthState = (state) => state.auth;
 
+// Memoized selectors using reselect (prevent unnecessary re-renders)
+export const selectAuth = createSelector([selectAuthState], (auth) => auth);
+export const selectUser = createSelector([selectAuthState], (auth) => auth.user);
+export const selectisAuthenticated = createSelector([selectAuthState], (auth) => auth.isAuthenticated);
+export const selectAuthLoading = createSelector([selectAuthState], (auth) => auth.loading);
+export const selectAuthError = createSelector([selectAuthState], (auth) => auth.error);
+export const selectCheckingAuth = createSelector([selectAuthState], (auth) => auth.checkingAuth);
 
-// Export selectors
+// Complex selector for authentication readiness
+export const selectAuthReady = createSelector(
+  [selectisAuthenticated, selectCheckingAuth],
+  (isAuthenticated, checkingAuth) => !checkingAuth && isAuthenticated
+);
+
+// Export reducer
 export default authSlice.reducer;

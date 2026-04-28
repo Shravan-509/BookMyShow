@@ -1,4 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
+import { createSelector } from "reselect";
 
 const initialState = {
     profile: null,
@@ -203,23 +204,33 @@ export const {
     resetProfileState,
 } = profileSlice.actions
 
-// Export selectors
-export const selectProfile = (state) => state.profile.profile;
-export const selectProfileLoading = (state) => state.profile.loading;
-export const selectProfileError = (state) => state.profile.error;
-export const selectProfileUpdateLoading = (state) => state.profile.profileUpdateLoading;
-export const selectProfileUpdateError = (state) => state.profile.profileUpdateError;
-export const selectPasswordChangeLoading = (state) => state.profile.passwordChangeLoading;
-export const selectPasswordChangeError = (state) => state.profile.passwordChangeError;
-export const selectEmailChangeLoading = (state) => state.profile.emailChangeLoading;
-export const selectEmailChangeError = (state) => state.profile.emailChangeError;
-export const selectShowEmailVerificationModal = (state) => state.profile.showEmailVerificationModal;
-export const selectPendingEmailChange = (state) => state.profile.pendingEmailChange;
-export const selectSecurityLoading = (state) => state.profile.securityLoading;
-export const selectSecurityError = (state) => state.profile.securityError;
-export const selectDeleteAccountLoading = (state) => state.profile.deleteAccountLoading;
-export const selectDeleteAccountError = (state) => state.profile.deleteAccountError;
-export const selectShowReauthModal = (state) => state.profile.showReauthModal
-export const selectReauthMessage = (state) => state.profile.reauthMessage
+// Base selector
+const selectProfileState = (state) => state.profile;
+
+// Memoized selectors using reselect
+export const selectProfile = createSelector([selectProfileState], (profile) => profile.profile);
+export const selectProfileLoading = createSelector([selectProfileState], (profile) => profile.loading);
+export const selectProfileError = createSelector([selectProfileState], (profile) => profile.error);
+export const selectProfileUpdateLoading = createSelector([selectProfileState], (profile) => profile.profileUpdateLoading);
+export const selectProfileUpdateError = createSelector([selectProfileState], (profile) => profile.profileUpdateError);
+export const selectPasswordChangeLoading = createSelector([selectProfileState], (profile) => profile.passwordChangeLoading);
+export const selectPasswordChangeError = createSelector([selectProfileState], (profile) => profile.passwordChangeError);
+export const selectEmailChangeLoading = createSelector([selectProfileState], (profile) => profile.emailChangeLoading);
+export const selectEmailChangeError = createSelector([selectProfileState], (profile) => profile.emailChangeError);
+export const selectShowEmailVerificationModal = createSelector([selectProfileState], (profile) => profile.showEmailVerificationModal);
+export const selectPendingEmailChange = createSelector([selectProfileState], (profile) => profile.pendingEmailChange);
+export const selectSecurityLoading = createSelector([selectProfileState], (profile) => profile.securityLoading);
+export const selectSecurityError = createSelector([selectProfileState], (profile) => profile.securityError);
+export const selectDeleteAccountLoading = createSelector([selectProfileState], (profile) => profile.deleteAccountLoading);
+export const selectDeleteAccountError = createSelector([selectProfileState], (profile) => profile.deleteAccountError);
+export const selectShowReauthModal = createSelector([selectProfileState], (profile) => profile.showReauthModal);
+export const selectReauthMessage = createSelector([selectProfileState], (profile) => profile.reauthMessage);
+
+// Complex memoized selectors
+export const selectIsOperationInProgress = createSelector(
+  [selectProfileUpdateLoading, selectPasswordChangeLoading, selectEmailChangeLoading, selectDeleteAccountLoading],
+  (profileLoading, passwordLoading, emailLoading, deleteLoading) => 
+    profileLoading || passwordLoading || emailLoading || deleteLoading
+);
 
 export default profileSlice.reducer;
