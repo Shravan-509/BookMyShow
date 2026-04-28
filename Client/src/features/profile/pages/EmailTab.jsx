@@ -2,6 +2,7 @@ import React,{ useEffect } from "react"
 import { Alert, Button, Card, Form, Input, Typography } from "antd"
 import { LockOutlined, MailOutlined, EditOutlined } from "@ant-design/icons"
 import { useProfile } from "../../../hooks/useProfile";
+import { sanitizeInput, validateEmail } from "../../../utils/securityValidation";
 
 const {Title, Text, Paragraph} = Typography;
 
@@ -26,9 +27,17 @@ const EmailTab = () => {
     }, [showEmailVerificationModal, emailForm]);
 
     const handleSubmit = (values) => {
+        const sanitizedEmail = sanitizeInput(values.newEmail);
+        const sanitizedPassword = sanitizeInput(values.password);
+        
+        if (!validateEmail(sanitizedEmail)) {
+            Alert("Please enter a valid email");
+            return;
+        }
+        
         requestEmailChange({
-            newEmail: values.newEmail,
-            password: values.password
+            newEmail: sanitizedEmail,
+            password: sanitizedPassword
         })
     };
 

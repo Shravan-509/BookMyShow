@@ -1,8 +1,9 @@
 import React from 'react';
-import { Button, Col, Form, Input, Modal, Row, Select } from 'antd';
+import { Alert, Button, Col, Form, Input, Modal, Row, Select } from 'antd';
 import TextArea from 'antd/es/input/TextArea';
 import { useDispatch } from 'react-redux';
 import { addMovieRequest, updateMovieRequest } from '../../../redux/slices/movieSlice';
+import { sanitizeInput, validateLength } from '../../../utils/securityValidation';
 
 const MovieForm = ({
     isModalOpen, 
@@ -20,13 +21,41 @@ const MovieForm = ({
     };
 
     const onFinish = (values) => {
+        // Sanitize all inputs
+        const sanitizedValues = {
+            movieName: sanitizeInput(values.movieName),
+            description: sanitizeInput(values.description),
+            duration: values.duration,
+            releaseDate: values.releaseDate,
+            genre: values.genre,
+            rating: values.rating,
+            language: values.language,
+            poster: values.poster
+        };
+        
+        // Validate inputs
+        if (!validateLength(sanitizedValues.movieName, 2, 100)) {
+            Alert("Movie name must be between 2 and 100 characters");
+            return;
+        }
+        
+        if (!validateLength(sanitizedValues.description, 10, 1000)) {
+            Alert("Description must be between 10 and 1000 characters");
+            return;
+        }
+        
+        if (sanitizedValues.duration <= 0 || sanitizedValues.duration > 300) {
+            Alert("Duration must be between 1 and 300 minutes");
+            return;
+        }
+        
         if(formType === "edit")
         {
-            dispatch(updateMovieRequest({id: selectedMovie._id, movie: values}))
+            dispatch(updateMovieRequest({id: selectedMovie._id, movie: sanitizedValues}))
         }
         else
         {
-            dispatch(addMovieRequest(values));
+            dispatch(addMovieRequest(sanitizedValues));
         }
     
         setIsModalOpen(false);

@@ -152,7 +152,7 @@ const Home = () => {
 
       if(user?.role === "user")
         {
-          const targetPath = `/movie/${movieId}/${format(new Date(), ("yyyyMMdd"))}`
+          const targetPath = `/movie/${movieId}/${format(new Date(), "yyyyMMdd")}`
           navigate(targetPath);
         }
         else

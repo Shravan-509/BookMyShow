@@ -22,6 +22,7 @@ import {
     } from '../../../redux/slices/verificationSlice';
 import { resetForgotPasswordState } from '../../../redux/slices/forgotPasswordSlice';
 import { notify } from '../../../utils/notificationUtils';
+import { sanitizeInput, validateEmail } from '../../../utils/securityValidation';
 
 const Login = memo(() => {
     const dispatch = useDispatch();
@@ -36,7 +37,20 @@ const Login = memo(() => {
 
     const handleLogin = useCallback(
         (values) => {
-            dispatch(loginRequest(values));
+            // Validate and sanitize inputs before sending
+            const sanitizedEmail = sanitizeInput(values.email);
+            const sanitizedPassword = sanitizeInput(values.password);
+
+            if (!validateEmail(sanitizedEmail)) 
+            {
+                notify("error", "Invalid email format");
+                return;
+            }
+
+            dispatch(loginRequest({
+                email: sanitizedEmail,
+                password: sanitizedPassword
+            }));
         }, [dispatch]
     )
 
@@ -58,7 +72,14 @@ const Login = memo(() => {
     const emailRules = useMemo(
         () => [
                 { required: true, message: "Please enter your email!" },
-                { type: "email", message: "Please enter a valid email!" },
+                { 
+                    validator: (_, value) => {
+                        if (!value) return Promise.resolve();
+                        return validateEmail(value) 
+                            ? Promise.resolve() 
+                            : Promise.reject(new Error("Please enter a valid email!"));
+                    }
+                },
             ],
         [],
     )

@@ -10,6 +10,8 @@ import {
         selectEmailSent, 
         resetForgotPasswordState
     } from '../../../redux/slices/forgotPasswordSlice';
+import { sanitizeInput, validateEmail } from '../../../utils/securityValidation';
+import { notify } from '../../../utils/notificationUtils';
 
 const ForgotPassword = () => {
     const dispatch = useDispatch();
@@ -33,8 +35,15 @@ const ForgotPassword = () => {
     }, [isOpen, dispatch, form])
 
     const handleSubmit = (values) => {
-        setCurrentEmail(values.email);
-        dispatch(forgotPasswordRequest(values.email))
+       const sanitizedEmail = sanitizeInput(values.email);
+        
+        if (!validateEmail(sanitizedEmail)) {
+            notify("error", "Please enter a valid email");
+            return;
+        }
+        
+        setCurrentEmail(sanitizedEmail);
+        dispatch(forgotPasswordRequest(sanitizedEmail))
     }
 
      const handleCancel = () => {
@@ -108,7 +117,14 @@ const ForgotPassword = () => {
                         name="email"
                         rules={[
                             { required: true, message: 'Please enter your email!' },
-                            { type: "email", message: "Please enter a valid email!" },
+                            { 
+                                validator: (_, value) => {
+                                    if (!value) return Promise.resolve();
+                                    return validateEmail(value) 
+                                        ? Promise.resolve() 
+                                        : Promise.reject(new Error("Please enter a valid email!"));
+                                }
+                            },
                         ]}
                     >
                         <Input 

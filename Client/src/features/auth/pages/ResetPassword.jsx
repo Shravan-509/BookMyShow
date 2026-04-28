@@ -11,6 +11,7 @@ import {
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeftOutlined, KeyOutlined, LockOutlined } from '@ant-design/icons';
 import { notify } from '../../../utils/notificationUtils';
+import { sanitizeInput, validatePasswordStrength } from '../../../utils/securityValidation';
 
 const ResetPassword = () => {
     const [form] = Form.useForm();
@@ -47,9 +48,18 @@ const ResetPassword = () => {
     }, [dispatch])
 
     const handleSubmit = (values) => {
+        const newPassword = sanitizeInput(values.password);
+        
+        const passwordCheck = validatePasswordStrength(newPassword);
+        if (!passwordCheck.valid) 
+        {
+            notify("error", passwordCheck.reason);
+            return;
+        }
+        
         dispatch(resetPasswordRequest({
             token,
-            newPassword : values.password,
+            newPassword,
         }))
     }
 

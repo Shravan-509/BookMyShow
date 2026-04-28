@@ -1,8 +1,9 @@
 import React from 'react'
-import { Button, Form, Input, Modal, Typography } from 'antd'
+import { Alert, Button, Form, Input, Modal, Typography } from 'antd'
 import { SafetyCertificateOutlined } from "@ant-design/icons";
 
 import { useProfile } from '../../../hooks/useProfile';
+import { sanitizeInput, validateLength } from '../../../utils/securityValidation';
 
 const {Title, Text, Paragraph} = Typography;
 const EmailChangeModal = () => {
@@ -18,8 +19,16 @@ const EmailChangeModal = () => {
     } = useProfile();
 
      const handleVerify = (values) => {
+        const sanitizedCode = sanitizeInput(values.code);
+        
+        // Validate code format (6 digits)
+        if (!validateLength(sanitizedCode, 6, 6) || !/^\d{6}$/.test(sanitizedCode)) {
+            Alert("Please enter a valid 6-digit code");
+            return;
+        }
+        
         verifyEmailChange({
-            code: values.code,
+            code: sanitizedCode,
             newEmail: pendingEmailChange,
         })
     }

@@ -6,6 +6,8 @@ const EmailVerification = React.lazy(() => import("./EmailVerification"))
 import { selectAuthLoading, signupRequest } from '../../../redux/slices/authSlice';
 import { selectActiveTab } from '../../../redux/slices/uiSlice';
 import { resetVerificationState } from '../../../redux/slices/verificationSlice';
+import { sanitizeInput, validateEmail, validatePasswordStrength, validatePhone } from '../../../utils/securityValidation';
+import { notify } from '../../../utils/notificationUtils';
 
 const Register = memo(() => {
     const [signupForm] = Form.useForm();
@@ -19,7 +21,14 @@ const Register = memo(() => {
     const emailRules = useMemo(
         () => [
                 { required: true, message: "Please enter your email!" },
-                { type: "email", message: "Please enter a valid email!" },
+               { 
+                    validator: (_, value) => {
+                        if (!value) return Promise.resolve();
+                        return validateEmail(value) 
+                            ? Promise.resolve() 
+                            : Promise.reject(new Error("Please enter a valid email!"));
+                    }
+                },
             ],
         [],
     )
@@ -27,7 +36,14 @@ const Register = memo(() => {
     const phoneRules = useMemo(
         () => [
                 { required: true, message: "Please enter your phone number!" },
-                { pattern: /^[6-9]\d{9}$/, message: "Please enter a valid 10-digit phone number!" },
+                { 
+                    validator: (_, value) => {
+                        if (!value) return Promise.resolve();
+                        return validatePhone(value) 
+                            ? Promise.resolve() 
+                            : Promise.reject(new Error("Please enter a valid phone number!"));
+                    }
+                },
             ],
         [],
     )
@@ -35,10 +51,14 @@ const Register = memo(() => {
     const passwordRules = useMemo(
         () => [
                 { required: true, message: "Please input your password!" },
-                { min: 8, message: "Password must be at least 8 characters!" },
-                {
-                    pattern: /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])/,
-                    message: "Password must include at least one uppercase letter, one number, and one special character",
+                { 
+                    validator: (_, value) => {
+                        if (!value) return Promise.resolve();
+                        const result = validatePasswordStrength(value);
+                        return result.valid 
+                            ? Promise.resolve() 
+                            : Promise.reject(new Error(result.reason));
+                    }
                 },
             ],
         [],
@@ -73,11 +93,34 @@ const Register = memo(() => {
     
      const handleSignup = useCallback(
         (values) => {
+            // Sanitize and validate all inputs
+            const sanitizedName = sanitizeInput(values.name);
+            const sanitizedEmail = sanitizeInput(values.email);
+            const sanitizedPhone = sanitizeInput(values.phone);
+            const sanitizedPassword = sanitizeInput(values.password);
+            
+            // Additional validation
+            if (!validateEmail(sanitizedEmail)) {
+                notify("error", "Invalid email format");
+                return;
+            }
+            
+            if (!validatePhone(sanitizedPhone)) {
+                notify("error", "Invalid phone number");
+                return;
+            }
+            
+            const passwordCheck = validatePasswordStrength(sanitizedPassword);
+            if (!passwordCheck.valid) {
+                notify("error", passwordCheck.reason);
+                return;
+            }
+            
             dispatch(signupRequest({
-                    name: values.name,
-                    email: values.email,
-                    phone: values.phone,
-                    password: values.password,
+                    name: sanitizedName,
+                    email: sanitizedEmail,
+                    phone: sanitizedPhone,
+                    password: sanitizedPassword,
                     role: values.role
                 })
             )

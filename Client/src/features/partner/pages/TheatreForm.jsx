@@ -4,6 +4,7 @@ import TextArea from 'antd/es/input/TextArea'
 import { useDispatch } from 'react-redux';
 import { addTheatreRequest, updateTheatreRequest } from '../../../redux/slices/theatreSlice';
 import { useAuth } from '../../../hooks/useAuth';
+import { sanitizeInput, validateLength } from '../../../utils/securityValidation';
 
 const TheatreForm = ({
     isModalOpen, 
@@ -22,16 +23,45 @@ const TheatreForm = ({
     };
 
     const onFinish = (values) => {
+        // Sanitize all inputs
+        const sanitizedValues = {
+            name: sanitizeInput(values.name),
+            address: sanitizeInput(values.address),
+            email: sanitizeInput(values.email),
+            phone: sanitizeInput(values.phone),
+            city: sanitizeInput(values.city),
+            state: sanitizeInput(values.state),
+            zipCode: sanitizeInput(values.zipCode)
+        };
+        
+        // Validate inputs
+        if (!validateLength(sanitizedValues.name, 2, 100)) {
+            Alert("Theatre name must be between 2 and 100 characters");
+            return;
+        }
+        
+        if (!validateLength(sanitizedValues.address, 5, 200)) {
+            Alert("Address must be between 5 and 200 characters");
+            return;
+        }
+        
+        if (!validateEmail(sanitizedValues.email)) {
+            Alert("Please enter a valid email");
+            return;
+        }
+        
+        if (!validatePhone(sanitizedValues.phone)) {
+            Alert("Please enter a valid phone number");
+            return;
+        }
     
         if(formType === "edit")
         {
-            dispatch(updateTheatreRequest({id: selectedTheatre._id, theatre: values}))
-            // response = await updateTheatre(selectedTheatre._id, values);
+            dispatch(updateTheatreRequest({id: selectedTheatre._id, theatre: sanitizedValues}))
         }
         else
         {
-            dispatch(addTheatreRequest({... values, owner: user._id}))
-            // response = await addTheatre({... values, owner: user._id});
+            dispatch(addTheatreRequest({...sanitizedValues, owner: user._id}))
         }
         setIsModalOpen(false);
         setSelectedTheatre(null);

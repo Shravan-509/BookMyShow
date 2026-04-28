@@ -1,7 +1,8 @@
 import React, { useEffect } from "react"
-import {Alert, Button, Card, Form, Input, Typography } from "antd"
+import { Alert, Button, Card, Form, Input, Typography } from "antd"
 import { LockOutlined } from "@ant-design/icons"
 import { useProfile } from "../../../hooks/useProfile";
+import { sanitizeInput, validatePasswordStrength } from "../../../utils/securityValidation";
 
 const {Title, Text, Paragraph} = Typography;
 
@@ -10,9 +11,20 @@ const PasswordChangeTab = () => {
     const { passwordChangeLoading, passwordChangeError, changePassword, clearErrors } = useProfile();
 
     const handleSubmit = (values) => {
+        // Sanitize and validate passwords
+        const currentPassword = sanitizeInput(values.currentPassword);
+        const newPassword = sanitizeInput(values.newPassword);
+        
+        // Validate new password strength
+        const passwordCheck = validatePasswordStrength(newPassword);
+        if (!passwordCheck.valid) {
+            Alert(passwordCheck.reason);
+            return;
+        }
+        
         changePassword({
-            currentPassword: values.currentPassword,
-            newPassword: values.newPassword
+            currentPassword,
+            newPassword
         })
     }
 
@@ -95,10 +107,14 @@ const PasswordChangeTab = () => {
                 label={<Text strong>New Password</Text>}
                 rules={[
                     { required: true, message: "Please enter your new password" },
-                    { min: 8, message: "Password must be at least 8 characters" },
                     {
-                        pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-                        message: "Password must contain at least one uppercase letter, one lowercase letter, and one number",
+                        validator: (_, value) => {
+                            if (!value) return Promise.resolve();
+                            const result = validatePasswordStrength(value);
+                            return result.valid 
+                                ? Promise.resolve() 
+                                : Promise.reject(new Error(result.reason));
+                        }
                     }
                 ]}
             >

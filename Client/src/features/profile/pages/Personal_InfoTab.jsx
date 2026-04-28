@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { MailOutlined, PhoneOutlined, SaveOutlined, UserOutlined } from '@ant-design/icons'
 import { Alert, Button, Card, Form, Input, Typography } from 'antd'
 import { useProfile } from '../../../hooks/useProfile';
+import { sanitizeInput, validatePhone } from '../../../utils/securityValidation';
 
 const {Title, Text, Paragraph} = Typography;
 
@@ -26,9 +27,24 @@ const Personal_InfoTab = () => {
     }, [profile?.name, profile?.phone, profile?.email]);
 
     const handleSubmit = (values) => {
+        // Sanitize inputs
+        const sanitizedName = sanitizeInput(values.name);
+        const sanitizedPhone = sanitizeInput(values.phone);
+        
+        // Validate inputs
+        if (!validateLength(sanitizedName, 2, 100)) {
+            Alert("Name must be between 2 and 100 characters");
+            return;
+        }
+        
+        if (!validatePhone(sanitizedPhone)) {
+            Alert("Please enter a valid phone number");
+            return;
+        }
+
         updateProfile({
-            name: values.name,
-            phone: values.phone,
+            name: sanitizedName,
+            phone: sanitizedPhone,
         })
     }
 
@@ -99,8 +115,12 @@ const Personal_InfoTab = () => {
                 rules={[
                     { required: true, message: "Please enter your phone number" },
                     { 
-                        pattern: /^[6-9]\d{9}$/, 
-                        message: "Please enter a valid 10-digit phone number"
+                        validator: (_, value) => {
+                            if (!value) return Promise.resolve();
+                            return validatePhone(value) 
+                                ? Promise.resolve() 
+                                : Promise.reject(new Error("Please enter a valid phone number"));
+                        }
                     },
                 ]}
             >
