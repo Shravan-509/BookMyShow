@@ -31,7 +31,9 @@ const LogoComponent = memo(() => (
         <img 
             src={Logo || "/placeholder.svg"} 
             alt="BookMyShow Logo" 
-            style={{ height: '40px', marginRight: '10px' }} 
+            width={120}
+            height={40}
+            // style={{ marginRight: '10px' }} 
         />
     </Link>
 ))
@@ -41,6 +43,7 @@ LogoComponent.displayName = "LogoComponent"
 const FooterComponent = memo(() => (
     <Footer 
         style={{ 
+            minHeight: '200px', 
             textAlign: 'center',
             background: 'rgb(51, 51, 56)',
             color: 'white',
@@ -50,6 +53,7 @@ const FooterComponent = memo(() => (
         <Divider 
             orientation="center" 
             style={{
+                minHeight: '60px',
                 borderColor: 'rgba(255, 255, 255, 0.3)',
                 color: 'white',
                 marginBottom: '24px',
@@ -256,10 +260,10 @@ const MainLayout = memo(({ children }) => {
         return "home"
     }, [location.pathname])
 
-    if(loading)
-    {
-        return <LoadingSpinner />
-    }
+    // if(loading)
+    // {
+    //     return <LoadingSpinner />
+    // }
     
   return (
         <Layout style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -291,8 +295,15 @@ const MainLayout = memo(({ children }) => {
                     onClick={showDrawer}
                 />
             </Header>
-            <Content style={{ flex: 1, padding: 24, borderRadius: borderRadiusLG, background: "#f5f5f5" }}>
-                {children}
+            <Content 
+                style={{ 
+                    flex: 1, 
+                    padding: 24, 
+                    borderRadius: borderRadiusLG, 
+                    minHeight: "calc(100vh - 64px - 200px)",
+                    background: "#f5f5f5" 
+                }}>
+                {loading ? <LoadingSpinner /> : children}
             </Content>
             
            <FooterComponent />
