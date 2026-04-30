@@ -3,30 +3,31 @@ import { Carousel, Image, Tabs } from 'antd'
 import { useNavigate } from 'react-router-dom';
 import Login from './Login';
 import Register from './Register';
-import cinemaBackground from "../../../assets/cinema-background.png";
-import cinemaBackground_1 from "../../../assets/cinema-background-1.png"
-import cinemaBackground_2 from "../../../assets/cinema-background-2.png"
+import cinemaBackground from "../../../assets/cinema-background.webp";
+import cinemaBackground_1 from "../../../assets/cinema-background-1.webp"
+import cinemaBackground_2 from "../../../assets/cinema-background-2.webp"
 import Logo from "../../../assets/bookmyshow_light.svg";
 import { useDispatch, useSelector } from 'react-redux';
 import { selectisAuthenticated } from '../../../redux/slices/authSlice';
 import { selectActiveTab, setActiveTab } from '../../../redux/slices/uiSlice';
 
 const CarouselComponent = memo(() => (
-    <Carousel autoplay>
-        <Image
-            src={cinemaBackground || "/placeholder.svg"}
+    <Carousel autoplay effect='fade'>
+        <img
+            src={cinemaBackground}
             alt="Entertainment collage - 1"
             className="banner-image"
-            loading='lazy'
+            fetchpriority="high"
+            decoding="async"
         />
-        <Image
-            src={cinemaBackground_1 || "/placeholder.svg"}
+        <img
+            src={cinemaBackground_1}
             alt="Entertainment collage - 2"
             className="banner-image"
             loading='lazy'
         />
-        <Image
-            src={cinemaBackground_2 || "/placeholder.svg"}
+        <img
+            src={cinemaBackground_2}
             alt="Entertainment collage - 3"
             className="banner-image"
             loading='lazy'
