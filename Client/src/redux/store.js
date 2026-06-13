@@ -2,8 +2,10 @@ import { configureStore } from "@reduxjs/toolkit";
 import createSagaMiddleware from "redux-saga";
 import { rootSaga } from "./sagas";
 import { persistStore, persistReducer, FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER } from "redux-persist";
-import storage from "redux-persist/lib/storage";
+import storageModule from "redux-persist/lib/storage";
 import rootReducer from "./reducers/rootReducer";
+
+const storage = storageModule.default || storageModule;
 
 const persistConfig = {
     key: "root",

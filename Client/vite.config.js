@@ -3,19 +3,10 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
-
-  build: {
-    minify: 'esbuild', // faster + enough
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          antd: ['antd', '@ant-design/icons'],
-          vendor: ['react', 'react-dom', 'axios'],
-        }
-      }
-    }
-  },
+  plugins: [
+    react(), 
+    tailwindcss(),
+  ],
 
   server: {
     proxy: {
