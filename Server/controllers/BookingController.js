@@ -135,7 +135,7 @@ const bookSeat = async (req, res, next) => {
             const reservedShow = await Show.findOneAndUpdate(
                 { _id: showId, bookedSeats: { $nin: seats } },
                 { $push: { bookedSeats: { $each: seats } } },
-                { new: true },
+                { returnDocument: "after" },
             ).populate(["movie", "theatre"])
 
             if (!reservedShow) 

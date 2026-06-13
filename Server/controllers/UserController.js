@@ -60,7 +60,10 @@ const updateProfile = async (req, res, next) => {
         const user = await User.findByIdAndUpdate(
             userId, 
             { $set: userFields }, 
-            { new: true }
+            {
+                returnDocument: "after",
+                runValidators: true
+            }
         ).select("-password -__v -resetToken -resetTokenExpiry");
 
         if (!user) {
@@ -229,7 +232,7 @@ const requestEmailChange = async (req, res, next) => {
         await Verification.findOneAndUpdate(
             { userId: user._id, type: "email-change" },
             { $set: { metadata: { newEmail , oldEmail: user.email } } },
-            { new: true },
+            { returnDocument: "after" },
         )
 
         // Send Verification to new email
@@ -306,7 +309,10 @@ const verifyEmailChange = async (req, res, next) => {
                 $inc: { tokenVersion: 1 }, // This will invalidate all existing tokens
                 updatedAt: new Date()
             },
-            { new: true }
+            {
+                returnDocument: "after",
+                runValidators: true
+            }
         ).select("-password -__v -resetToken -resetTokenExpiry")
 
         if (!user) {

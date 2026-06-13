@@ -23,7 +23,10 @@ const updateShow = async(req, res, next) => {
         const updatedShow = await Show.findByIdAndUpdate(
             req?.params?.id, 
             req?.body, 
-            { new: true }
+            {
+                returnDocument: "after",
+                runValidators: true
+            }
         );
         if(!updatedShow)
         {
@@ -120,46 +123,44 @@ const getAllShowsByTheatre = async(req, res, next) => {
 };
 
 // when User selects a movie
-const getTheatresWithShowsByMovie = async(req, res, next) => {
-    try
-    {
-        const {movie, date} = req.body;
-        const shows = await Show.find({movie, date}).populate("theatre");
-        
-        if(!shows)
-        {
-            return res.send({
-                success: false,
-                message: `Shows not found`,
-            });
+const getTheatresWithShowsByMovie = async (req, res, next) => {
+  try {
+    const { movie, date } = req.body;
 
-        }
-        let uniqueTheatres = [];
-        shows.forEach((show) => {
-            let isTheatre = uniqueTheatres.find((theatre) => theatre._id === show.theatre._id);
+    const shows = await Show.find({ movie, date })
+      .populate("theatre");
 
-            if(!isTheatre)
-            {
-                let showsOfThisTheatre = shows.filter(
-                            (showObj) => showObj.theatre._id === show.theatre._id
-                );
-                uniqueTheatres.push({
-                    ...show.theatre._doc,
-                    shows: showsOfThisTheatre
-                })
-            }
-        })
-        
-        return res.send({
-            success: true,
-            message: "All shows has been fetched",
-            data: uniqueTheatres
-        });
-        
-    } catch (error) {
-        res.status(400);
-        next(error);
+    if (!shows.length) {
+      return res.send({
+        success: true,
+        message: "No shows found",
+      });
     }
+
+    const theatreMap = new Map();
+
+    shows.forEach((show) => {
+      const theatreId = show.theatre._id.toString();
+
+      if (!theatreMap.has(theatreId)) {
+        theatreMap.set(theatreId, {
+          ...show.theatre._doc,
+          shows: [],
+        });
+      }
+
+      theatreMap.get(theatreId).shows.push(show);
+    });
+
+    return res.send({
+      success: true,
+      message: "All shows have been fetched",
+      data: Array.from(theatreMap.values()),
+    });
+  } catch (error) {
+    res.status(400);
+    next(error);
+  }
 };
 
 module.exports = {

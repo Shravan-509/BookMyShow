@@ -30,7 +30,14 @@ const updateTheatre = async(req, res, next) => {
     try {
         const id = req?.params.id;
         const {name} = req?.body;
-        const updatedTheatre = await Theatre.findByIdAndUpdate(id, req?.body, {new: true})
+        const updatedTheatre = await Theatre.findByIdAndUpdate(
+            id, 
+            req?.body, 
+            {
+                returnDocument: "after",
+                runValidators: true
+            }
+        )
         
         if(!updatedTheatre){
             return res.send({
