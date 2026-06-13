@@ -61,7 +61,7 @@ const TheatreForm = ({
         }
         else
         {
-            dispatch(addTheatreRequest({...sanitizedValues, owner: user._id}))
+            dispatch(addTheatreRequest({...sanitizedValues, owner: user.id}))
         }
         setIsModalOpen(false);
         setSelectedTheatre(null);

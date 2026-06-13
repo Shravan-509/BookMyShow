@@ -194,7 +194,7 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
 
                 const bookingPayload = {
                     show: show._id,
-                    user: user._id,
+                    user: user.id,
                     seats,
                     transactionId: razorpay_payment_id,
                     orderId: razorpay_order_id,

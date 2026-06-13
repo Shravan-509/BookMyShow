@@ -113,7 +113,7 @@ function* handleLogin(action) {
             yield put(loginSuccess({token: data.access_token, user: data.user}));
 
             // ✅ Immediately validate and populate user
-            yield put(checkAuthStatus()); 
+            // yield put(checkAuthStatus()); 
 
             // Show success message
             notify("success", "Login Successful!");

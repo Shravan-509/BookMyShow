@@ -105,7 +105,7 @@ export const {
 const selectAuthState = (state) => state.auth;
 
 // Memoized selectors using reselect (prevent unnecessary re-renders)
-export const selectAuth = createSelector([selectAuthState], (auth) => auth);
+export const selectAuth = (state) => state.auth;
 export const selectUser = createSelector([selectAuthState], (auth) => auth.user);
 export const selectisAuthenticated = createSelector([selectAuthState], (auth) => auth.isAuthenticated);
 export const selectAuthLoading = createSelector([selectAuthState], (auth) => auth.loading);

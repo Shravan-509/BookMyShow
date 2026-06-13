@@ -159,7 +159,7 @@ export const {
 const selectVerificationState = (state) => state.verification;
 
 // Memoized selectors using reselect
-export const selectVerification = createSelector([selectVerificationState], (verification) => verification);
+export const selectVerification = (state) => state.verification;
 export const selectVerificationEmail = createSelector([selectVerificationState], (verification) => verification.verificationEmail);
 export const selectTempUserId = createSelector([selectVerificationState], (verification) => verification.tempUserId);
 export const selectShowEmailVerificationModal = createSelector([selectVerificationState], (verification) => verification.showEmailVerificationModal);

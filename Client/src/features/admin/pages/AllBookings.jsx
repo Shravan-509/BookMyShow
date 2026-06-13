@@ -1,5 +1,3 @@
-"use client"
-
 import { useEffect, useState } from "react"
 import { Table, Tag, Input, DatePicker, Space, Card, Statistic, Row, Col, message } from "antd"
 import { SearchOutlined, DollarOutlined, ShoppingOutlined, UserOutlined } from "@ant-design/icons"

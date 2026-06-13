@@ -173,7 +173,8 @@ const MovieForm = ({
                                             {value: "TV Movie", label: "TV Movie"},
                                             {value: "Thriller", label: "Thriller"},
                                             {value: "War", label: "War"},
-                                            {value: "Western", label: "Western"}
+                                            {value: "Western", label: "Western"},
+                                             {value: "Sports", label: "Sports"}
                                         ]}
                                         size='large' 
                                     >

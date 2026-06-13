@@ -143,6 +143,7 @@ const TheatreList = () => {
             </Button>
         </div>
         <Table 
+            rowKey="_id"
             dataSource={theatres} 
             columns={columns}
             scroll={{ x: 600 }}

@@ -1,5 +1,3 @@
-"use client"
-
 import { useMemo, useState, useEffect } from "react"
 import { Button, Card, Space, Tag, Typography } from "antd"
 import { StarOutlined, EyeOutlined } from "@ant-design/icons"

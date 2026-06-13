@@ -284,14 +284,14 @@ const OrderHistory = () => {
   const { userBookings: bookings, loading, error, getUserBookings } = useBooking()
 
   const fetchUserBookings = () => {
-    if (user?._id) {
-      getUserBookings(user._id)
+    if (user?.id) {
+      getUserBookings(user.id)
     }
   }
 
   useEffect(() => {
     fetchUserBookings()
-  }, [user?._id])
+  }, [user?.id])
 
   useEffect(() => {
     if (bookings.length === 0) return

@@ -1,7 +1,5 @@
-"use client"
-
-import { useEffect, useState } from "react"
-import { Card, Statistic, Row, Col, message, Spin, Empty } from "antd"
+import { useEffect, useMemo, useState } from "react"
+import { Card, Statistic, Row, Col, Spin, Empty } from "antd"
 import { DollarOutlined, ShoppingOutlined, TeamOutlined, RiseOutlined } from "@ant-design/icons"
 import { useDispatch, useSelector } from "react-redux"
 import { selectAuth } from "../../../redux/slices/authSlice"
@@ -32,10 +30,36 @@ const RevenueTracking = () => {
   const loading = useSelector(selectBookingLoading)
 
   useEffect(() => {
-    if (user?._id) {
-      dispatch(getRevenueDataRequest(user._id))
+    if (user?.id) {
+      dispatch(getRevenueDataRequest(user.id))
     }
   }, [user, dispatch])
+
+  // SAFE DEFAULTS
+  const revenueByMonth = revenueData?.revenueByMonth || [];
+  const revenueByTheatre = revenueData?.revenueByTheatre || [];
+
+  // Format month data for charts
+  const monthlyData = useMemo(
+    () =>
+      revenueByMonth.map((item) => ({
+        month: item.month,
+        revenue: item.revenue,
+      })),
+    [revenueByMonth]
+  );
+
+  // Format theatre data for charts
+  const theatreData = useMemo(
+    () =>
+      revenueByTheatre.map((item) => ({
+        name: item.theatreName,
+        revenue: item.revenue,
+        bookings: item.bookings,
+        tickets: item.tickets,
+      })),
+    [revenueByTheatre]
+  );
 
   if (loading) {
     return (
@@ -53,21 +77,7 @@ const RevenueTracking = () => {
     )
   }
 
-  const { summary, revenueByTheatre, revenueByMonth } = revenueData
-
-  // Format month data for charts
-  const monthlyData = revenueByMonth.map((item) => ({
-    month: item.month,
-    revenue: item.revenue,
-  }))
-
-  // Format theatre data for charts
-  const theatreData = revenueByTheatre.map((item) => ({
-    name: item.theatreName,
-    revenue: item.revenue,
-    bookings: item.bookings,
-    tickets: item.tickets,
-  }))
+  const { summary } = revenueData
 
   return (
     <div style={{ padding: "20px" }}>

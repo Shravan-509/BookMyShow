@@ -23,8 +23,12 @@ export const useAuth = () => {
 
     //logout function
     const handlelogout = async () => {
-        await persistor.purge(); 
         dispatch(logout());
+        await persistor.flush();
+        await persistor.purge();
+
+        localStorage.removeItem("persist:root");
+        sessionStorage.clear();
         Navigate("/", { replace : true });
     }
 
