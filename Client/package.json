@@ -12,6 +12,7 @@
   "dependencies": {
     "@ant-design/icons": "^5.3.0",
     "@reduxjs/toolkit": "^2.11.2",
+    "@tailwindcss/vite": "^4.1.18",
     "antd": "^5.17.0",
     "axios": "^1.16.0",
     "date-fns": "^4.1.0",
@@ -20,12 +21,11 @@
     "react-dom": "^18.2.0",
     "react-redux": "^9.2.0",
     "react-router-dom": "^6.30.4",
-    "recharts": "^2.12.7",
+    "recharts": "^3.9.0",
     "redux-persist": "^6.0.0",
     "redux-saga": "^1.4.2",
     "reselect": "^5.1.1",
-    "tailwindcss": "^4.1.18",
-    "@tailwindcss/vite": "^4.1.18"
+    "tailwindcss": "^4.1.18"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
