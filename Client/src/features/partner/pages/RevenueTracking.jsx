@@ -129,12 +129,12 @@ const RevenueTracking = () => {
       <Row gutter={16} style={{ marginBottom: "24px" }}>
         <Col xs={24} lg={12}>
           <Card title="Revenue by Month (Last 6 Months)" style={{ height: "400px" }}>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={monthlyData}>
+            <ResponsiveContainer height={300}>
+              <LineChart data={monthlyData} accessibilityLayer>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis />
-                <Tooltip formatter={(value) => `₹${value.toFixed(2)}`} />
+                <Tooltip formatter={(value) => [`₹${Number(value).toFixed(2)}`, 'Revenue']} />
                 <Legend />
                 <Line type="monotone" dataKey="revenue" stroke="#8884d8" strokeWidth={2} name="Revenue" />
               </LineChart>
@@ -143,13 +143,13 @@ const RevenueTracking = () => {
         </Col>
 
         <Col xs={24} lg={12}>
-          <Card title="Revenue by Theatre" style={{ height: "400px" }}>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={theatreData}>
+          <Card title="Revenue by Theatre" style={{ height: "400px" }}>            
+            <ResponsiveContainer height={300}>              
+              <BarChart data={theatreData} accessibilityLayer>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip formatter={(value) => `₹${value.toFixed(2)}`} />
+                <YAxis />               
+                <Tooltip formatter={(value) => [`₹${Number(value).toFixed(2)}`, 'Revenue']} />
                 <Legend />
                 <Bar dataKey="revenue" fill="#8884d8" name="Revenue" />
               </BarChart>
@@ -160,8 +160,8 @@ const RevenueTracking = () => {
 
       <Row gutter={16}>
         <Col xs={24} lg={12}>
-          <Card title="Bookings by Theatre" style={{ height: "400px" }}>
-            <ResponsiveContainer width="100%" height={300}>
+          <Card title="Bookings by Theatre" style={{ height: "400px" }}>           
+            <ResponsiveContainer height={300}>
               <PieChart>
                 <Pie
                   data={theatreData}
@@ -183,9 +183,9 @@ const RevenueTracking = () => {
         </Col>
 
         <Col xs={24} lg={12}>
-          <Card title="Theatre Performance Comparison" style={{ height: "400px" }}>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={theatreData}>
+          <Card title="Theatre Performance Comparison" style={{ height: "400px" }}>            
+            <ResponsiveContainer height={300}>             
+              <BarChart data={theatreData} accessibilityLayer>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis />
