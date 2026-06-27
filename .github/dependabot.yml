@@ -5,13 +5,9 @@ updates:
     directory: "/Client"
     schedule:
       interval: "weekly"
-    registries:
-      - github-packages
 
   # 2. Track dependencies in the Server folder
   - package-ecosystem: "npm"
     directory: "/Server"
     schedule:
       interval: "weekly"
-    registries:
-      - github-packages
