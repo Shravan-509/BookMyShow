@@ -3,11 +3,20 @@ registries:
   github-packages:
     type: npm-registry
     url: https://npm.pkg.github.com
-    token: ${{ secrets.DEPENDABOT_GITHUB_TOKEN }} # This matches the secret name you saved in GitHub
+    token: ${{ secrets.DEPENDABOT_GITHUB_TOKEN }}
 
 updates:
+  # 1. Track dependencies in the Client folder
   - package-ecosystem: "npm"
-    directory: "/"
+    directory: "/Client"
+    schedule:
+      interval: "weekly"
+    registries:
+      - github-packages
+
+  # 2. Track dependencies in the Server folder
+  - package-ecosystem: "npm"
+    directory: "/Server"
     schedule:
       interval: "weekly"
     registries:
