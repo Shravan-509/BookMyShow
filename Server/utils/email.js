@@ -1,16 +1,14 @@
 const fs = require("fs");
 const path = require("path");
 const QRCode = require("qrcode")
-const brevo = require("@getbrevo/brevo");
+const { BrevoClient } = require('@getbrevo/brevo');
 
 const Verification = require('../models/verificationSchema');
 
-// Initialize Brevo
-const brevoClient = new brevo.TransactionalEmailsApi();
-
-// Configure API key
-const apiKeyAuth = brevoClient.authentications["apiKey"];
-apiKeyAuth.apiKey = process.env.BREVO_API_KEY;
+// Initialize & Configure API key Brevo
+const brevoClient = new BrevoClient({
+  apiKey: process.env.BREVO_API_KEY,
+});
 
 // Generate a random 6-digit code
 const generateVerificationCode = () => {
@@ -77,7 +75,7 @@ const sendVerificationEmail = async(email, code, type) => {
             templateName = "reverification"
             subject = "Verify your BookMyShow account"
         }
-        if (type === "email-change") 
+        else if (type === "email-change") 
         {
             templateName = "email-change"
             subject = "Verify your Email change request"
@@ -102,7 +100,7 @@ const sendVerificationEmail = async(email, code, type) => {
             htmlContent: html
         };
 
-        const result = brevoClient.sendTransacEmail(sendEmail);
+        const result = await brevoClient.transactionalEmails.sendTransacEmail(sendEmail);
 
         // console.log(`${templateName} email sent : ${result.messageId}`);
         return result;
@@ -139,7 +137,7 @@ const sendPasswordResetEmail = async({email, name, resetUrl}) => {
             htmlContent: html
         };
         
-        const result = brevoClient.sendTransacEmail(sendEmail);
+        const result = await brevoClient.transactionalEmails.sendTransacEmail(sendEmail);
         // console.log("Password reset email sent:", result.messageId);
         return result;
     } catch (error) {
@@ -190,7 +188,7 @@ const sendSecurityNotificationEmail = async (email, type, data = {} ) => {
             htmlContent: html
         };
 
-    const result = brevoClient.sendTransacEmail(sendEmail);
+    const result = await brevoClient.transactionalEmails.sendTransacEmail(sendEmail);
     // console.log(`✅ Security notification email sent: ${type} to ${email}`)
     return result;
   } catch (error) {
@@ -285,7 +283,7 @@ const sendTicketEmail = async ({name, email, booking, show, movie, theatre, pdfB
             })
         }
 
-        const result = brevoClient.sendTransacEmail(sendEmail);
+        const result = await brevoClient.transactionalEmails.sendTransacEmail(sendEmail);
         // console.log("Ticket Email with PDF sent:", result.messageId);
         return result;
     } catch (error) {
