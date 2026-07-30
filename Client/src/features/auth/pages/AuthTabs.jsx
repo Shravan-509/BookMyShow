@@ -17,7 +17,7 @@ const CarouselComponent = memo(() => (
             src={cinemaBackground}
             alt="Entertainment collage - 1"
             className="banner-image"
-            fetchpriority="high"
+            fetchPriority="high"
             decoding="async"
         />
         <img
