@@ -147,7 +147,11 @@ const AllBookings = () => {
               title="Total Bookings"
               value={filteredBookings.length}
               prefix={<ShoppingOutlined />}
-              valueStyle={{ color: "#3f8600" }}
+              styles={{
+                  content: {
+                      color: "#3f8600",
+                  },
+              }}
             />
           </Card>
         </Col>
@@ -158,7 +162,11 @@ const AllBookings = () => {
               value={totalRevenue}
               prefix={<RupeeIcon style={{ fontSize: '22px' }}/>}
               precision={2}
-              valueStyle={{ color: "#cf1322" }}
+              styles={{
+                  content: {
+                      color: "#cf1322",
+                  },
+              }}
             />
           </Card>
         </Col>
@@ -168,7 +176,11 @@ const AllBookings = () => {
               title="Unique Users"
               value={uniqueUsers}
               prefix={<UserOutlined />}
-              valueStyle={{ color: "#1890ff" }}
+              styles={{
+                  content: {
+                      color: "#1890ff",
+                  },
+              }}
             />
           </Card>
         </Col>

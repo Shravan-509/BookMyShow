@@ -123,7 +123,11 @@ const UserManagement = () => {
               title="Total Users"
               value={totalUsers}
               prefix={<TeamOutlined />}
-              valueStyle={{ color: "#3f8600" }}
+              styles={{
+                  content: {
+                      color: "#3f8600",
+                  },
+              }}
             />
           </Card>
         </Col>
@@ -133,7 +137,11 @@ const UserManagement = () => {
               title="Verified Users"
               value={verifiedUsers}
               prefix={<CheckCircleOutlined />}
-              valueStyle={{ color: "#1890ff" }}
+              styles={{
+                  content: {
+                      color: "#1890ff",
+                  },
+              }}
             />
           </Card>
         </Col>
@@ -143,7 +151,11 @@ const UserManagement = () => {
               title="Partners"
               value={partnerCount}
               prefix={<UserOutlined />}
-              valueStyle={{ color: "#fa8c16" }}
+              styles={{
+                  content: {
+                      color: "#fa8c16",
+                  },
+              }}
             />
           </Card>
         </Col>
@@ -153,7 +165,11 @@ const UserManagement = () => {
               title="Regular Users"
               value={userCount}
               prefix={<UserOutlined />}
-              valueStyle={{ color: "#52c41a" }}
+              styles={{
+                  content: {
+                      color: "#52c41a",
+                  },
+              }}
             />
           </Card>
         </Col>

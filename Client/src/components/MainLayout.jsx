@@ -51,7 +51,7 @@ const FooterComponent = memo(() => (
         }}
     >
         <Divider 
-            orientation="center" 
+            titlePlacement="center" 
             style={{
                 minHeight: '60px',
                 borderColor: 'rgba(255, 255, 255, 0.3)',

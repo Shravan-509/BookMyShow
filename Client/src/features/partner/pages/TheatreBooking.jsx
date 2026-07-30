@@ -161,7 +161,11 @@ const TheatreBookings = () => {
               title="Total Bookings"
               value={bookings.length}
               prefix={<ShoppingOutlined />}
-              valueStyle={{ color: "#3f8600" }}
+              styles={{
+                  content: {
+                      color: "#3f8600",
+                  },
+              }}
             />
           </Card>
         </Col>
@@ -172,7 +176,11 @@ const TheatreBookings = () => {
               value={totalRevenue}
               prefix={<RupeeIcon style={{ fontSize: '22px' }} />}
               precision={2}
-              valueStyle={{ color: "#cf1322" }}
+              styles={{
+                  content: {
+                      color: "#cf1322",
+                  },
+              }}
             />
           </Card>
         </Col>
@@ -182,7 +190,11 @@ const TheatreBookings = () => {
               title="Unique Customers"
               value={uniqueUsers}
               prefix={<TeamOutlined />}
-              valueStyle={{ color: "#1890ff" }}
+              styles={{
+                  content: {
+                      color: "#1890ff",
+                  },
+              }}
             />
           </Card>
         </Col>

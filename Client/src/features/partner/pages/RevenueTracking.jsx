@@ -89,7 +89,11 @@ const RevenueTracking = () => {
               value={summary.totalRevenue}
               prefix={<RupeeIcon style={{ fontSize: '22px' }}/>}
               precision={2}
-              valueStyle={{ color: "#cf1322" }}
+              styles={{
+                  content: {
+                      color: "#cf1322",
+                  },
+              }}
             />
           </Card>
         </Col>
@@ -99,7 +103,11 @@ const RevenueTracking = () => {
               title="Total Bookings"
               value={summary.totalBookings}
               prefix={<ShoppingOutlined />}
-              valueStyle={{ color: "#3f8600" }}
+              styles={{
+                  content: {
+                      color: "#3f8600",
+                  },
+              }}
             />
           </Card>
         </Col>
@@ -109,7 +117,11 @@ const RevenueTracking = () => {
               title="Total Tickets Sold"
               value={summary.totalTickets}
               prefix={<TeamOutlined />}
-              valueStyle={{ color: "#1890ff" }}
+              styles={{
+                  content: {
+                      color: "#1890ff",
+                  },
+              }}
             />
           </Card>
         </Col>
@@ -120,7 +132,11 @@ const RevenueTracking = () => {
               value={summary.averageBookingValue}
               prefix={<RiseOutlined />}
               precision={2}
-              valueStyle={{ color: "#722ed1" }}
+              styles={{
+                  content: {
+                      color: "#722ed1",
+                  },
+              }}
             />
           </Card>
         </Col>
