@@ -9,23 +9,22 @@
   },
   "dependencies": {
     "@getbrevo/brevo": "^6.0.2",
-    "axios": "^1.16.1",
+    "axios": "^1.19.0",
     "bcrypt": "^6.0.0",
     "compression": "^1.8.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
-    "express-mongo-sanitize": "^2.2.0",
-    "express-rate-limit": "^8.5.1",
+    "express-rate-limit": "^8.6.1",
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
     "mongodb": "^7.5.0",
-    "mongoose": "^9.8.1",
+    "mongoose": "^9.9.0",
     "node-cache": "^5.1.2",
     "pdfkit": "^0.19.1",
     "qrcode": "^1.5.4",
-    "razorpay": "^2.9.6"
+    "razorpay": "^2.9.8"
   },
   "devDependencies": {
     "eslint": "^10.0.0",

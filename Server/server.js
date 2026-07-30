@@ -3,7 +3,7 @@ require("dotenv").config();
 const express = require("express");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
-const mongoSanitize = require("express-mongo-sanitize");
+// const mongoSanitize = require("express-mongo-sanitize");
 
 const connectDB = require("./config/db");
 
@@ -32,7 +32,7 @@ app.use(express.urlencoded({ limit: "10mb", extended: true }));
 app.use(cookieParser());
 
 // Mongo sanitize (prevent NoSQL injection)
-app.use(mongoSanitize());
+// app.use(mongoSanitize());
 
 // Fix req.query mutability (optional but fine)
 // app.use((req, _res, next) => {
