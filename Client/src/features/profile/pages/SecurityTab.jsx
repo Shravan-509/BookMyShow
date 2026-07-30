@@ -14,11 +14,11 @@ const Security = () => {
   return (
     <Card 
         title={
-        <Title level={4} className="!mb-0 !text-[#f84464]">
+        <Title level={4} className="mb-0! text-[#f84464]!">
           Security Settings
         </Title>
       }
-      className="!rounded-xl"
+      className="rounded-xl!"
       styles={{
             body: {
                 padding: '24px'
@@ -47,7 +47,7 @@ const Security = () => {
             <div className="flex justify-between items-center mb-4">
                 <div>
                      <Title level={5} className="mb-1!">
-                        <SafetyOutlined className="!mr-2" />
+                        <SafetyOutlined className="mr-2!" />
                         Two-Factor Authentication
                     </Title>
                     <Text type="secondary">
@@ -78,12 +78,12 @@ const Security = () => {
                 {
                     profile?.twoFactorEnabled ? (
                         <>
-                            <CheckCircleOutlined className="!mr-2" />
+                            <CheckCircleOutlined className="mr-2!" />
                             Two-factor authentication is enabled
                         </>
                     ) : (
                         <>
-                            <ExclamationCircleOutlined className="!mr-2" />
+                            <ExclamationCircleOutlined className="mr-2!" />
                             Two-factor authentication is disabled
                         </>
                     )}
@@ -102,13 +102,13 @@ const Security = () => {
                 <Text strong>Email Verification: </Text>
                 {
                     profile?.emailVerified ? (
-                        <Text className="!text-[#52c41a]">
-                            <CheckCircleOutlined className="!mr-1" />
+                        <Text className="text-[#52c41a]!">
+                            <CheckCircleOutlined className="mr-1!" />
                             Verified
                         </Text>
                     ) : (
-                    <Text className="!text-[#ff4d4f]">
-                        <ExclamationCircleOutlined className="!mr-1" />
+                    <Text className="text-[#ff4d4f]!">
+                        <ExclamationCircleOutlined className="mr-1!" />
                         Not Verified
                     </Text>
                 )}
