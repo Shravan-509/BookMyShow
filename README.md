@@ -6,6 +6,7 @@ A comprehensive full-stack movie booking platform built with React, Node.js/Expr
 
 - [Project Overview](#project-overview)
 - [Architecture](#architecture)
+- [Technical Documentation](#technical-documentation)
 - [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
 - [Environment Variables](#environment-variables)
@@ -38,48 +39,91 @@ BookMyShow is a production-ready movie booking platform that connects users with
 
 ```mermaid
 graph TB
-    %% Frontend (Netlify)
-    subgraph Frontend["Frontend (Netlify)"]
+
+    %% =========================
+    %% Frontend Layer
+    %% =========================
+
+    subgraph Frontend["Frontend Layer (Netlify)"]
+
         React["React + Vite"]
-        Redux["Redux + Redux-Saga"]
+        Redux["Redux Toolkit + Redux-Saga"]
         AntD["Ant Design UI"]
         Axios["Axios HTTP Client"]
+
     end
-    
-    %% Backend (Render)
-    subgraph Backend["Backend (Render)"]
-        Express["Express.js Server"]
+
+    %% =========================
+    %% Backend Layer
+    %% =========================
+
+    subgraph Backend["Backend Layer (Render)"]
+
+        Express["Express.js API Server"]
+
         Auth["Authentication & Authorization"]
+
         Controllers["Controllers Layer"]
-        Models["MongoDB Models"]
-        Utils["Email & Payment Utils"]
+
+        Models["Mongoose Models"]
+
+        Utils["Email + Payment Services"]
+
     end
-    
+
+    %% =========================
     %% External Services
+    %% =========================
+
     subgraph External["External Services"]
+
         MongoDB["MongoDB Atlas"]
-        Razorpay["Razorpay Payment"]
-        EmailService["Email Service"]
+
+        Razorpay["Razorpay Payment Gateway"]
+
+        EmailService["Brevo Transactional Email"]
+
     end
-    
-    %% Frontend connections
-    React -->|API Calls| Axios
-    Axios -->|HTTP/REST| Express
-    Redux -->|State Management| React
-    AntD -->|UI Components| React
-    
-    %% Backend connections
-    Express -->|Business Logic| Controllers
-    Controllers -->|Data Operations| Models
-    Models -->|Query/Store| MongoDB
-    
-    Express -->|Payment| Razorpay
-    Express -->|Transactional Email| EmailService
-    
-    %% Professional Darker Colors for Better Readability
-    style Frontend fill:#90caf9,stroke:#333,stroke-width:1px,color:#000
-    style Backend fill:#ce93d8,stroke:#333,stroke-width:1px,color:#000
-    style External fill:#ffe082,stroke:#333,stroke-width:1px,color:#000
+
+    %% =========================
+    %% Frontend Flow
+    %% =========================
+
+    React -->|UI Rendering| AntD
+
+    React -->|Dispatch Actions| Redux
+
+    Redux -->|Async API Calls| Axios
+
+    Axios -->|REST API| Express
+
+    %% =========================
+    %% Backend Flow
+    %% =========================
+
+    Express -->|Security Middleware| Auth
+
+    Auth -->|Business Logic| Controllers
+
+    Controllers -->|Database Operations| Models
+
+    Models -->|Read / Write| MongoDB
+
+    Controllers -->|Payment Processing| Razorpay
+
+    Controllers -->|Email Notifications| EmailService
+
+    %% =========================
+    %% Professional Styling
+    %% =========================
+
+    classDef frontend fill:#1e293b,color:#ffffff,stroke:#334155,stroke-width:1px;
+    classDef backend fill:#312e81,color:#ffffff,stroke:#4338ca,stroke-width:1px;
+    classDef external fill:#14532d,color:#ffffff,stroke:#166534,stroke-width:1px;
+
+    class React,Redux,AntD,Axios frontend;
+    class Express,Auth,Controllers,Models,Utils backend;
+    class MongoDB,Razorpay,EmailService external;
 ```
 
 ### Data Flow Diagram
@@ -87,121 +131,241 @@ graph TB
 ```mermaid
 sequenceDiagram
     autonumber
-    participant U as User
-    participant C as React Client
-    participant S as Express Server
-    participant DB as MongoDB
-    participant P as Razorpay
-    participant E as Email Service
-    
-    %% Browsing Movies
-    U->>C: Browse Movies
-    C->>S: GET /movies
-    S->>DB: Query Movies
-    DB-->>S: Movie Data
-    S-->>C: Movie List
-    C-->>U: Display Movies
-    
-    %% Selecting Show & Seats
-    U->>C: Select Show & Seats
-    C->>S: POST /bookings
-    S->>DB: Create Booking
-    DB-->>S: Booking ID
-    S-->>C: Booking Details
-    C-->>U: Show Booking Summary
-    
-    %% Payment Flow
-    U->>C: Proceed to Payment
-    C->>P: Initiate Payment
-    P-->>C: Payment Gateway Loaded
-    U->>P: Complete Payment
-    P-->>S: Payment Webhook Triggered
-    
-    %% Booking Confirmation
-    S->>DB: Update Booking Status
-    S->>E: Send Confirmation Email
-    E-->>U: Ticket Email
-    S-->>C: Success Response
-    C-->>U: Booking Confirmation Displayed
 
+    actor User
+
+    participant Client as React Client
+    participant API as Express API
+    participant DB as MongoDB Atlas
+    participant Razorpay as Razorpay Gateway
+    participant Email as Brevo Email Service
+
+    %% --------------------------------------------------
+    %% Movie Discovery
+    %% --------------------------------------------------
+
+    Note over User,DB: Movie Discovery Flow
+
+    User->>Client: Browse Movies
+    activate Client
+
+    Client->>API: GET /movies
+    activate API
+
+    API->>DB: Fetch available movies
+    activate DB
+
+    DB-->>API: Movie data
+    deactivate DB
+
+    API-->>Client: Movie response
+    deactivate API
+
+    Client-->>User: Render movie catalog
+    deactivate Client
+
+    %% --------------------------------------------------
+    %% Booking Creation
+    %% --------------------------------------------------
+
+    Note over User,DB: Seat Selection & Booking
+
+    User->>Client: Select show & seats
+    activate Client
+
+    Client->>API: POST /bookings/create
+    activate API
+
+    API->>DB: Create pending booking
+    activate DB
+
+    DB-->>API: Booking ID
+    deactivate DB
+
+    API-->>Client: Booking summary
+    deactivate API
+
+    Client-->>User: Display booking summary
+    deactivate Client
+
+    %% --------------------------------------------------
+    %% Payment Flow
+    %% --------------------------------------------------
+
+    Note over User,Razorpay: Payment Processing
+
+    User->>Client: Proceed to Payment
+    activate Client
+
+    Client->>Razorpay: Initialize Checkout
+    activate Razorpay
+
+    Razorpay-->>Client: Checkout Loaded
+
+    User->>Razorpay: Complete Payment
+
+    Razorpay-->>API: Payment Webhook
+    deactivate Razorpay
+
+    %% --------------------------------------------------
+    %% Booking Confirmation
+    %% --------------------------------------------------
+
+    Note over API,Email: Booking Confirmation
+
+    activate API
+
+    API->>DB: Update booking status
+    activate DB
+
+    DB-->>API: Booking confirmed
+    deactivate DB
+
+    API->>Email: Send e-ticket
+    activate Email
+
+    Email-->>User: Ticket Confirmation
+    deactivate Email
+
+    API-->>Client: Booking Success
+    deactivate API
+
+    Client-->>User: Show Confirmation Screen
 ```
+
 
 ### Component Architecture
-
 ```mermaid
-graph TD
-    %% Main App
-    App["App.jsx"]
+flowchart LR
 
-    %% Auth Module
-    subgraph AuthModule["Auth Module"]
-        AuthTabs["AuthTabs"]
+    %% ==================================================
+    %% Application Entry
+    %% ==================================================
+
+    App["App"]
+
+    %% ==================================================
+    %% Authentication
+    %% ==================================================
+
+    subgraph AUTH["Authentication"]
+        AuthTabs["Auth"]
         Login["Login"]
         Register["Register"]
-        EmailVerification["EmailVerification"]
-        ForgotPassword["ForgotPassword"]
-        TwoFA["TwoFactorAuthentication"]
+        Verify["Email Verification"]
+        Forgot["Forgot Password"]
+        TwoFA["2FA"]
     end
 
-    %% Movies Module
-    subgraph MoviesModule["Movies Module"]
+    %% ==================================================
+    %% Movie Booking
+    %% ==================================================
+
+    subgraph BOOKING["Movie Booking"]
         Home["Home"]
-        MovieDetails["MovieDetails"]
-        ShowTime["ShowTime"]
-        SeatSelection["SeatSelection"]
+        Details["Movie Details"]
+        ShowTime["Show Time"]
+        Seats["Seat Selection"]
         Checkout["Checkout"]
-        Bookings["Bookings"]
+        Orders["Bookings"]
     end
 
-    %% Profile Module
-    subgraph ProfileModule["Profile Module"]
-        ProfilePage["Profile"]
-        PersonalInfoTab["PersonalInfoTab"]
-        SecurityTab["SecurityTab"]
-        EmailTab["EmailTab"]
-        PasswordTab["PasswordTab"]
+    %% ==================================================
+    %% User Profile
+    %% ==================================================
+
+    subgraph PROFILE["Profile"]
+        Profile["Profile"]
+        Personal["Personal Info"]
+        Security["Security"]
+        Email["Email Settings"]
+        Password["Password Settings"]
     end
 
-    %% Admin Module
-    subgraph AdminModule["Admin Module"]
-        AdminDash["Admin Dashboard"]
-        MovieForm["MovieForm"]
-        MovieList["MovieList"]
-        TheatreList["TheatreList"]
+    %% ==================================================
+    %% Admin
+    %% ==================================================
+
+    subgraph ADMIN["Admin"]
+        AdminDashboard["Dashboard"]
+        MovieForm["Movie Form"]
+        MovieList["Movie List"]
+        TheatreList["Theatre List"]
     end
 
-    %% Partner Module
-    subgraph PartnerModule["Partner Module"]
-        PartnerDash["Partner Dashboard"]
-        TheatreForm["TheatreForm"]
-        MovieShows["MovieShows"]
+    %% ==================================================
+    %% Theatre Partner
+    %% ==================================================
+
+    subgraph PARTNER["Theatre Partner"]
+        PartnerDashboard["Dashboard"]
+        TheatreForm["Theatre Form"]
+        MovieShows["Movie Shows"]
     end
 
-    %% App connections (entry points to each module)
+    %% ==================================================
+    %% Navigation
+    %% ==================================================
+
     App --> AuthTabs
     App --> Home
-    App --> ProfilePage
-    App --> AdminDash
-    App --> PartnerDash
+    App --> Profile
+    App --> AdminDashboard
+    App --> PartnerDashboard
 
-    %% Auth Module internal flow
+    %% Authentication Flow
+
     AuthTabs --> Login
     AuthTabs --> Register
-    Register --> EmailVerification
+    Register --> Verify
     Login --> TwoFA
-    ForgotPassword --> EmailVerification
+    Forgot --> Verify
 
-    %% Movies Module internal flow
-    Home --> MovieDetails
-    MovieDetails --> ShowTime
-    ShowTime --> SeatSelection
-    SeatSelection --> Checkout
-    Checkout --> Bookings
+    %% Booking Flow
 
-    %% Profile Module internal flow
-    ProfilePage --> PersonalInfoTab
-    ProfilePage --> SecurityTab
+    Home --> Details
+    Details --> ShowTime
+    ShowTime --> Seats
+    Seats --> Checkout
+    Checkout --> Orders
+
+    %% Profile Flow
+
+    Profile --> Personal
+    Profile --> Security
+    Security --> Email
+    Security --> Password
+
+    %% Styling (Theme Friendly)
+
+    classDef root stroke-width:3px
+    classDef auth stroke-width:2px
+    classDef booking stroke-width:2px
+    classDef profile stroke-width:2px
+    classDef admin stroke-width:2px
+    classDef partner stroke-width:2px
+
+    class App root
+
+    class AuthTabs,Login,Register,Verify,Forgot,TwoFA auth
+    class Home,Details,ShowTime,Seats,Checkout,Orders booking
+    class Profile,Personal,Security,Email,Password profile
+    class AdminDashboard,MovieForm,MovieList,TheatreList admin
+    class PartnerDashboard,TheatreForm,MovieShows partner
 ```
+
+---
+<a name="technical-documentation"></a>
+## 📚 Technical Documentation
+
+The production onboarding documentation generated from the current codebase is available in:
+
+| Document | Purpose |
+|---------|---------|
+| [Project Documentation](docs/PROJECT_DOCUMENTATION.md) | Complete technical project report covering architecture, frontend, backend, auth, Redux, payment, security, deployment, and setup |
+| [API Reference](docs/API_REFERENCE.md) | Backend endpoint reference with request bodies and route behavior |
+| [Database Schema](docs/DATABASE_SCHEMA.md) | Mongoose model fields, relationships, and deletion behavior |
+| [Architecture](docs/ARCHITECTURE.md) | Concise system architecture, flows, middleware, and deployment diagrams |
 
 ---
 <a name="tech-stack"></a>
@@ -229,7 +393,7 @@ graph TD
 | **JWT** | Authentication |
 | **Bcrypt** | Password Hashing |
 | **Razorpay** | Payment Gateway |
-| **Nodemailer/Resend** | Email Service |
+| **Brevo** | Transactional Email Service |
 | **PDFKit** | PDF Generation |
 
 ---
@@ -424,7 +588,7 @@ Server/
 ```
 
 ---
-<a name="nvironment-variables"></a>
+<a name="environment-variables"></a>
 ## 🔐 Environment Variables
 
 ### Client Environment Variables
@@ -433,22 +597,14 @@ Create a `.env` file in the `Client/` directory:
 
 ```env
 # API Configuration
-VITE_API_BASE_URL=http://localhost:3000/bms/v1
-VITE_API_TIMEOUT=10000
-
-# Feature Flags
-VITE_ENABLE_2FA=true
-VITE_ENABLE_EMAIL_VERIFICATION=true
-VITE_ENABLE_PAYMENT=true
-
-# Deployment
-VITE_APP_NAME=BookMyShow
-VITE_APP_VERSION=1.0.0
+VITE_API_URL=http://localhost:3000/bms/v1
+VITE_RAZORPAY_KEY_ID=your_razorpay_key_id
 ```
 
 **For Netlify Deployment:**
 ```env
-VITE_API_BASE_URL=https://your-render-backend.onrender.com/bms/v1
+VITE_API_URL=https://your-render-backend.onrender.com/bms/v1
+VITE_RAZORPAY_KEY_ID=your_razorpay_key_id
 ```
 
 ### Server Environment Variables
@@ -459,41 +615,26 @@ Create a `.env` file in the `Server/` directory:
 # Server Configuration
 PORT=3000
 NODE_ENV=development
+PUBLIC_APP_URL=http://localhost:5173
 
 # Database
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/bookmyshow
+MONGODB_CONNECTION_STRING=mongodb+srv://username:password@cluster.mongodb.net/bookmyshow
 
 # JWT
 JWT_SECRET=your_jwt_secret_key_here
-JWT_EXPIRY=7d
 
-# Email Service
-EMAIL_SERVICE=gmail
-EMAIL_USER=your-email@gmail.com
-EMAIL_PASSWORD=your-app-password
-EMAIL_FROM=noreply@bookmyshow.com
+# Email Service (Brevo)
+BREVO_API_KEY=your_brevo_api_key
+BREVO_EMAIL_FROM=noreply@bookmyshow.com
 
 # Payment Gateway
 RAZORPAY_KEY_ID=your_razorpay_key_id
 RAZORPAY_KEY_SECRET=your_razorpay_key_secret
-
-# Frontend URL (for CORS)
-FRONTEND_URL=http://localhost:5173
-
-# Admin Credentials
-ADMIN_EMAIL=admin@bookmyshow.com
-ADMIN_PASSWORD=secure_password_here
-
-# Cache Configuration
-CACHE_TTL=3600
-
-# 2FA
-TWO_FACTOR_ENABLED=true
 ```
 
 **For Render Deployment:**
 ```env
-FRONTEND_URL=https://your-netlify-frontend.netlify.app
+PUBLIC_APP_URL=https://your-netlify-frontend.netlify.app
 NODE_ENV=production
 ```
 
@@ -521,7 +662,8 @@ NODE_ENV=production
 
 3. **Set Environment Variables**
    - Go to Site settings → Build & deploy → Environment
-   - Add `VITE_API_BASE_URL` pointing to your Render backend
+   - Add `VITE_API_URL` pointing to your Render backend `/bms/v1` base path
+   - Add `VITE_RAZORPAY_KEY_ID` for Razorpay Checkout
 
 4. **Deploy**
    - Push to main branch
@@ -574,8 +716,8 @@ NODE_ENV=production
 
 3. **Set Environment Variables**
    - Go to Environment
-   - Add all variables from `.env.example`
-   - Ensure `FRONTEND_URL` matches your Netlify domain
+   - Add the server variables listed above
+   - Ensure `PUBLIC_APP_URL` matches your Netlify domain
 
 4. **Database Connection**
    - Use MongoDB Atlas connection string
@@ -600,7 +742,8 @@ services:
         value: production
       - key: PORT
         value: 3000
-    healthCheckPath: /bms/v1/health
+    # Add a health endpoint before enabling this in Render.
+    # healthCheckPath: /bms/v1/health
 ```
 
 ---
@@ -619,8 +762,7 @@ cd bookmyshow
 ```bash
 cd Server
 npm install
-cp .env.example .env
-# Edit .env with your configuration
+# Create .env with the server variables listed above
 npm run dev
 ```
 
@@ -628,6 +770,7 @@ npm run dev
 ```bash
 cd ../Client
 npm install
+# Create .env with VITE_API_URL and VITE_RAZORPAY_KEY_ID
 npm run dev
 ```
 
