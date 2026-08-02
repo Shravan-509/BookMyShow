@@ -1,591 +1,718 @@
-# BookMyShow - Detailed Architecture
+# BookMyShow Architecture
 
-## Table of Contents
+This document describes the architecture implemented in the current codebase. For full onboarding documentation, see [PROJECT_DOCUMENTATION.md](./PROJECT_DOCUMENTATION.md).
 
-1. [System Architecture](#system-architecture)
-2. [Frontend Architecture](#frontend-architecture)
-3. [Backend Architecture](#backend-architecture)
-4. [Database Architecture](#database-architecture)
-5. [Security Architecture](#security-architecture)
-6. [Integration Architecture](#integration-architecture)
+## System Context
 
----
+```mermaid
+flowchart TB
 
-## System Architecture
+    %% ==================================================
+    %% Actors
+    %% ==================================================
 
-### Three-Tier Architecture
+    Customer["Customer"]
+    Admin["Admin"]
+    Partner["Theatre Partner"]
 
-BookMyShow follows a classic three-tier architecture:
+    %% ==================================================
+    %% Presentation Layer
+    %% ==================================================
 
+    subgraph PRESENTATION["Presentation Layer"]
+        Client["React + Vite SPA"]
+    end
+
+    %% ==================================================
+    %% Application Layer
+    %% ==================================================
+
+    subgraph APPLICATION["Application Layer"]
+
+        API["Express REST API"]
+
+        BookingService["Booking Service"]
+
+        AuthService["Authentication Service"]
+
+        PaymentService["Payment Service"]
+
+        TicketService["Ticket Service"]
+    end
+
+    %% ==================================================
+    %% Data Layer
+    %% ==================================================
+
+    subgraph DATA["Data Layer"]
+        MongoDB[("MongoDB Atlas")]
+    end
+
+    %% ==================================================
+    %% External Integrations
+    %% ==================================================
+
+    subgraph INTEGRATIONS["External Integrations"]
+
+        Razorpay["Razorpay"]
+
+        Brevo["Brevo Email"]
+
+        PDF["PDFKit + QR Code"]
+    end
+
+    %% ==================================================
+    %% User Interactions
+    %% ==================================================
+
+    Customer --> Client
+    Admin --> Client
+    Partner --> Client
+
+    %% ==================================================
+    %% Frontend to Backend
+    %% ==================================================
+
+    Client --> API
+
+    %% ==================================================
+    %% Internal Services
+    %% ==================================================
+
+    API --> AuthService
+    API --> BookingService
+    API --> PaymentService
+    API --> TicketService
+
+    %% ==================================================
+    %% Database Access
+    %% ==================================================
+
+    AuthService --> MongoDB
+    BookingService --> MongoDB
+    PaymentService --> MongoDB
+    TicketService --> MongoDB
+
+    %% ==================================================
+    %% Third-Party Integrations
+    %% ==================================================
+
+    PaymentService --> Razorpay
+
+    TicketService --> PDF
+
+    TicketService --> Brevo
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    PRESENTATION LAYER                           │
-│                    (React + Vite Frontend)                      │
-│  - User Interface Components                                    │
-│  - State Management (Redux)                                     │
-│  - Client-side Routing                                          │
-│  - Form Validation                                              │
-└─────────────────────────────────────────────────────────────────┘
-                              ↕ (HTTP/REST)
-┌─────────────────────────────────────────────────────────────────┐
-│                    BUSINESS LOGIC LAYER                         │
-│                    (Express.js Backend)                         │
-│  - API Routes & Controllers                                     │
-│  - Authentication & Authorization                               │
-│  - Business Logic Implementation                                │
-│  - Data Validation                                              │
-│  - Payment Processing                                           │
-│  - Email Service                                                │
-└─────────────────────────────────────────────────────────────────┘
-                              ↕ (Mongoose ODM)
-┌─────────────────────────────────────────────────────────────────┐
-│                    DATA ACCESS LAYER                            │
-│                    (MongoDB Database)                           │
-│  - User Data                                                    │
-│  - Movie Information                                            │
-│  - Theatre Details                                              │
-│  - Show Schedules                                               │
-│  - Booking Records                                              │
-│  - Verification Codes                                           │
-└─────────────────────────────────────────────────────────────────┘
-```
 
-### Request-Response Flow
+
+## Application Layers
+
+| Layer | Main files | Responsibility |
+| --- | --- | --- |
+| Presentation | `Client/src/features`, `Client/src/components`, `Client/src/App.jsx` | UI, route guards, role-aware navigation, booking screens |
+| Client state | `Client/src/redux` | Redux Toolkit slices, persisted root reducer, Redux-Saga side effects |
+| API client | `Client/src/api` | Axios calls grouped by backend domain |
+| HTTP API | `Server/server.js`, `Server/routes` | Middleware and route mounting |
+| Business logic | `Server/controllers` | Auth, users, movies, theatres, shows, bookings, payments |
+| Data model | `Server/models` | Mongoose schemas and relations |
+| Integrations | `Server/utils/email.js`, `Server/utils/ticket-pdf.js`, Razorpay SDK | Email, PDF ticket, payment gateway |
+
+## Backend Request Flow
 
 ```mermaid
 sequenceDiagram
-    participant Browser as Browser
-    participant Redux as Redux Store
-    participant Saga as Redux-Saga
-    participant API as Axios
-    participant Server as Express Server
-    participant DB as MongoDB
-    
-    Browser->>Redux: Dispatch Action
-    Redux->>Saga: Trigger Saga
-    Saga->>API: Make HTTP Request
-    API->>Server: Send Request
-    Server->>DB: Query/Update Data
-    DB-->>Server: Return Data
-    Server-->>API: Send Response
-    API-->>Saga: Receive Response
-    Saga->>Redux: Dispatch Success Action
-    Redux-->>Browser: Update State
-    Browser-->>Browser: Re-render Component
+    autonumber
+
+    actor Client
+
+    participant Express as Express Server
+    participant Middleware as Middleware Pipeline
+    participant Controller as Controller Layer
+    participant Model as Mongoose Models
+    participant MongoDB as MongoDB Atlas
+
+    %% ==========================================
+    %% Request Processing
+    %% ==========================================
+
+    Note over Client,Middleware: Request Processing
+
+    Client->>Express: HTTP Request
+    activate Express
+
+    Express->>Middleware: Execute Middleware Chain
+    activate Middleware
+
+    Note over Middleware: body-parser<br/>helmet<br/>cors<br/>compression<br/>mongo-sanitize<br/>rate-limit
+
+    %% ==========================================
+    %% Authentication
+    %% ==========================================
+
+    Note over Middleware,Controller: Authentication & Authorization
+
+    Middleware->>Middleware: validateJWT()
+    Middleware->>Middleware: authorizeRoles()
+
+    Middleware->>Controller: Forward Request
+    deactivate Middleware
+
+    %% ==========================================
+    %% Business Logic
+    %% ==========================================
+
+    Note over Controller,MongoDB: Business Logic & Persistence
+
+    activate Controller
+
+    Controller->>Model: Query / Update Data
+    activate Model
+
+    Model->>MongoDB: Read / Write Operation
+    activate MongoDB
+
+    MongoDB-->>Model: Documents
+    deactivate MongoDB
+
+    Model-->>Controller: Domain Data
+    deactivate Model
+
+    %% ==========================================
+    %% Response Generation
+    %% ==========================================
+
+    Note over Controller,Client: Response Lifecycle
+
+    Controller-->>Express: JSON Response
+
+    Express-->>Client: HTTP Response
+
+    deactivate Controller
+    deactivate Express
 ```
 
----
 
-## Frontend Architecture
-
-### Redux State Management
-
-```
-Redux Store
-├── auth
-│   ├── user: { id, name, email, role }
-│   ├── isAuthenticated: boolean
-│   ├── token: string
-│   ├── loading: boolean
-│   └── error: string
-├── movies
-│   ├── list: Movie[]
-│   ├── selectedMovie: Movie
-│   ├── loading: boolean
-│   └── error: string
-├── theatres
-│   ├── list: Theatre[]
-│   ├── selectedTheatre: Theatre
-│   ├── loading: boolean
-│   └── error: string
-├── shows
-│   ├── list: Show[]
-│   ├── selectedShow: Show
-│   ├── loading: boolean
-│   └── error: string
-├── booking
-│   ├── selectedSeats: string[]
-│   ├── bookingDetails: Booking
-│   ├── loading: boolean
-│   └── error: string
-├── profile
-│   ├── editMode: boolean
-│   ├── changes: object
-│   ├── loading: boolean
-│   └── error: string
-├── verification
-│   ├── code: string
-│   ├── userId: string
-│   ├── type: string
-│   ├── loading: boolean
-│   └── error: string
-├── forgotPassword
-│   ├── email: string
-│   ├── token: string
-│   ├── loading: boolean
-│   └── error: string
-├── loader
-│   └── isLoading: boolean
-└── ui
-    ├── modals: object
-    ├── notifications: Notification[]
-    └── theme: string
-```
-
-### Component Hierarchy
-
-```
-App
-├── Routes
-│   ├── PublicRoute
-│   │   └── AuthTabs
-│   │       ├── Login
-│   │       └── Register
-│   ├── ProtectedRoute
-│   │   ├── MainLayout
-│   │   │   ├── Header
-│   │   │   ├── Sidebar
-│   │   │   └── Content
-│   │   ├── Home
-│   │   ├── MovieDetails
-│   │   ├── SeatSelection
-│   │   ├── Checkout
-│   │   ├── Profile
-│   │   ├── Admin
-│   │   └── Partner
-│   └── ErrorBoundary
-└── Providers
-    ├── Redux Provider
-    ├── Router Provider
-    └── Theme Provider
-```
-
-### Redux-Saga Flow
-
-```
-Action Dispatched
-    ↓
-Saga Listener (takeEvery/takeLatest)
-    ↓
-Saga Generator Function
-    ├── call() - Make API request
-    ├── put() - Dispatch action
-    ├── select() - Get state
-    └── fork() - Run side effect
-    ↓
-Success/Failure Action
-    ↓
-Reducer Updates State
-    ↓
-Component Re-renders
-```
-
----
-
-## Backend Architecture
-
-### Express.js Middleware Stack
-
-```
-Request
-    ↓
-CORS Middleware
-    ↓
-Helmet Security Headers
-    ↓
-Body Parser (JSON)
-    ↓
-Cookie Parser
-    ↓
-Compression
-    ↓
-Rate Limiter
-    ↓
-Route Handler
-    ├── JWT Validation (if protected)
-    ├── Role Check (if needed)
-    └── Controller Logic
-    ↓
-Response
-    ↓
-Error Handler
-    ↓
-Client
-```
-
-### Controller Pattern
-
-```javascript
-// Pattern: Try-Catch with Error Handling
-async function controllerMethod(req, res, next) {
-  try {
-    // 1. Validate input
-    // 2. Check authorization
-    // 3. Execute business logic
-    // 4. Return response
-    res.status(200).json({ success: true, data });
-  } catch (error) {
-    // Pass to error handler
-    next(error);
-  }
-}
-```
-
-### Service Layer Pattern
-
-```
-Route Handler
-    ↓
-Controller
-    ├── Input Validation
-    ├── Authorization Check
-    └── Call Service
-    ↓
-Service Layer
-    ├── Business Logic
-    ├── Data Transformation
-    └── Call Repository
-    ↓
-Repository Layer
-    ├── Database Query
-    ├── Data Persistence
-    └── Return Data
-    ↓
-Response to Client
-```
-
----
-
-## Database Architecture
-
-### MongoDB Collections
-
-```
-bookmyshow
-├── users
-│   ├── _id: ObjectId
-│   ├── name: String
-│   ├── email: String (unique)
-│   ├── phone: Number (unique)
-│   ├── password: String (hashed)
-│   ├── role: String (enum)
-│   ├── emailVerified: Boolean
-│   ├── twoFactorEnabled: Boolean
-│   ├── resetToken: String
-│   ├── resetTokenExpiry: Date
-│   ├── tokenVersion: Number
-│   ├── createdAt: Date
-│   └── updatedAt: Date
-│
-├── movies
-│   ├── _id: ObjectId
-│   ├── movieName: String (unique)
-│   ├── description: String
-│   ├── duration: Number
-│   ├── genre: Array
-│   ├── language: Array
-│   ├── releaseDate: Date
-│   ├── poster: String
-│   ├── createdAt: Date
-│   └── updatedAt: Date
-│
-├── theatres
-│   ├── _id: ObjectId
-│   ├── name: String
-│   ├── address: String
-│   ├── phone: Number
-│   ├── email: String
-│   ├── owner: ObjectId (ref: users)
-│   ├── isActive: Boolean
-│   ├── createdAt: Date
-│   └── updatedAt: Date
-│
-├── shows
-│   ├── _id: ObjectId
-│   ├── name: String
-│   ├── date: Date
-│   ├── time: String
-│   ├── movie: ObjectId (ref: movies)
-│   ├── ticketPrice: Number
-│   ├── totalSeats: Number
-│   ├── bookedSeats: Array
-│   ├── theatre: ObjectId (ref: theatres)
-│   ├── createdAt: Date
-│   └── updatedAt: Date
-│
-├── bookings
-│   ├── _id: ObjectId
-│   ├── show: ObjectId (ref: shows)
-│   ├── user: ObjectId (ref: users)
-│   ├── seats: Array
-│   ├── seatType: String
-│   ├── transactionId: String
-│   ├── orderId: String
-│   ├── receipt: String
-│   ├── bookingId: String (unique, indexed)
-│   ├── amount: Number
-│   ├── convenienceFee: Number
-│   ├── gstPercent: Number
-│   ├── paymentMethod: String
-│   ├── ticketStatus: String (enum)
-│   ├── createdAt: Date
-│   └── updatedAt: Date
-│
-└── verifications
-    ├── _id: ObjectId
-    ├── userId: ObjectId (ref: users)
-    ├── code: String
-    ├── type: String (enum)
-    ├── expiresAt: Date
-    ├── createdAt: Date
-    └── updatedAt: Date
-```
-
-### Database Indexes
-
-```javascript
-// Performance optimization indexes
-users.index({ email: 1 });
-users.index({ phone: 1 });
-movies.index({ movieName: 1 });
-theatres.index({ owner: 1 });
-shows.index({ movie: 1 });
-shows.index({ theatre: 1 });
-shows.index({ date: 1 });
-bookings.index({ bookingId: 1 });
-bookings.index({ user: 1 });
-bookings.index({ show: 1 });
-verifications.index({ userId: 1 });
-verifications.index({ expiresAt: 1 });
-```
-
----
-
-## Security Architecture
-
-### Authentication Flow
+## Frontend Request Flow
 
 ```mermaid
-graph TD
-    A["User Registration"] --> B["Validate Input"]
-    B --> C["Hash Password"]
-    C --> D["Create User"]
-    D --> E["Generate Verification Code"]
-    E --> F["Send Email"]
-    F --> G["User Verifies Email"]
-    G --> H["Mark Email Verified"]
-    
-    I["User Login"] --> J["Find User"]
-    J --> K["Compare Password"]
-    K --> L{Email Verified?}
-    L -->|No| M["Reject Login"]
-    L -->|Yes| N{2FA Enabled?}
-    N -->|Yes| O["Send 2FA Code"]
-    O --> P["User Verifies 2FA"]
-    P --> Q["Generate JWT"]
-    N -->|No| Q
-    Q --> R["Set httpOnly Cookie"]
-    R --> S["Return Token"]
+sequenceDiagram
+    autonumber
+
+    participant Component as React Component
+    participant Store as Redux Store
+    participant Saga as Redux Saga
+    participant Service as API Service
+    participant Axios as Axios Client
+    participant API as Express API
+
+    Note over Component,API: User Initiated Request
+
+    Component->>Store: Dispatch Action
+
+    Store->>Saga: Notify Saga
+
+    activate Saga
+
+    Saga->>Service: Execute Service Method
+
+    activate Service
+
+    Service->>Axios: Send HTTP Request
+
+    activate Axios
+
+    Axios->>API: REST API Call
+
+    activate API
+
+    API-->>Axios: JSON Response
+
+    deactivate API
+
+    Axios-->>Service: Response Payload
+
+    deactivate Axios
+
+    Service-->>Saga: Parsed Response
+
+    deactivate Service
+
+    alt Success Response
+
+        Saga->>Store: Dispatch Success Action
+
+        Store-->>Component: Updated State
+
+    else Error Response
+
+        Saga->>Store: Dispatch Failure Action
+
+        Store-->>Component: Error State
+
+    end
+
+    deactivate Saga
 ```
 
-### JWT Token Structure
 
-```javascript
-{
-  // Header
-  {
-    "alg": "HS256",
-    "typ": "JWT"
-  }
-  
-  // Payload
-  {
-    "userId": "507f1f77bcf86cd799439011",
-    "iat": 1634567890,
-    "exp": 1634654290  // 24 hours
-  }
-  
-  // Signature
-  HMACSHA256(
-    base64UrlEncode(header) + "." +
-    base64UrlEncode(payload),
-    secret
-  )
-}
+## Authentication Flow
+
+#### Registration & Email Verification Flow
+
+```mermaid
+sequenceDiagram
+    autonumber
+
+    actor User
+
+    participant Client as React Client
+    participant API as Express API
+    participant UserDB as User Collection
+    participant VerificationDB as Verification Collection
+    participant Email as Brevo Email Service
+
+    Note over User,Email: User Registration
+
+    User->>Client: Register Account
+
+    Client->>API: POST /auth/register
+
+    activate API
+
+    API->>API: Hash Password (bcrypt)
+
+    API->>UserDB: Create User
+
+    API->>VerificationDB: Generate Verification Code
+
+    API->>Email: Send Verification Email
+
+    API-->>Client: verificationRequired=true
+
+    deactivate API
+
+    Note over User,VerificationDB: Email Verification
+
+    User->>Client: Submit Verification Code
+
+    Client->>API: POST /auth/verify-email
+
+    activate API
+
+    API->>VerificationDB: Fetch Active Verification
+
+    VerificationDB-->>API: Verification Record
+
+    alt Valid & Not Expired
+
+        API->>UserDB: Set emailVerified=true
+
+        API->>VerificationDB: Mark Verification Used
+
+        API-->>Client: Email Verified
+
+    else Invalid or Expired
+
+        API-->>Client: Verification Failed
+
+    end
+
+    deactivate API
 ```
 
-### Password Security
+#### Login & Authentication Flow
 
-```
-User Password
-    ↓
-Validate Strength
-    ↓
-Generate Salt (10 rounds)
-    ↓
-Hash with bcrypt
-    ↓
-Store in Database
-    ↓
-On Login: Compare with bcrypt
-```
+```mermaid
+sequenceDiagram
+    autonumber
 
-### Role-Based Access Control
+    actor User
 
-```
-User Roles:
-├── admin
-│   ├── Manage movies
-│   ├── Manage theatres
-│   ├── View all bookings
-│   └── User management
-├── partner
-│   ├── Manage own theatres
-│   ├── Create shows
-│   ├── View theatre bookings
-│   └── Revenue tracking
-└── user
-    ├── Browse movies
-    ├── Book tickets
-    ├── View own bookings
-    └── Manage profile
-```
+    participant Client as React Client
+    participant API as Express API
+    participant UserDB as User Collection
 
----
+    Note over User,UserDB: User Authentication
 
-## Integration Architecture
+    User->>Client: Login
 
-### Payment Integration (Razorpay)
+    Client->>API: POST /auth/login
 
-```
-Client
-    ↓
-Initiate Payment
-    ↓
-Server: Create Order
-    ↓
-Razorpay: Generate Order ID
-    ↓
-Client: Open Payment Gateway
-    ↓
-User: Complete Payment
-    ↓
-Razorpay: Webhook Notification
-    ↓
-Server: Verify Signature
-    ↓
-Update Booking Status
-    ↓
-Send Confirmation Email
+    activate API
+
+    API->>UserDB: Find User By Email
+
+    UserDB-->>API: User Record
+
+    API->>API: Validate Password (bcrypt.compare)
+
+    alt User Not Found
+
+        API-->>Client: Invalid Credentials
+
+    else Invalid Password
+
+        API-->>Client: Invalid Credentials
+
+    else Email Not Verified
+
+        API-->>Client: UNVERIFIED_ACCOUNT
+
+    else Authentication Success
+
+        API->>API: Generate JWT
+
+        API-->>Client: HTTP-only JWT Cookie
+
+    end
+
+    deactivate API
 ```
 
-### Email Service Integration
+#### Two-Factor Authentication Flow
 
+```mermaid
+sequenceDiagram
+    autonumber
+
+    actor User
+
+    participant Client as React Client
+    participant API as Express API
+    participant Email as Brevo Email Service
+
+    Note over User,Email: Two-Factor Authentication
+
+    User->>Client: Login
+
+    Client->>API: POST /auth/login
+
+    activate API
+
+    API->>API: Validate Credentials
+
+    API->>API: Generate OTP
+
+    API->>Email: Send OTP
+
+    Email-->>User: Verification Code
+
+    deactivate API
+
+    User->>Client: Submit OTP
+
+    Client->>API: POST /auth/verify-otp
+
+    activate API
+
+    API->>API: Validate OTP
+
+    alt Valid OTP
+
+        API->>API: Generate JWT
+
+        API-->>Client: HTTP-only JWT Cookie
+
+    else Invalid OTP
+
+        API-->>Client: OTP Verification Failed
+
+    end
+
+    deactivate API
 ```
-Server
-    ├── SendGrid (Primary)
-    │   ├── API Key
-    │   └── Email Templates
-    ├── Nodemailer (Fallback)
-    │   ├── SMTP Config
-    │   └── Email Templates
-    └── Resend (Alternative)
-        ├── API Key
-        └── Email Templates
 
-Email Types:
-├── Email Verification
-├── 2FA Code
-├── Password Reset
-├── Booking Confirmation
-├── Ticket PDF
-├── Email Change
-├── Password Change
-├── Account Deletion
-└── Re-verification
+#### Authorization & Protected Route Flow
+```mermaid
+sequenceDiagram
+    autonumber
+
+    actor User
+
+    participant Client as React Client
+    participant API as Express API
+    participant Auth as JWT Middleware
+    participant Controller as Protected Controller
+
+    Note over User,Controller: Protected Resource Access
+
+    User->>Client: Open Protected Page
+
+    Client->>API: Request Resource + JWT Cookie
+
+    activate API
+
+    API->>Auth: Validate JWT
+
+    activate Auth
+
+    alt Valid Token
+
+        Auth->>Controller: Forward Request
+
+        activate Controller
+
+        Controller-->>API: Protected Data
+
+        deactivate Controller
+
+        API-->>Client: Success Response
+
+    else Invalid Token
+
+        Auth-->>API: Unauthorized
+
+        API-->>Client: 401 Unauthorized
+
+    end
+
+    deactivate Auth
+
+    deactivate API
 ```
 
----
 
-## Performance Optimization
+## Payment and Booking Flow
 
-### Frontend Optimization
+```mermaid
+sequenceDiagram
+    autonumber
 
-- **Code Splitting:** Lazy load components
-- **Memoization:** React.memo, useMemo, useCallback
-- **Redux Selectors:** Prevent unnecessary re-renders
-- **Image Optimization:** Compress and lazy load images
-- **Bundle Analysis:** Monitor bundle size
+    actor User
 
-### Backend Optimization
+    participant UI as Checkout UI
+    participant API as Express API
+    participant Booking as Booking Service
+    participant Razorpay as Razorpay Gateway
+    participant DB as MongoDB
+    participant Notify as Notification Service
 
-- **Database Indexing:** Index frequently queried fields
-- **Response Compression:** gzip compression
-- **Caching:** In-memory cache with node-cache
-- **Pagination:** Limit response size
-- **Rate Limiting:** Prevent abuse
+    Note over User,Notify: Seat Validation & Booking Workflow
 
-### Database Optimization
+    User->>UI: Select Seats
 
-- **Indexes:** Create indexes on foreign keys and frequently queried fields
-- **Aggregation:** Use MongoDB aggregation pipeline
-- **Projection:** Return only needed fields
-- **Connection Pooling:** Reuse database connections
+    UI->>API: Validate Seats
 
----
+    activate API
 
-## Scalability Considerations
+    API->>Booking: Check Seat Availability
 
-### Horizontal Scaling
+    activate Booking
 
-- **Load Balancer:** Distribute traffic across multiple servers
-- **Database Replication:** MongoDB replica sets
-- **Caching Layer:** Redis for distributed caching
-- **CDN:** Serve static assets globally
+    Booking->>DB: Read Seat Inventory
 
-### Vertical Scaling
+    activate DB
 
-- **Server Resources:** Increase CPU, RAM
-- **Database Optimization:** Query optimization, indexing
-- **Code Optimization:** Reduce computational complexity
+    DB-->>Booking: Seat Status
 
----
+    deactivate DB
 
-## Monitoring & Logging
+    alt Seats Available
 
-### Application Monitoring
+        Booking->>DB: Lock Seats
 
-- **Error Tracking:** Sentry or similar
-- **Performance Monitoring:** New Relic or similar
-- **Uptime Monitoring:** Pingdom or similar
-- **Log Aggregation:** ELK stack or similar
+        activate DB
 
-### Metrics to Track
+        DB-->>Booking: Seats Locked
 
-- **API Response Time:** Average, P95, P99
-- **Error Rate:** 4xx, 5xx errors
-- **Database Query Time:** Slow queries
-- **User Engagement:** Active users, bookings
-- **Payment Success Rate:** Transaction success/failure
+        deactivate DB
 
----
+        Booking-->>API: Validation Successful
 
-## Disaster Recovery
+        API-->>UI: Seats Available
 
-### Backup Strategy
+    else Seats Unavailable
 
-- **Database Backups:** Daily automated backups
-- **Code Backups:** Git repository
-- **Configuration Backups:** Environment variables
+        Booking-->>API: Validation Failed
 
-### Recovery Plan
+        API-->>UI: Seats No Longer Available
 
-- **RTO (Recovery Time Objective):** < 1 hour
-- **RPO (Recovery Point Objective):** < 1 day
-- **Failover:** Automated failover to backup systems
-- **Testing:** Regular disaster recovery drills
+    end
 
----
+    deactivate Booking
+    deactivate API
 
-**Last Updated:** October 2024  
-**Version:** 1.0.0
+    User->>UI: Proceed To Payment
+
+    UI->>API: Create Payment Order
+
+    activate API
+
+    API->>Razorpay: Create Order
+
+    activate Razorpay
+
+    Razorpay-->>API: Order Details
+
+    deactivate Razorpay
+
+    API-->>UI: Order Information
+
+    deactivate API
+
+    UI->>Razorpay: Launch Checkout
+
+    User->>Razorpay: Complete Payment
+
+    Razorpay-->>UI: Payment Result
+
+    UI->>API: Confirm Payment
+
+    activate API
+
+    API->>API: Verify Payment Signature
+
+    alt Payment Successful
+
+        API->>Booking: Confirm Booking
+
+        activate Booking
+
+        Booking->>DB: Mark Seats Booked
+
+        Booking->>DB: Create Booking Record
+
+        activate DB
+
+        DB-->>Booking: Booking Saved
+
+        deactivate DB
+
+        Booking-->>API: Booking Confirmed
+
+        deactivate Booking
+
+        API->>Notify: Send Ticket
+
+        activate Notify
+
+        Notify-->>User: Email + PDF Ticket
+
+        deactivate Notify
+
+        API-->>UI: Booking Success
+
+    else Payment Failed
+
+        API->>Booking: Release Locked Seats
+
+        Booking->>DB: Unlock Seats
+
+        API-->>UI: Payment Failed
+
+    end
+
+    deactivate API
+```
+
+## Middleware Stack
+
+| Order | Middleware | Purpose |
+| --- | --- | --- |
+| 1 | `express.json`, `express.urlencoded`, `cookieParser` | Request body and cookie parsing |
+| 2 | `express-mongo-sanitize` | NoSQL injection mitigation |
+| 3 | Helmet security headers | CSP, frameguard, HSTS, no-sniff, referrer policy |
+| 4 | Compression | Gzip compression for responses larger than 1KB |
+| 5 | Response-time and request logging | `X-Response-Time` plus console request duration logs |
+| 6 | Static/API cache headers | Cache-Control headers |
+| 7 | General rate limiter | Global request throttling |
+| 8 | CORS | Allows `PUBLIC_APP_URL` with credentials |
+| 9 | Route-specific middleware | Auth limiter, JWT validation, booking limiter, route-level cache |
+| 10 | Error handler | Final JSON error response |
+
+## Route Groups
+
+| Base path | Router | Protection |
+| --- | --- | --- |
+| `/bms/v1/auth` | `authRoute.js` | Public with auth rate limiter |
+| `/bms/v1/users` | `userRoute.js` | JWT |
+| `/bms/v1/movies` | `movieRoute.js` | JWT |
+| `/bms/v1/theatres` | `theatreRoute.js` | JWT |
+| `/bms/v1/shows` | `showRoute.js` | JWT |
+| `/bms/v1/bookings` | `bookingRoute.js` | JWT plus booking rate limiter |
+
+## Data Relationships
+
+```mermaid
+erDiagram
+
+    USERS ||--o{ THEATRES : owns
+    USERS ||--o{ BOOKINGS : creates
+    USERS ||--o{ VERIFICATIONS : receives
+
+    MOVIES ||--o{ SHOWS : scheduled
+    THEATRES ||--o{ SHOWS : hosts
+
+    SHOWS ||--o{ BOOKINGS : booked_for
+```
+
+## Deployment Architecture
+
+```mermaid
+flowchart TB
+
+    %% ==========================================
+    %% Users
+    %% ==========================================
+
+    User["Users"]
+
+    %% ==========================================
+    %% Frontend
+    %% ==========================================
+
+    subgraph FRONTEND["Frontend"]
+        Netlify["Netlify<br/>React + Vite"]
+    end
+
+    %% ==========================================
+    %% Backend
+    %% ==========================================
+
+    subgraph BACKEND["Backend"]
+        Render["Render<br/>Node.js + Express API"]
+    end
+
+    %% ==========================================
+    %% Data Layer
+    %% ==========================================
+
+    subgraph DATA["Data Layer"]
+        Atlas[("MongoDB Atlas")]
+    end
+
+    %% ==========================================
+    %% External Integrations
+    %% ==========================================
+
+    subgraph INTEGRATIONS["External Services"]
+
+        Razorpay["Razorpay<br/>Payments"]
+
+        Brevo["Brevo<br/>Email Service"]
+    end
+
+    %% ==========================================
+    %% Request Flow
+    %% ==========================================
+
+    User --> Netlify
+
+    Netlify --> Render
+
+    Render --> Atlas
+
+    Render --> Razorpay
+
+    Render --> Brevo
+```
+
+Required production alignment:
+
+| Setting | Requirement |
+| --- | --- |
+| `PUBLIC_APP_URL` | Must match frontend origin for CORS and password reset links |
+| `VITE_API_URL` | Must point to backend `/bms/v1` |
+| HTTPS | Required for production cross-site secure cookies |
+| Razorpay keys | Client public key and server secret must belong to same environment |
+| Brevo sender | `BREVO_EMAIL_FROM` must be verified/configured |
