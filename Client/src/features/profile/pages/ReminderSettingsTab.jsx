@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Card, Switch, Select, Button, Space, Typography, List, Tag } from "antd"
 import { BellOutlined, ClockCircleOutlined, DeleteOutlined } from "@ant-design/icons"
 import {
@@ -8,18 +8,14 @@ import {
   cancelReminder,
 } from "../../../utils/reminderUtils"
 import { notify } from "../../../utils/notificationUtils"
-import { formatDate, formatParsedTime } from "../../../utils/dateFormatter"
+import { formatDate, formatParsedTime, formatTime } from "../../../utils/dateFormatter"
 
 const { Title, Text } = Typography
 const { Option } = Select
 
 const ReminderSettingsTab = () => {
-  const [settings, setSettings] = useState(getReminderSettings())
-  const [upcomingReminders, setUpcomingReminders] = useState([])
-
-  useEffect(() => {
-    loadUpcomingReminders()
-  }, [])
+  const [settings, setSettings] = useState(() => getReminderSettings())
+  const [upcomingReminders, setUpcomingReminders] = useState(() => getUpcomingReminders())
 
   const loadUpcomingReminders = () => {
     setUpcomingReminders(getUpcomingReminders())

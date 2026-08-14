@@ -1,6 +1,5 @@
 import { takeLatest, put, call } from "redux-saga/effects";
 import Cookies from "js-cookie";
-import { axiosInstance } from "../../api/index";
 import { 
     authStatusChecked, 
     checkAuthStatus, 
@@ -22,51 +21,6 @@ import {
 import { notify } from "../../utils/notificationUtils";
 import { AuthAPI } from "../../api/auth";
 
-
-// Account Login API calls
-const loginApi = async (credentials) => {
-    try {
-        const response = await axiosInstance.post("/auth/login", credentials);
-        return response.data;
-    } catch (error) {
-        const data = error.response?.data || {};
-        // Create a custom error and attach code/message
-        const customError = new Error(data.message || 'Login failed');
-        customError.code = data.code;
-        throw customError;
-    }
-};
-
-export const signupApi = async (userData) => {
-    try {
-        const response = await axiosInstance.post("/auth/register", userData);
-        return response.data;
-    } catch (error) {
-        const message = error.response?.data?.message || 'Registration failed';
-        throw new Error(message);
-    }
-};
-
-export const checkAuthApi = async () => {
-    try {
-        const response = await axiosInstance.get("/users/profile");
-        return response.data;
-    } catch (error) {
-        const message = error.response?.data?.message || 'Not Authenticated';
-        throw new Error(message);
-    }
-};
-
-const logoutApi = async () => {
-    try {
-        const response = await axiosInstance.post("/auth/logout");
-        return response.data;
-    } catch (error) {
-        const message = error.response?.data.message || "Login Failed";
-        throw new Error(message);
-    }
-};
-
 // Worker Sagas
 function* handleCheckAuthStatus() {
     try{
@@ -81,7 +35,7 @@ function* handleCheckAuthStatus() {
                 user: userData.user
             })
         )
-    } catch (error) {
+    } catch {
         // If error user is not Authenticated
         yield put(
             authStatusChecked({

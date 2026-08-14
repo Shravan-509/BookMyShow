@@ -1,8 +1,7 @@
-import { useEffect, useState } from "react"
-import { Table, Tag, Input, Card, Statistic, Row, Col, message, Badge, Space } from "antd"
+import { useEffect, useMemo, useState } from "react"
+import { Table, Tag, Input, Card, Statistic, Row, Col, Badge, Space } from "antd"
 import { SearchOutlined, UserOutlined, TeamOutlined, CheckCircleOutlined, CloseCircleOutlined } from "@ant-design/icons"
-import { getAllUsersRequest, selectAllUsers, selectUserLoading, selectUsersByRole } from "../../../redux/slices/userSlice"
-import { format } from 'date-fns';
+import { getAllUsersRequest, selectAllUsers, selectUserLoading } from "../../../redux/slices/userSlice"
 import { useDispatch, useSelector } from "react-redux"
 import { formatDate, formatTime } from "../../../utils/dateFormatter"
 
@@ -10,30 +9,29 @@ const UserManagement = () => {
   const dispatch = useDispatch()
   const users = useSelector(selectAllUsers)
   const loading = useSelector(selectUserLoading)
-  const userByRole = useSelector(selectUsersByRole)
-  const [filteredUsers, setFilteredUsers] = useState([])
   const [searchText, setSearchText] = useState("")
 
   useEffect(() => {
     dispatch(getAllUsersRequest())
   }, [dispatch])
 
-  useEffect(() => {
-    if (searchText) {
-      const filtered = users.filter(
-        (user) =>
-          user.name?.toLowerCase().includes(searchText.toLowerCase()) ||
-          user.email?.toLowerCase().includes(searchText.toLowerCase()) ||
-          user.phone?.toString().includes(searchText) ||
-          user.role?.toLowerCase().includes(searchText.toLowerCase()),
-      )
-      setFilteredUsers(filtered)
-    } 
-    else 
-    {
-      setFilteredUsers(users)
+  const filteredUsers = useMemo(() => {
+    const userList = users || []
+
+    if (!searchText) {
+      return userList
     }
-  }, [searchText, users])
+
+    const searchValue = searchText.toLowerCase()
+
+    return userList.filter(
+      (user) =>
+        user.name?.toLowerCase().includes(searchValue) ||
+        user.email?.toLowerCase().includes(searchValue) ||
+        user.phone?.toString().includes(searchText) ||
+        user.role?.toLowerCase().includes(searchValue)
+    )
+  }, [users, searchText])
 
   const columns = [
     {
@@ -110,7 +108,7 @@ const UserManagement = () => {
 
   const totalUsers = filteredUsers.length
   const verifiedUsers = filteredUsers.filter((u) => u.emailVerified).length
-  const adminCount = filteredUsers.filter((u) => u.role === "admin").length
+  // const adminCount = filteredUsers.filter((u) => u.role === "admin").length
   const partnerCount = filteredUsers.filter((u) => u.role === "partner").length
   const userCount = filteredUsers.filter((u) => u.role === "user").length
 

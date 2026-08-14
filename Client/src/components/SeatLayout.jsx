@@ -1,5 +1,5 @@
 import { Button } from 'antd';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 
 export const SeatLayout = ({ totalSeats, bookedSeats, selectedSeats, onSeatSelect }) => {
     const seatsPerRow = 15;
@@ -17,12 +17,13 @@ export const SeatLayout = ({ totalSeats, bookedSeats, selectedSeats, onSeatSelec
         seatsPerRow
     }
 
-    const handleWheel = (e) => {
+    const handleWheel = useCallback((e) => {
         e.preventDefault()
         const delta = e.deltaY * -0.01
-        const newScale = Math.min(Math.max(0.5, scale + delta), 3)
-        setScale(newScale)
-    }
+        setScale((prevScale) =>
+            Math.min(Math.max(0.5, prevScale + delta), 3)
+        )
+    }, [])
 
     const handleTouchStart = (e) => {
         if(e.touches.length === 2)
@@ -111,7 +112,7 @@ export const SeatLayout = ({ totalSeats, bookedSeats, selectedSeats, onSeatSelec
             container.addEventListener("wheel", handleWheel, { passive: false })
             return () => container.removeEventListener("wheel", handleWheel)
         }
-    }, [scale])
+    }, [handleWheel])
 
 
     const renderSeat = (rowLabel, seatNumber) => {
@@ -152,7 +153,7 @@ export const SeatLayout = ({ totalSeats, bookedSeats, selectedSeats, onSeatSelec
                 <Button size="small" onClick={zoomOut} className="min-w-10! h-8!">
                     -
                 </Button>
-                <Button size="small" onClick={resetZoom} className="min-w-[60px]! h-8! text-xs!">
+                <Button size="small" onClick={resetZoom} className="min-w-15! h-8! text-xs!">
                     Reset
                 </Button>
                 <Button size="small" onClick={zoomIn} className="min-w-10! h-8!">

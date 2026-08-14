@@ -11,37 +11,6 @@ import {
 } from "../slices/bookingSlice";
 import { notify } from "../../utils/notificationUtils";
 
-// API calls
-/* const validateSeatsAPI = async (payload) => {
-    try {
-        const response = await validateSeats(payload);
-        return response;
-    } catch (error) {
-        const message = error.response?.data?.message || 'Failed to validate seats';
-        throw new Error(message);
-    }
-};
-
-const bookSeatsAPI = async (payload) => {
-    try {
-        const response = await bookSeat(payload);
-        return response.data;
-    } catch (error) {
-        const message = error.response?.data?.message || 'Failed to book seats';
-        throw new Error(message);
-    }
-};
-
-const getUserBookingAPI = async (userId) => {
-    try {
-        const response = await bookingsByUserId(userId);
-        return response;
-    } catch (error) {
-        const message = error.response?.data?.message || 'Failed to fetch user bookings';
-        throw new Error(message);
-    }
-}; */
-
 // Worker Sagas
 function* validateSeatBookingSaga(action) {
     try{

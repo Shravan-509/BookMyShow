@@ -1,10 +1,11 @@
 import React from 'react';
 import { Button, Col, Form, Input, Modal, Row } from 'antd'
 import TextArea from 'antd/es/input/TextArea'
+import { notify } from '../../../utils/notificationUtils';
 import { useDispatch } from 'react-redux';
 import { addTheatreRequest, updateTheatreRequest } from '../../../redux/slices/theatreSlice';
 import { useAuth } from '../../../hooks/useAuth';
-import { sanitizeInput, validateLength } from '../../../utils/securityValidation';
+import { sanitizeInput, validateLength, validateEmail,validatePhone } from '../../../utils/securityValidation';
 
 const TheatreForm = ({
     isModalOpen, 
@@ -36,22 +37,22 @@ const TheatreForm = ({
         
         // Validate inputs
         if (!validateLength(sanitizedValues.name, 2, 100)) {
-            Alert("Theatre name must be between 2 and 100 characters");
+            notify("warning", "Theatre name must be between 2 and 100 characters");
             return;
         }
         
         if (!validateLength(sanitizedValues.address, 5, 200)) {
-            Alert("Address must be between 5 and 200 characters");
+            notify("warning", "Address must be between 5 and 200 characters");
             return;
         }
         
         if (!validateEmail(sanitizedValues.email)) {
-            Alert("Please enter a valid email");
+            notify("warning", "Please enter a valid email");
             return;
         }
         
         if (!validatePhone(sanitizedValues.phone)) {
-            Alert("Please enter a valid phone number");
+            notify("warning", "Please enter a valid phone number");
             return;
         }
     

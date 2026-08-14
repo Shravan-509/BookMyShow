@@ -1,6 +1,7 @@
 import React from 'react';
-import { Alert, Button, Col, Form, Input, Modal, Row, Select } from 'antd';
+import { Button, Col, Form, Input, Modal, Row, Select } from 'antd';
 import TextArea from 'antd/es/input/TextArea';
+import { notify } from '../../../utils/notificationUtils';
 import { useDispatch } from 'react-redux';
 import { addMovieRequest, updateMovieRequest } from '../../../redux/slices/movieSlice';
 import { sanitizeInput, validateLength } from '../../../utils/securityValidation';
@@ -35,17 +36,17 @@ const MovieForm = ({
         
         // Validate inputs
         if (!validateLength(sanitizedValues.movieName, 2, 100)) {
-            Alert("Movie name must be between 2 and 100 characters");
+            notify("warning", "Movie name must be between 2 and 100 characters");
             return;
         }
         
         if (!validateLength(sanitizedValues.description, 10, 1000)) {
-            Alert("Description must be between 10 and 1000 characters");
+            notify("warning", "Description must be between 10 and 1000 characters");
             return;
         }
         
         if (sanitizedValues.duration <= 0 || sanitizedValues.duration > 300) {
-            Alert("Duration must be between 1 and 300 minutes");
+            notify("warning", "Duration must be between 1 and 300 minutes");
             return;
         }
         

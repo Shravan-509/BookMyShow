@@ -70,10 +70,10 @@ export const validateAPIResponse = (response) => {
 };
 
 // Encrypt sensitive data (client-side)
-export const encryptSensitiveData = (data, key) => {
+export const encryptSensitiveData = (data) => {
   try {
     const encoded = new TextEncoder().encode(data);
-    const keyHash = new TextEncoder().encode(key);
+    // const keyHash = new TextEncoder().encode(key);
     return btoa(String.fromCharCode(...encoded));
   } catch {
     return null;

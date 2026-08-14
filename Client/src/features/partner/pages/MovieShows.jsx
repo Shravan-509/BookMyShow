@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Button, Col, Form, Input, InputNumber, Modal, Popconfirm, Row, Select, Spin, Table, Tooltip } from "antd";
 import Title from "antd/es/typography/Title";
-import { format, parse } from 'date-fns';
 import { EditOutlined, DeleteOutlined, ArrowLeftOutlined } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 import { addShowRequest, deleteShowRequest, getShowsByTheatreRequest, selectShow, selectShowError, selectShowLoading, updateShowRequest } from "../../../redux/slices/showSlice";
@@ -26,21 +25,10 @@ const MovieShows = ({
     const movies = useSelector(selectMovie);
 
     useEffect(() =>{
-        dispatch(getShowsByTheatreRequest(selectedTheatre._id))
-    }, [dispatch])
-
-    // useEffect(() => {
-    //     if (!loading && shows && (view === "add" || view === "edit")) 
-    //     {
-    //         const timeoutId = setTimeout(() => {
-    //             setView("table");
-    //             setSelectedShow(null);
-    //         }, 0);
-
-    //         // Cleanup if the component unmounts before timeout
-    //         return () => clearTimeout(timeoutId);
-    //     }
-    // }, [loading, shows, view]);
+        if (selectedTheatre?._id) {
+             dispatch(getShowsByTheatreRequest(selectedTheatre._id))
+        }
+    }, [dispatch, selectedTheatre?._id])
 
     const handleCancel= () => {
         setIsShowModalOpen(false);
@@ -81,7 +69,7 @@ const MovieShows = ({
             title: "Show Date",
             key : "date",
             dataIndex: "date",
-            render: (text, data) => {
+            render: (text) => {
                 return formatDate(text, "MMM do yyyy")
             } 
         },

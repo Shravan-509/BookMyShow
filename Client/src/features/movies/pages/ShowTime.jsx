@@ -15,8 +15,6 @@ const ShowTime = memo(() => {
     const navigate = useNavigate();
     const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
     const [deviceType, setDeviceType] = useState('desktop')
-    const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024)
-
     const showLoading = useSelector(selectShowLoading);
     const showError = useSelector(selectShowError)
     const theatres = useSelector(selectShow);
@@ -31,7 +29,6 @@ const ShowTime = memo(() => {
 
         const handleResize = () => {
             const width = window.innerWidth
-            setWindowWidth(width)
             setDeviceType(getDeviceType(width))
         }
 
@@ -42,8 +39,6 @@ const ShowTime = memo(() => {
 
     // Computed responsive values
     const isMobile = deviceType === 'mobile'
-    const isTablet = deviceType === 'tablet'
-    const isDesktop = deviceType === 'desktop'
 
     useEffect(() => {
         dispatch(getTheatresWithShowsByMovieRequest({movie: params.id, date: selectedDate}))

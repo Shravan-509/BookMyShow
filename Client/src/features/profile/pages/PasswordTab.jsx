@@ -1,7 +1,8 @@
 import React, { useEffect } from "react"
-import { Alert, Button, Card, Form, Input, Typography } from "antd"
+import { Button, Card, Form, Input, Typography } from "antd"
 import { LockOutlined } from "@ant-design/icons"
 import { useProfile } from "../../../hooks/useProfile";
+import { notify } from "../../../utils/notificationUtils";
 import { sanitizeInput, validatePasswordStrength } from "../../../utils/securityValidation";
 
 const {Title, Text, Paragraph} = Typography;
@@ -18,7 +19,7 @@ const PasswordChangeTab = () => {
         // Validate new password strength
         const passwordCheck = validatePasswordStrength(newPassword);
         if (!passwordCheck.valid) {
-            Alert(passwordCheck.reason);
+            notify("warning", passwordCheck.reason);
             return;
         }
         

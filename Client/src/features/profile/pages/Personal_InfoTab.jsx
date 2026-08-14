@@ -1,8 +1,9 @@
 import React, { useEffect } from 'react';
 import { MailOutlined, PhoneOutlined, SaveOutlined, UserOutlined } from '@ant-design/icons'
-import { Alert, Button, Card, Form, Input, Typography } from 'antd'
+import { Button, Card, Form, Input, Typography } from 'antd'
+import { notify } from '../../../utils/notificationUtils';
 import { useProfile } from '../../../hooks/useProfile';
-import { sanitizeInput, validatePhone } from '../../../utils/securityValidation';
+import { sanitizeInput, validatePhone, validateLength } from '../../../utils/securityValidation';
 
 const {Title, Text, Paragraph} = Typography;
 
@@ -24,7 +25,7 @@ const Personal_InfoTab = () => {
                 email: profile.email || ""
             })
         }
-    }, [profile?.name, profile?.phone, profile?.email]);
+    }, [profile, profileForm]);
 
     const handleSubmit = (values) => {
         // Sanitize inputs
@@ -33,12 +34,12 @@ const Personal_InfoTab = () => {
         
         // Validate inputs
         if (!validateLength(sanitizedName, 2, 100)) {
-            Alert("Name must be between 2 and 100 characters");
+            notify("warning", "Name must be between 2 and 100 characters");
             return;
         }
         
         if (!validatePhone(sanitizedPhone)) {
-            Alert("Please enter a valid phone number");
+            notify("warning", "Please enter a valid phone number");
             return;
         }
 

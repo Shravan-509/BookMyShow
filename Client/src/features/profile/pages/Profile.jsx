@@ -11,7 +11,7 @@ const { Title, Text } = Typography
 
 const Profile = memo(() => {
   const { user } = useAuth();    
-  const { profile, loading, error, fetchProfile, resetProfile } = useProfile()
+  const { profile, loading, error, fetchProfile } = useProfile()
 
   const displayProfile = useMemo(() => profile || user, [profile, user])
 
@@ -28,7 +28,7 @@ const Profile = memo(() => {
 
    if (loading && !profile) {
     return (
-      <div className="flex justify-center items-center min-h-[400px]">
+      <div className="flex justify-center items-center min-h-100">
         <Spin size="large" />
       </div>
     )

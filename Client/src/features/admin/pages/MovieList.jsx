@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { Button, Spin, Table, Tag, Tooltip } from 'antd'
-import { format } from 'date-fns';
 import {useDispatch, useSelector} from "react-redux";
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import MovieForm from './MovieForm';

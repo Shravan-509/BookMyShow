@@ -37,7 +37,7 @@ import {
 } from "../../../redux/slices/showSlice"
 import { notify } from "../../../utils/notificationUtils"
 import SeatRecommendation from "../../../components/SeatRecommendation"
-import { formatDate, formatParsedTime, formatTime } from "../../../utils/dateFormatter";
+import { formatDate, formatParsedTime } from "../../../utils/dateFormatter";
 const { Title, Text } = Typography
 const { Step } = Steps
 
@@ -89,7 +89,7 @@ const Booking = () => {
   const [selectedSeats, setSelectedSeats] = useState([])
   const [showBookingSummary, setShowBookingSummary] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
-  const [seatPreferences, setSeatPreferences] = useState({
+  const [seatPreferences] = useState({
     preferCenter: true,
     preferBack: false,
     preferAisle: false,
@@ -183,7 +183,7 @@ const Booking = () => {
     [user?.name, user?.email, user?.phone],
   )
 
-  const BookingSummaryContent = () => (
+  const bookingSummaryContent = (
     <div className="p-4">
       <div className="mb-4">
         <Text strong className="text-lg">
@@ -366,7 +366,7 @@ const Booking = () => {
                     </>
                   )}
 
-                  {isMobile && showBookingSummary && <BookingSummaryContent />}
+                  {isMobile && showBookingSummary && bookingSummaryContent}
 
                   {(!isMobile || !showBookingSummary) && (
                     <>

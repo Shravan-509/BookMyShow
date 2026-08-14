@@ -1,5 +1,4 @@
 import { takeLatest, put, call } from "redux-saga/effects";
-import { axiosInstance } from "../../api/index";
 import { 
     forgotPasswordRequest, 
     forgotPasswordSuccess, 
@@ -10,27 +9,6 @@ import {
 } from "../slices/forgotPasswordSlice";
 import { notify } from "../../utils/notificationUtils";
 import { ForgotPasswordAPI } from "../../api/forgotPassword";
-
-// Forgot Password API calls
-const forgotPasswordAPI = async (email) => {
-    try {
-        const response = await axiosInstance.post("/auth/forgot-password", {email});
-        return response.data;
-    } catch (error) {
-        const message = error.response?.data?.message || 'Failed to send reset email';
-        throw new Error(message);
-    }
-};
-
-const resetPasswordAPI = async (resetData) => {
-    try {
-        const response = await axiosInstance.post("/auth/reset-password", resetData);
-        return response.data;
-    } catch (error) {
-        const message = error.response?.data?.message || 'Failed to reset password';
-        throw new Error(message);
-    }
-};
 
 // Worker Sagas
 function* handleForgotPassword(action) {

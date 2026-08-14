@@ -1,5 +1,4 @@
 import { call, put, select, takeLatest, putResolve} from "redux-saga/effects";
-import { axiosInstance } from "../../api";
 import { notify } from "../../utils/notificationUtils";
 import { logout, setUserData } from "../slices/authSlice";
 import { 
@@ -28,85 +27,6 @@ import {
     
 } from "../slices/profileSlice";
 import { ProfileAPI } from "../../api/profile";
-
-
-// Profile API Calls
-const fetchProfileAPI = async() => {
-    try 
-    {
-        const response = await axiosInstance.get("/users/profile");
-        return response.data;
-    } catch (error) {
-        const message = error.response?.data?.message || 'Failed to fetch profile';
-        throw new Error(message);
-    }
-}
-
-const updateProfileAPI = async(profileData) => {
-    try 
-    {
-        const response = await axiosInstance.put("/users/update-profile", profileData);
-        return response.data;
-    } catch (error) {
-        const message = error.response?.data?.message || 'Failed to update profile';
-        throw new Error(message);
-    }
-}
-
-const changePasswordAPI = async(passwordData) => {
-    try 
-    {
-        const response = await axiosInstance.put("/users/change-password", passwordData);
-        return response.data;
-    } catch (error) {
-        const message = error.response?.data?.message || 'Failed to change password';
-        throw new Error(message);
-    }
-}
-
-const requestEmailChangeAPI = async(emailData) => {
-    try 
-    {
-        const response = await axiosInstance.post("/users/request-email-change", emailData);
-        return response.data;
-    } catch (error) {
-        const message = error.response?.data?.message || 'Failed to request email change';
-        throw new Error(message);
-    }
-}
-
-const verifyEmailChangeAPI = async(verificationData) => {
-    try 
-    {
-        const response = await axiosInstance.post("/users/verify-email-change", verificationData);
-        return response.data;
-    } catch (error) {
-        const message = error.response?.data?.message || 'Failed to verify email change';
-        throw new Error(message);
-    }
-}
-
-const toggle2FAAPI = async() => {
-    try 
-    {
-        const response = await axiosInstance.put("/users/toggle-2fa");
-        return response.data;
-    } catch (error) {
-        const message = error.response?.data?.message || 'Failed to toggle 2FA';
-        throw new Error(message);
-    }
-}
-
-const deleteAccountAPI = async(password) => {
-    try 
-    {
-        const response = await axiosInstance.delete("/users/delete-account", {data: {password}});
-        return response.data;
-    } catch (error) {
-        const message = error.response?.data?.message || 'Failed to delete account';
-        throw new Error(message);
-    }
-}
 
 // Worker Sagas
 function* fetchProfileSaga() {

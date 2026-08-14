@@ -1,5 +1,4 @@
 import { takeLatest, put, call } from "redux-saga/effects";
-import { axiosInstance } from "../../api/index";
 import { 
     addShowFailure, 
     addShowRequest, 
@@ -22,67 +21,6 @@ import {
     } from "../slices/showSlice";
 import { notify } from "../../utils/notificationUtils";
 import { ShowAPI } from "../../api/show";
-
-// Show API calls
-const addShowAPI = async (show) => {
-    try {
-        const response = await axiosInstance.post("/shows", show);
-        return response.data;
-    } catch (error) {
-        const message = error.response?.data?.message || 'Failed to Add a Show';
-        throw new Error(message);
-    }
-};
-
-const updateShowAPI = async ({id, show}) => {
-    try {
-        const response = await axiosInstance.patch(`/shows/${id}`, show);
-        return response.data;
-    } catch (error) {
-        const message = error.response?.data?.message || 'Failed to Update a Show';
-        throw new Error(message);
-    }
-};
-
-const deleteShowAPI = async (id) => {
-    try {
-        const response = await axiosInstance.delete(`/shows/${id}`);
-        return response.data;
-    } catch (error) {
-        const message = error.response?.data?.message || 'Failed to Delete a Show';
-        throw new Error(message);
-    }
-};
-
-export const getShowByIdAPI = async (id) => {
-    try {
-        const response = await axiosInstance.get(`/shows/${id}`);
-        return response?.data;
-    } catch (error) {
-        const message = error.response?.data?.message || 'Failed to get a Show';
-        throw new Error(message);
-    }
-};
-
-export const getShowsByTheatreAPI = async (id) =>  {
-    try {
-        const response = await axiosInstance.get(`/shows/theatre/${id}`);
-        return response?.data;
-    } catch (error) {
-        const message = error.response?.data?.message || 'Failed to get a Show in a Theatre';
-        throw new Error(message);
-    }
-};
-
-export const getTheatresWithShowsByMovieAPI = async (movie) =>  {
-    try {
-        const response = await axiosInstance.post('/shows/theatres/movie', movie);
-        return response?.data;
-    } catch (error) {
-        const message = error.response?.data?.message || 'Failed to get Theatres for a Movie';
-        throw new Error(message);
-    }
-};
 
 
 // Worker Sagas

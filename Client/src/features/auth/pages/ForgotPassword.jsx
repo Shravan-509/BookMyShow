@@ -1,5 +1,5 @@
 import { Alert, Button, Form, Input, Modal } from 'antd'
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { selectShowForgotPasswordModal, setShowForgotPasswordModal } from '../../../redux/slices/uiSlice';
 import { CheckCircleOutlined, CloseCircleOutlined, LockOutlined, MailOutlined, SendOutlined } from '@ant-design/icons';
@@ -23,17 +23,6 @@ const ForgotPassword = () => {
     const error = useSelector(selectForgotPasswordError);
     const emailSent = useSelector(selectEmailSent);
 
-    //Reset state when modal closes
-    useEffect(() => {
-        if(!isOpen)
-        {
-            // Reset all forgot password state when modal is closed
-            dispatch(resetForgotPasswordState());
-            setCurrentEmail("")
-            form.resetFields();
-        }
-    }, [isOpen, dispatch, form])
-
     const handleSubmit = (values) => {
        const sanitizedEmail = sanitizeInput(values.email);
         
@@ -48,7 +37,10 @@ const ForgotPassword = () => {
 
      const handleCancel = () => {
         //Close Modal and Reset
-        dispatch(setShowForgotPasswordModal(false));
+        dispatch(resetForgotPasswordState())
+        setCurrentEmail("")
+        form.resetFields()
+        dispatch(setShowForgotPasswordModal(false))
     }
 
     const handleResendEmail = () => {

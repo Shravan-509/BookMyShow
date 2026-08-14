@@ -1,5 +1,4 @@
 import { takeLatest, put, call, delay, select, fork } from "redux-saga/effects"
-import { axiosInstance } from "../../api";
 import {
     verifyEmailRequest, 
     verifyEmailSuccess, 
@@ -20,48 +19,6 @@ import { setActiveTab } from "../slices/uiSlice";
 import { checkAuthStatus, loginSuccess, setLoading } from "../slices/authSlice";
 import { notify } from "../../utils/notificationUtils";
 import { VerificationAPI } from "../../api/verification";
-
-//API Calls
-const verifyEmailApi = async (payload) => {
-    try {
-        const response = await axiosInstance.post("/auth/verify-email", payload);
-        return response.data;
-    } catch (error) {
-        const message = error.response?.data.message || "Email Verification Failed";
-        throw new Error(message);
-    }
-};
-
-const verifyTwoFactorApi = async (payload) => {
-    try {
-        const response = await axiosInstance.post("/auth/verify-2fa", payload);
-        return response.data;
-    } catch (error) {
-        const message = error.response?.data.message || "Two Factor Authentication Failed";
-        throw new Error(message);
-    }
-};
-
-const reverifyAccountApi = async (payload) => {
-    try {
-        const response = await axiosInstance.post("/auth/request-reverification", payload);
-        return response.data;
-    } catch (error) {
-        const message = error.response?.data.message || "Reverification Request Failed";
-        throw new Error(message);
-    }
-};
-
-const resendCodeApi = async (type, payload) => {
-    try {
-        const endpoint = type === "email" ? "/auth/resend-verification" : "/auth/resend-2fa"
-        const response = await axiosInstance.post(endpoint, payload);
-        return response.data;
-    } catch (error) {
-        const message = error.response?.data.message || "Failed to resend code";
-        throw new Error(message);
-    }
-};
 
 //Worker Sagas
 function* handleVerifyEmail(action) {
@@ -167,7 +124,7 @@ function* handleVerifyTwoFactor(action) {
 
 function* handleReverifyAccount(action) {
     try {
-        const tempUserId = yield select((state) => state.verification.tempUserId);
+        // const tempUserId = yield select((state) => state.verification.tempUserId);
         const data = yield call(VerificationAPI.reverifyAccount, {
            email: action.payload.email
         })

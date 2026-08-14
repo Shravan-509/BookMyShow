@@ -15,9 +15,6 @@ import {
   isYesterday,
   parse,
   parseISO,
-  isSameDay,
-  addDays,
-  addHours,
   startOfDay,
   endOfDay,
   differenceInDays,
@@ -35,7 +32,7 @@ export const formatDate = (date, formatStr = 'dd MMM yyyy') => {
   try {
     const dateObj = typeof date === 'string' ? parseISO(date) : new Date(date);
     return format(dateObj, formatStr);
-  } catch (error) {
+  } catch  {
     console.warn('[dateFormatter] Invalid date:', date);
     return '';
   }
@@ -51,7 +48,7 @@ export const formatTime = (date, formatStr = 'HH:mm') => {
   try {
     const dateObj = typeof date === 'string' ? parseISO(date) : new Date(date);
     return format(dateObj, formatStr);
-  } catch (error) {
+  } catch  {
     console.warn('[dateFormatter] Invalid date:', date);
     return '';
   }
@@ -66,7 +63,7 @@ export const formatDateTime = (date, formatStr = 'dd MMM yyyy HH:mm') => {
   try {
     const dateObj = typeof date === 'string' ? parseISO(date) : new Date(date);
     return format(dateObj, formatStr);
-  } catch (error) {
+  } catch  {
     console.warn('[dateFormatter] Invalid date:', date);
     return '';
   }
@@ -81,7 +78,7 @@ export const formatRelative = (date) => {
   try {
     const dateObj = typeof date === 'string' ? parseISO(date) : new Date(date);
     return formatDistanceToNow(dateObj, { addSuffix: true });
-  } catch (error) {
+  } catch  {
     console.warn('[dateFormatter] Invalid date:', date);
     return '';
   }
@@ -96,7 +93,7 @@ export const isDateToday = (date) => {
   try {
     const dateObj = typeof date === 'string' ? parseISO(date) : new Date(date);
     return isToday(dateObj);
-  } catch (error) {
+  } catch  {
     return false;
   }
 };
@@ -110,7 +107,7 @@ export const isDateTomorrow = (date) => {
   try {
     const dateObj = typeof date === 'string' ? parseISO(date) : new Date(date);
     return isTomorrow(dateObj);
-  } catch (error) {
+  } catch  {
     return false;
   }
 };
@@ -124,7 +121,7 @@ export const isDateYesterday = (date) => {
   try {
     const dateObj = typeof date === 'string' ? parseISO(date) : new Date(date);
     return isYesterday(dateObj);
-  } catch (error) {
+  } catch  {
     return false;
   }
 };
@@ -144,7 +141,7 @@ export const formatBookingDate = (date) => {
     if (isDateYesterday(dateObj)) return 'Yesterday';
     
     return format(dateObj, 'dd MMM yyyy');
-  } catch (error) {
+  } catch  {
     console.warn('[dateFormatter] Invalid date:', date);
     return '';
   }
@@ -168,7 +165,7 @@ export const formatShowTime = (startDate, endDate = null) => {
     }
     
     return startTime;
-  } catch (error) {
+  } catch  {
     console.warn('[dateFormatter] Invalid date:', startDate);
     return '';
   }
@@ -183,7 +180,7 @@ export const daysUntil = (date) => {
   try {
     const dateObj = typeof date === 'string' ? parseISO(date) : new Date(date);
     return differenceInDays(dateObj, new Date());
-  } catch (error) {
+  } catch  {
     return 0;
   }
 };
@@ -197,7 +194,7 @@ export const hoursUntil = (date) => {
   try {
     const dateObj = typeof date === 'string' ? parseISO(date) : new Date(date);
     return differenceInHours(dateObj, new Date());
-  } catch (error) {
+  } catch  {
     return 0;
   }
 };
@@ -211,7 +208,7 @@ export const minutesUntil = (date) => {
   try {
     const dateObj = typeof date === 'string' ? parseISO(date) : new Date(date);
     return differenceInMinutes(dateObj, new Date());
-  } catch (error) {
+  } catch  {
     return 0;
   }
 };
@@ -225,7 +222,7 @@ export const isShowToday = (showDate) => {
   try {
     const dateObj = typeof showDate === 'string' ? parseISO(showDate) : new Date(showDate);
     return isDateToday(dateObj);
-  } catch (error) {
+  } catch  {
     return false;
   }
 };
@@ -239,7 +236,7 @@ export const hasShowPassed = (showDate) => {
   try {
     const dateObj = typeof showDate === 'string' ? parseISO(showDate) : new Date(showDate);
     return new Date() > dateObj;
-  } catch (error) {
+  } catch  {
     return false;
   }
 };
@@ -269,7 +266,7 @@ export const formatDuration = (minutes) => {
 export const parseDate = (dateString, formatPattern = 'dd/MM/yyyy') => {
   try {
     return parse(dateString, formatPattern, new Date());
-  } catch (error) {
+  } catch  {
     console.warn('[dateFormatter] Failed to parse date:', dateString, formatPattern);
     return null;
   }
@@ -294,7 +291,7 @@ export const isWithinDateRange = (date, start, end) => {
       d >= startOfDay(start) &&
       d <= endOfDay(end)
     );
-  } catch (error) {
+  } catch  {
     console.warn('[dateFormatter] Invalid date range check:', date, start, end);
     return false;
   }
@@ -311,7 +308,7 @@ export const formatParsedTime = (time, inputFormat = "HH:mm", outputFormat = "hh
   try {
     const parsed = parse(time, inputFormat, new Date());
     return format(parsed, outputFormat);
-  } catch (error) {
+  } catch  {
     console.warn('[dateFormatter] Invalid time:', time);
     return '';
   }

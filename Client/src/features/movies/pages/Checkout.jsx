@@ -12,14 +12,12 @@ import {
     MobileOutlined, 
     WalletOutlined 
 } from '@ant-design/icons';
-import { format } from 'date-fns';
 import { 
     selectValidationResult, validateSeatBookingRequest,
     selectRazorpayOrder, selectIsPaymentProcessing, selectPaymentError, createRazorpayOrderRequest,
     selectBookingLoading, selectBookingData, bookSeatsRequest
 } from '../../../redux/slices/bookingSlice';
 import { useAuth } from '../../../hooks/useAuth';
-import { useBooking } from '../../../hooks/useBooking';
 import { useNavigate } from 'react-router-dom';
 import { notify } from '../../../utils/notificationUtils';
 import { useDispatch, useSelector } from 'react-redux';
@@ -48,7 +46,6 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
     const [paymentStatus, setPaymentStatus] = useState("") // 'processing', 'success', 'failed'
     const [paymentMethod, setPaymentMethod] = useState("UPI")
     const [deviceType, setDeviceType] = useState('desktop')
-    const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024)
     const [error, setError] = useState(null)
     const [retryCount, setRetryCount] = useState(0)
     const maxRetries = 3
@@ -70,7 +67,6 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
 
         const handleResize = () => {
             const width = window.innerWidth
-            setWindowWidth(width)
             setDeviceType(getDeviceType(width))
         }
 
@@ -94,7 +90,6 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
     // Computed responsive values
     const isMobile = deviceType === 'mobile'
     const isTablet = deviceType === 'tablet'
-    const isDesktop = deviceType === 'desktop'
 
     const loadRazorpayScript = useCallback(() => {
         return new Promise((resolve) => {
@@ -180,7 +175,7 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
             setError("Failed to validate seats. Please try again.")
             return false
         }
-    }, [seats, show._id, validationResult, validationLoading]);
+    }, [seats, show._id, validationResult, validationLoading, dispatch]);
 
     const handleRazorPaymentSucess = useCallback(
         async(payment) => {
@@ -248,12 +243,12 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
                 console.log("Error in Booking after payment: ", error);
                 notify(
                     "error", 
-                    `Booking failed. Please contact support with your payment ID: ${razorpay_payment_id}`
+                    `Booking failed. Please contact support with your payment ID: ${payment?.razorpay_payment_id}`
                 );
                 setPaymentStatus("failed");
             }
         },
-        [show._id, seats, paymentMethod, totalAmount, bookingData, paymentError, navigate]
+        [razorpayOrder, show._id, user.id, seats, convenienceFee, dispatch, bookingData, paymentError, navigate]
     );
 
     const handleRazorPay = useCallback(async () => {
@@ -282,7 +277,7 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
         
             dispatch(createRazorpayOrderRequest({ amount }));
 
-            const { id: order_id, amount: order_amount, receipt: order_receipt } = razorpayOrder;
+            const { id: order_id, amount: order_amount } = razorpayOrder;
 
             return new Promise((resolve) => {
                     let attempts = 0
@@ -371,12 +366,11 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
         error,
         loadRazorpayScript,
         show._id,
+        show.movie.movieName,
         user,
         seats,
-        convenienceFee,
-        paymentMethod,
-        navigate,
-        handleRazorPaymentSucess
+        handleRazorPaymentSucess,
+        dispatch
     ])
 
     const renderPaymentStatus = useCallback(() => {

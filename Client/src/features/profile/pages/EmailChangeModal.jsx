@@ -1,7 +1,7 @@
 import React from 'react'
 import { Alert, Button, Form, Input, Modal, Typography } from 'antd'
 import { SafetyCertificateOutlined } from "@ant-design/icons";
-
+import { notify } from '../../../utils/notificationUtils';
 import { useProfile } from '../../../hooks/useProfile';
 import { sanitizeInput, validateLength } from '../../../utils/securityValidation';
 
@@ -23,7 +23,7 @@ const EmailChangeModal = () => {
         
         // Validate code format (6 digits)
         if (!validateLength(sanitizedCode, 6, 6) || !/^\d{6}$/.test(sanitizedCode)) {
-            Alert("Please enter a valid 6-digit code");
+            notify("warning", "Please enter a valid 6-digit code");
             return;
         }
         

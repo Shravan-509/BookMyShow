@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react"
+import { useMemo } from "react"
 import { Button, Card, Space, Tag, Typography } from "antd"
 import { StarOutlined, EyeOutlined } from "@ant-design/icons"
 
@@ -12,9 +12,8 @@ const SeatRecommendation = ({
     groupSize = 1, 
     preferences = {} 
 }) => {
-    const [selectedRecommendation, setSelectedRecommendation] = useState(null);
 
-    const getRecommendationReason = (rowIndex, startSeat, groupSize, totalRows, seatsPerRow, prefs) => {
+    const getRecommendationReason = (rowIndex, startSeat, groupSize, totalRows, seatsPerRow) => {
         const reasons = []
 
         if (rowIndex >= totalRows * 0.3 && rowIndex <= totalRows * 0.7) 
@@ -98,7 +97,7 @@ const SeatRecommendation = ({
                     recommendations.push({
                         seats: seatGroup,
                         score,
-                        reason: getRecommendationReason(rowIndex, startSeat, groupSize, numRows, seatsPerRow, preferences),
+                        reason: getRecommendationReason(rowIndex, startSeat, groupSize, numRows, seatsPerRow),
                     })
                 }
             }
@@ -108,17 +107,22 @@ const SeatRecommendation = ({
         return recommendations.sort((a, b) => b.score - a.score).slice(0, 3)
     }, [totalSeats, bookedSeats, groupSize, preferences])
 
-    useEffect(() => {
+    const selectedRecommendation = useMemo(() => 
+    {
         // Check if current selected seats match any recommendation
-        const matchinRecommendation = recommendations.findIndex((rec) => {
-            const recSeatIds = rec.seats.map((s) => s.seatId).sort();
-            const currentSeatIds = [...selectedSeats].sort();
-            return(
+        const matchingRecommendation = recommendations.findIndex((rec) => {
+            const recSeatIds = rec.seats.map((s) => s.seatId).sort()
+            const currentSeatIds = [...selectedSeats].sort()
+
+            return (
                 recSeatIds.length === currentSeatIds.length &&
-                recSeatIds.every((seatId, index) => seatId === currentSeatIds[index])
+                recSeatIds.every(
+                    (seatId, index) => seatId === currentSeatIds[index]
+                )
             )
         })
-        setSelectedRecommendation(matchinRecommendation >= 0 ? matchinRecommendation : null)
+
+        return matchingRecommendation >= 0 ? matchingRecommendation : null
     }, [selectedSeats, recommendations])
 
     const handleQuickSelect = (recommendedSeats, index) => {
@@ -126,13 +130,11 @@ const SeatRecommendation = ({
         if(selectedRecommendation === index)
         {
             // Undo Selection - clear all selected seats
-            setSelectedRecommendation(null);
-            onSeatSelect([]) // Celar all selected seats
+            onSeatSelect([])
         }
         else
         {
             // Select new Recommendation
-            setSelectedRecommendation(index)
             onSeatSelect(recommendedSeats);
         }
         

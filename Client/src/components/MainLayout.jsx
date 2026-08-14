@@ -101,7 +101,7 @@ const MainLayout = memo(({ children }) => {
    
     const navigate = useNavigate()
 
-    const { token: { colorBgContainer, borderRadiusLG } } = theme.useToken()
+    const { token: { borderRadiusLG } } = theme.useToken()
 
     // Utility: Truncate name
     const truncate = useCallback((str, maxLength = 12) => 

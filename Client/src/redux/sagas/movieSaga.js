@@ -1,5 +1,4 @@
 import { takeEvery, put, call } from "redux-saga/effects";
-import { axiosInstance } from "../../api/index";
 import { 
     addMovieFailure, 
     addMovieRequest, 
@@ -20,58 +19,6 @@ import {
 import { format } from 'date-fns';
 import { notify } from "../../utils/notificationUtils";
 import { MovieAPI } from "../../api/movie";
-
-// Movie API calls
-const fetchMoviesAPI = async () => {
-    try {
-        const response = await axiosInstance.get("/movies");
-        return response.data;
-    } catch (error) {
-        const message = error.response?.data?.message || 'Failed to fetch Movies';
-        throw new Error(message);
-    }
-};
-
-const addMovieAPI = async (movie) => {
-    try {
-        const response = await axiosInstance.post("/movies", movie);
-        return response.data;
-    } catch (error) {
-        const message = error.response?.data?.message || 'Failed to Add a Movie';
-        throw new Error(message);
-    }
-};
-
-const updateMovieAPI = async ({id, movie}) => {
-    try {
-        const response = await axiosInstance.patch(`/movies/${id}`, movie);
-        return response.data;
-    } catch (error) {
-        const message = error.response?.data?.message || 'Failed to Update a Movie';
-        throw new Error(message);
-    }
-};
-
-const deleteMovieAPI = async (id) => {
-    try {
-        const response = await axiosInstance.delete(`/movies/${id}`);
-        return response.data;
-    } catch (error) {
-        const message = error.response?.data?.message || 'Failed to Delete a Movie';
-        throw new Error(message);
-    }
-};
-
-const getMovieByIdAPI = async (id) => {
-    try {
-        const response = await axiosInstance.get(`/movies/${id}`);
-        return response?.data;
-    } catch (error) {
-        const message = error.response?.data?.message || 'Failed to get a Movie';
-        throw new Error(message);
-    }
-};
-
 
 // Worker Sagas
 function* getMoviesSaga() {
@@ -199,7 +146,7 @@ function* getMovieByIdSaga(action) {
     catch(error)
     {
         const errorMessage = error.response?.data?.message || error.message
-        yield put(getMovieByIdFailure(eerrorMessage));
+        yield put(getMovieByIdFailure(errorMessage));
         notify("error", "Error fetching movie details. Please try again.", errorMessage);  
     }
 }

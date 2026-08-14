@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react"
-import { Table, Tag, Input, DatePicker, Space, Card, Statistic, Row, Col, message } from "antd"
-import { SearchOutlined, DollarOutlined, ShoppingOutlined, UserOutlined } from "@ant-design/icons"
+import { useEffect, useMemo, useState } from "react"
+import { Table, Tag, Input, DatePicker, Space, Card, Statistic, Row, Col } from "antd"
+import { SearchOutlined, ShoppingOutlined, UserOutlined } from "@ant-design/icons"
 
 import { getAllBookingsRequest, selectAllBookings, selectBookingLoading } from "../../../redux/slices/bookingSlice"
 import { useDispatch, useSelector } from "react-redux"
@@ -13,7 +13,7 @@ const AllBookings = () => {
   const dispatch = useDispatch()
   const bookings = useSelector(selectAllBookings)
   const loading = useSelector(selectBookingLoading)
-  const [filteredBookings, setFilteredBookings] = useState([])
+
   const [searchText, setSearchText] = useState("")
   const [dateRange, setDateRange] = useState(null)
 
@@ -21,32 +21,36 @@ const AllBookings = () => {
     dispatch(getAllBookingsRequest())
   }, [dispatch])
 
-  useEffect(() => {
-    let filtered = [...bookings]
+  const filteredBookings = useMemo(() => {
+    let filtered = [...(bookings || [])]
 
     // Filter by search text
     if (searchText) {
+      const searchValue = searchText.toLowerCase()
+
       filtered = filtered.filter(
         (booking) =>
-          booking.userName?.toLowerCase().includes(searchText.toLowerCase()) ||
-          booking.userEmail?.toLowerCase().includes(searchText.toLowerCase()) ||
-          booking.movieTitle?.toLowerCase().includes(searchText.toLowerCase()) ||
-          booking.theatreName?.toLowerCase().includes(searchText.toLowerCase()) ||
-          booking.bookingId?.toLowerCase().includes(searchText.toLowerCase()),
+          booking.userName?.toLowerCase().includes(searchValue) ||
+          booking.userEmail?.toLowerCase().includes(searchValue) ||
+          booking.movieTitle?.toLowerCase().includes(searchValue) ||
+          booking.theatreName?.toLowerCase().includes(searchValue) ||
+          booking.bookingId?.toLowerCase().includes(searchValue)
       )
     }
 
     // Filter by date range
-    if (dateRange && dateRange[0] && dateRange[1]) 
-    {
-     
-      filtered = filtered.filter((booking) => {
-        isWithinDateRange(booking.bookingTime, dateRange[0].toDate(), dateRange[1].toDate())
-      })
+    if (dateRange?.[0] && dateRange?.[1]) {
+      filtered = filtered.filter((booking) =>
+        isWithinDateRange(
+          booking.bookingTime,
+          dateRange[0].toDate(),
+          dateRange[1].toDate()
+        )
+      )
     }
 
-    setFilteredBookings(filtered)
-  }, [searchText, dateRange, bookings])
+    return filtered
+  }, [bookings, searchText, dateRange])
 
   const columns = [
     {
@@ -135,7 +139,7 @@ const AllBookings = () => {
   ]
 
   const totalRevenue = filteredBookings.reduce((sum, booking) => sum + (booking.amount || 0), 0)
-  const totalTickets = filteredBookings.reduce((sum, booking) => sum + (booking.seats?.length || 0), 0)
+  // const totalTickets = filteredBookings.reduce((sum, booking) => sum + (booking.seats?.length || 0), 0)
   const uniqueUsers = new Set(filteredBookings.map((b) => b.userEmail)).size
 
   return (

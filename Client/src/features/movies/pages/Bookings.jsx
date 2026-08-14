@@ -1,5 +1,5 @@
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import React, { useCallback, useEffect, useMemo, useState } from "react"
 import { Button, Card, Col, Divider, Flex, QRCode, Row, Skeleton, Space, Tag, Typography, Collapse, Modal } from "antd"
 import {
   BarcodeOutlined,
@@ -279,19 +279,17 @@ const OrderHistory = () => {
   const [isMobile, setIsMobile] = useState(false)
   const [selectedBooking, setSelectedBooking] = useState(null)
   const [showQRModal, setShowQRModal] = useState(false)
-  const scheduledBookings = useRef(new Set());
+  // const scheduledBookings = useRef(new Set());
 
   const { userBookings: bookings, loading, error, getUserBookings } = useBooking()
 
-  const fetchUserBookings = () => {
-    if (user?.id) {
-      getUserBookings(user.id)
-    }
-  }
+  const userId = user?.id
 
   useEffect(() => {
-    fetchUserBookings()
-  }, [user?.id])
+    if (userId) {
+      getUserBookings(userId)
+    }
+  }, [userId, getUserBookings])
 
   useEffect(() => {
     if (bookings.length === 0) return

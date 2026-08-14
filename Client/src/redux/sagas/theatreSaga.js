@@ -1,5 +1,4 @@
 import { takeLatest, put, call } from "redux-saga/effects";
-import { axiosInstance } from "../../api/index";
 import { 
     addTheatreFailure, 
     addTheatreRequest, 
@@ -16,47 +15,6 @@ import {
     } from "../slices/theatreSlice";
 import { notify } from "../../utils/notificationUtils";
 import { TheatreAPI } from "../../api/theatre";
-
-// Theatre API calls
-const fetchTheatresAPI = async () => {
-    try {
-        const response = await axiosInstance.get("/theatres");
-        return response.data;
-    } catch (error) {
-        const message = error.response?.data?.message || 'Failed to fetch Theatres';
-        throw new Error(message);
-    }
-};
-
-const addTheatreAPI = async (theatre) => {
-    try {
-        const response = await axiosInstance.post("/theatres", theatre);
-        return response.data;
-    } catch (error) {
-        const message = error.response?.data?.message || 'Failed to Add a Theatre';
-        throw new Error(message);
-    }
-};
-
-const updateTheatreAPI = async ({id, theatre}) => {
-    try {
-        const response = await axiosInstance.patch(`/theatres/${id}`, theatre);
-        return response.data;
-    } catch (error) {
-        const message = error.response?.data?.message || 'Failed to Update a Theatre';
-        throw new Error(message);
-    }
-};
-
-const deleteTheatreAPI = async (id) => {
-    try {
-        const response = await axiosInstance.delete(`/theatres/${id}`);
-        return response.data;
-    } catch (error) {
-        const message = error.response?.data?.message || 'Failed to Delete a Theatre';
-        throw new Error(message);
-    }
-};
 
 // Worker Sagas
 function* getTheatresSaga() {

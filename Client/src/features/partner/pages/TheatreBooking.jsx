@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
-import { Table, Tag, Select, Card, Statistic, Row, Col, message, Empty } from "antd"
-import { ShoppingOutlined, DollarOutlined, TeamOutlined } from "@ant-design/icons"
+import { Table, Tag, Select, Card, Statistic, Row, Col, Empty } from "antd"
+import { ShoppingOutlined, TeamOutlined } from "@ant-design/icons"
 import { useDispatch, useSelector } from "react-redux"
 import { selectTheatre } from "../../../redux/slices/theatreSlice"
 import {
@@ -21,18 +21,15 @@ const TheatreBookings = () => {
   const loading = useSelector(selectBookingLoading)
   const [selectedTheatreId, setSelectedTheatreId] = useState(null)
 
-  useEffect(() => {
-    if (theatres && theatres.length > 0 && !selectedTheatreId) {
-      setSelectedTheatreId(theatres[0]._id)
-    }
-  }, [theatres, selectedTheatreId])
+  const effectiveTheatreId =
+    selectedTheatreId || theatres?.[0]?._id || null
 
   useEffect(() => {
-    if (selectedTheatreId) 
+    if (effectiveTheatreId) 
     {
-      dispatch(getTheatreBookingsRequest(selectedTheatreId))
+      dispatch(getTheatreBookingsRequest(effectiveTheatreId))
     }
-  }, [selectedTheatreId, dispatch])
+  }, [effectiveTheatreId, dispatch])
 
   const columns = [
     {
@@ -115,10 +112,10 @@ const TheatreBookings = () => {
   ]
 
   const totalRevenue = bookings.reduce((sum, booking) => sum + (booking.amount || 0), 0)
-  const totalTickets = bookings.reduce((sum, booking) => sum + (booking.seats?.length || 0), 0)
+  // const totalTickets = bookings.reduce((sum, booking) => sum + (booking.seats?.length || 0), 0)
   const uniqueUsers = new Set(bookings.map((b) => b.userEmail)).size
 
-  const selectedTheatre = theatres?.find((t) => t._id === selectedTheatreId)
+  const selectedTheatre = theatres?.find((t) => t._id === effectiveTheatreId)
 
   return (
     <div style={{ padding: "20px" }}>
@@ -126,7 +123,7 @@ const TheatreBookings = () => {
         <div style={{ marginBottom: "16px" }}>
           <label style={{ marginRight: "12px", fontWeight: "500" }}>Select Theatre:</label>
           <Select
-            value={selectedTheatreId}
+            value={effectiveTheatreId}
             onChange={setSelectedTheatreId}
             style={{ width: 300, maxWidth: "100%" }}
             placeholder="Select a theatre"

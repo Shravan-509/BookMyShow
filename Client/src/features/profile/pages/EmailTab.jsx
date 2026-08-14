@@ -1,6 +1,7 @@
 import React,{ useEffect } from "react"
-import { Alert, Button, Card, Form, Input, Typography } from "antd"
+import { Button, Card, Form, Input, Typography } from "antd"
 import { LockOutlined, MailOutlined, EditOutlined } from "@ant-design/icons"
+import { notify } from "../../../utils/notificationUtils";
 import { useProfile } from "../../../hooks/useProfile";
 import { sanitizeInput, validateEmail } from "../../../utils/securityValidation";
 
@@ -31,7 +32,8 @@ const EmailTab = () => {
         const sanitizedPassword = sanitizeInput(values.password);
         
         if (!validateEmail(sanitizedEmail)) {
-            Alert("Please enter a valid email");
+            notify("warning", "Please enter a valid email");
+            
             return;
         }
         

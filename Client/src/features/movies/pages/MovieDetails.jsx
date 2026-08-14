@@ -30,7 +30,6 @@ const MovieInfo = memo(() => {
     const dispatch = useDispatch();
     const [activeTab, setActiveTab] = useState("showTimes")
     const [deviceType, setDeviceType] = useState('desktop')
-    const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024)
 
     const movieLoading = useSelector(selectMovieLoading);
     const movieError = useSelector(selectMovieError)
@@ -46,7 +45,6 @@ const MovieInfo = memo(() => {
 
         const handleResize = () => {
             const width = window.innerWidth
-            setWindowWidth(width)
             setDeviceType(getDeviceType(width))
         }
 
@@ -57,8 +55,6 @@ const MovieInfo = memo(() => {
 
     // Computed responsive values
     const isMobile = deviceType === 'mobile'
-    const isTablet = deviceType === 'tablet'
-    const isDesktop = deviceType === 'desktop'
 
     const formattedDuration = useMemo(() => {
         return movie?.duration ? formatDuration(movie.duration) : ""
