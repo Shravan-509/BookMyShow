@@ -8,7 +8,6 @@ const Theatre = require('../models/theatreSchema');
 
 const userInfo = async (req, res, next) => {
     try {
-        console.log(req);
         const userId = req.userId;
         const user = await User.findById(userId).select("-password -__v -resetToken -resetTokenExpiry");
         if (!user) 
@@ -398,7 +397,8 @@ const toggle2FA = async (req, res, next) => {
 
 const deleteAccount = async(req, res, next) => {
     try {
-        const {userId, password} = req?.body;
+        const {password} = req?.body;
+        const userId = req.userId;
         // Validation
         if(!password) 
         {

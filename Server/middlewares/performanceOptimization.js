@@ -72,7 +72,9 @@ const cacheMiddleware = (duration = 600) => {
       return next();
     }
 
-    const key = '__express__' + (req.originalUrl || req.url);
+    const authKey = req.userId || req.user?.userId || "anonymous";
+    const roleKey = req.user?.role || "none";
+    const key = `__express__${req.method}:${req.originalUrl || req.url}:${authKey}:${roleKey}`;
     const cachedData = cache.get(key);
 
     if (cachedData) {
@@ -86,7 +88,7 @@ const cacheMiddleware = (duration = 600) => {
     res.json = (data) => {
       cache.set(key, data, duration);
       res.set('X-Cache', 'MISS');
-      res.set('Cache-Control', `public, max-age=${duration}`);
+      res.set('Cache-Control', req.userId ? 'private, no-store' : `public, max-age=${duration}`);
       return originalJson(data);
     };
 
@@ -111,7 +113,7 @@ const createRateLimiter = (windowMs = 15 * 60 * 1000, max = 100) => {
     },
     keyGenerator: (req) => {
       // Use IP address as key
-      return req.user?.id || ipKeyGenerator(req);
+      return req.user?.userId || req.userId || ipKeyGenerator(req);
     },
   });
 };
@@ -200,8 +202,10 @@ const staticCacheHeaders = (req, res, next) => {
     res.set('Cache-Control', 'public, max-age=31536000, immutable'); // 1 year for versioned assets
   } else if (req.path.match(/\.(html)$/)) {
     res.set('Cache-Control', 'public, max-age=3600, must-revalidate'); // 1 hour for HTML
+  } else if (req.path.startsWith('/bms/v1/')) {
+    res.set('Cache-Control', 'private, no-store');
   } else {
-    res.set('Cache-Control', 'public, max-age=300, must-revalidate'); // 5 min for API
+    res.set('Cache-Control', 'no-store');
   }
   next();
 };

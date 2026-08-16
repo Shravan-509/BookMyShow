@@ -1,11 +1,14 @@
 const { getTheatres, addTheatre, updateTheatre, deleteTheatre } = require("../controllers/TheatreController");
-const { cache } = require("../middlewares/cache");
+const { validateRole } = require("../middlewares/authorization");
 
 const router = require("express").Router();
 
-router.post("/", addTheatre);
-router.patch("/:id", updateTheatre);
-router.delete("/:id", deleteTheatre);
-router.get("/", cache(60), getTheatres);
+router.post("/", validateRole(["admin", "partner"]), addTheatre);
+router.patch("/:id", validateRole(["admin", "partner"]), updateTheatre);
+router.delete("/:id", validateRole(["admin", "partner"]), deleteTheatre);
+router.get("/", validateRole(["admin", "partner"]), getTheatres);
+
+// getTheatreById()
+// getTheatresByCity(/city/:city)
 
 module.exports = router;

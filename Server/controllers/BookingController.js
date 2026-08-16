@@ -1,7 +1,9 @@
 const Booking = require("../models/bookingSchema");
 const Show = require("../models/showSchema");
+const Theatre = require("../models/theatreSchema");
 const Razorpay = require("razorpay");
 const crypto = require("crypto");
+const mongoose = require("mongoose");
 const { generateBookingId } = require("../utils/idGenerator");
 
 const path = require("path")
@@ -14,15 +16,53 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 })
 
+const validateSeatInput = (seats) => (
+    Array.isArray(seats)
+    && seats.length > 0
+    && seats.every((seat) => typeof seat === "string" && seat.trim().length > 0 && seat.length <= 20)
+    && new Set(seats).size === seats.length
+)
+
+const validateFeePerTicket = (feePerTicket) => (
+    Number.isFinite(feePerTicket)
+    && Number.isInteger(feePerTicket)
+    && feePerTicket >= 15
+    && feePerTicket <= 20
+)
+
+const calculateBookingPricing = (ticketPrice, seats, feePerTicket) => {
+    const authoritativeTicketPrice = Number(ticketPrice)
+
+    if (!Number.isFinite(authoritativeTicketPrice) || authoritativeTicketPrice < 0) {
+        throw new Error("Invalid show ticket price")
+    }
+
+    const ticketAmount = Number((authoritativeTicketPrice * seats.length).toFixed(2))
+    const baseConvenienceFee = feePerTicket * seats.length
+    const gst = Number((baseConvenienceFee * 0.18).toFixed(2))
+    const convenienceFee = Number((baseConvenienceFee + gst).toFixed(2))
+    const totalAmount = Number((ticketAmount + convenienceFee).toFixed(2))
+    const totalAmountInPaise = Math.round(totalAmount * 100)
+
+    return {
+        ticketAmount,
+        feePerTicket,
+        gst,
+        convenienceFee,
+        totalAmount,
+        totalAmountInPaise,
+    }
+}
+
 const validateSeats = async (req, res, next) => {
     try {
         const { showId, seats } = req.body
 
-        if(!showId || !seats || !Array.isArray(seats) || seats.length === 0)
+        if(!mongoose.Types.ObjectId.isValid(showId) || !validateSeatInput(seats))
         {
             return res.status(400).send({
                 success: false,
-                message: "Show Id and Seats Array are required"
+                message: "Valid show id and seats array are required"
             })
         }
 
@@ -80,12 +120,55 @@ const validateSeats = async (req, res, next) => {
 
 const createOrder = async (req, res, next) => {
     try {
-        const{ amount } = req.body;
+        const { showId, seats } = req.body;
+        const feePerTicket = Number(req.body.feePerTicket);
+
+        if(!mongoose.Types.ObjectId.isValid(showId))
+        {
+            return res.status(400).json({
+                success: false,
+                message: "Valid show id is required"
+            })
+        }
+
+        if(!validateSeatInput(seats))
+        {
+            return res.status(400).json({
+                success: false,
+                message: "Seats array is required"
+            })
+        }
+
+        if(!validateFeePerTicket(feePerTicket))
+        {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid convenience fee"
+            })
+        }
+
+        const show = await Show.findById(showId)
+
+        if(!show)
+        {
+            return res.status(404).json({
+                success: false,
+                message: "Show not found"
+            })
+        }
+
+        const pricing = calculateBookingPricing(show.ticketPrice, seats, feePerTicket)
 
         const options = {
-            amount: Math.round(amount * 100),
+            amount: pricing.totalAmountInPaise,
             currency: "INR",
-            receipt: "BMS_TICKET_" + new Date().getTime()
+            receipt: "BMS_TICKET_" + new Date().getTime(),
+            notes: {
+                userId: req.userId.toString(),
+                showId: show._id.toString(),
+                seatCount: seats.length.toString(),
+                feePerTicket: feePerTicket.toString(),
+            },
         }
 
         const order = await razorpay.orders.create(options);
@@ -93,7 +176,14 @@ const createOrder = async (req, res, next) => {
         res.send({
             success: true,
             message: "Order Creation Successfull",
-            data: order
+            data: {
+                ...order,
+                ticketAmount: pricing.ticketAmount,
+                feePerTicket: pricing.feePerTicket,
+                gst: pricing.gst,
+                convenienceFee: pricing.convenienceFee,
+                totalAmount: pricing.totalAmount,
+            }
         });
 
     } catch (error) {
@@ -111,14 +201,27 @@ const bookSeat = async (req, res, next) => {
             signature,
             seats,
             show: showId,
-            amount,
             seatType,
-            convenienceFee,
             gstPercent,
             paymentMethod,
             receipt,
         } = req.body;
         
+            if(!transactionId || !orderId || !signature)
+            {
+                return res.status(400).json({
+                    success: false,
+                    message: "Payment details are required",
+                })
+            }
+
+            if(!mongoose.Types.ObjectId.isValid(showId) || !validateSeatInput(seats))
+            {
+                return res.status(400).json({
+                    success: false,
+                    message: "Valid show id and seats array are required",
+                })
+            }
        
         const generatedSignature = crypto
             .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
@@ -127,7 +230,81 @@ const bookSeat = async (req, res, next) => {
 
             if (generatedSignature !== signature) 
             {
-                return res.json({ success: false, message: "Invalid payment" })
+                return res.status(400).json({ success: false, message: "Invalid payment" })
+            }
+
+            const [razorpayOrder, razorpayPayment, show] = await Promise.all([
+                razorpay.orders.fetch(orderId),
+                razorpay.payments.fetch(transactionId),
+                Show.findById(showId),
+            ])
+
+            if(!show)
+            {
+                return res.status(404).json({
+                    success: false,
+                    message: "Show not found",
+                })
+            }
+
+            if(razorpayPayment.order_id !== orderId)
+            {
+                return res.status(400).json({
+                    success: false,
+                    message: "Payment order mismatch",
+                })
+            }
+
+            if(razorpayPayment.status !== "captured")
+            {
+                return res.status(400).json({
+                    success: false,
+                    message: "Payment is not captured",
+                })
+            }
+
+            const orderNotes = razorpayOrder.notes || {}
+            const feePerTicket = Number(orderNotes.feePerTicket)
+
+            if(
+                orderNotes.userId !== req.userId.toString()
+                || orderNotes.showId !== showId.toString()
+                || Number(orderNotes.seatCount) !== seats.length
+                || !validateFeePerTicket(feePerTicket)
+            )
+            {
+                return res.status(400).json({
+                    success: false,
+                    message: "Payment order does not match booking request",
+                })
+            }
+
+            const pricing = calculateBookingPricing(show.ticketPrice, seats, feePerTicket)
+
+            if(
+                Number(razorpayOrder.amount) !== pricing.totalAmountInPaise
+                || Number(razorpayPayment.amount) !== pricing.totalAmountInPaise
+            )
+            {
+                return res.status(400).json({
+                    success: false,
+                    message: "Payment amount does not match booking amount",
+                })
+            }
+
+            const existingBooking = await Booking.findOne({
+                $or: [
+                    { transactionId },
+                    { orderId },
+                ],
+            }).select("_id")
+
+            if(existingBooking)
+            {
+                return res.status(409).json({
+                    success: false,
+                    message: "Payment has already been used for a booking",
+                })
             }
 
             // 1) Atomically reserve seats to prevent double booking
@@ -162,10 +339,10 @@ const bookSeat = async (req, res, next) => {
                 seatType: seatType || "Standard",
                 transactionId,
                 orderId,
-                receipt,
+                receipt: razorpayOrder.receipt || receipt,
                 bookingId,
-                amount: amount / 100,
-                convenienceFee: convenienceFee ?? 0,
+                amount: pricing.totalAmount,
+                convenienceFee: pricing.convenienceFee,
                 gstPercent: gstPercent ?? 18,
                 paymentMethod: paymentMethod || "N/A",
                 ticketStatus: "Confirmed",
@@ -179,6 +356,15 @@ const bookSeat = async (req, res, next) => {
             {
                 // If booking save fails, rollback the seat reservation
                 await Show.findByIdAndUpdate(showId, { $pull: { bookedSeats: { $in: seats } } })
+
+                if(err.code === 11000)
+                {
+                    return res.status(409).json({
+                        success: false,
+                        message: "Payment has already been used for a booking",
+                    })
+                }
+
                 throw err
             }
             
@@ -241,7 +427,15 @@ const bookSeat = async (req, res, next) => {
 const getBookingsByUserId = async(req, res, next) => {
     try 
     {
-        const populatedBookings = await Booking.find({user : req?.params?.id})
+        if(req.params.id !== req.userId.toString())
+        {
+            return res.status(403).json({
+                success: false,
+                message: "Access denied"
+            })
+        }
+
+        const populatedBookings = await Booking.find({user : req.userId})
             .sort({ createdAt: -1 })
             .populate({
                 path: "show",
@@ -356,7 +550,21 @@ const getBookingsByTheatre = async (req, res, next) => {
   try {
     const { theatreId } = req.params
 
-    const Show = require("../models/showSchema")
+    const theatre = await Theatre.findById(theatreId).select("owner")
+
+    if (!theatre) {
+      return res.status(404).json({
+        success: false,
+        message: "Theatre not found",
+      })
+    }
+
+    if (req.user?.role === "partner" && theatre.owner?.toString() !== req.userId.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied",
+      })
+    }
 
     // Find all shows for this theatre
     const shows = await Show.find({ theatre: theatreId }).select("_id")
@@ -425,8 +633,12 @@ const getRevenueByOwner = async (req, res, next) => {
   try {
     const { ownerId } = req.params
 
-    const Theatre = require("../models/theatreSchema")
-    const Show = require("../models/showSchema")
+    if (req.user?.role === "partner" && ownerId !== req.userId.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied",
+      })
+    }
 
     // Find all theatres owned by this partner
     const theatres = await Theatre.find({ owner: ownerId }).select("_id name")

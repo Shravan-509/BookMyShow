@@ -1,8 +1,35 @@
 const Show = require("../models/showSchema");
+const Theatre = require("../models/theatreSchema");
+
+const canManageTheatre = async (req, theatreId) => {
+    const theatre = await Theatre.findById(theatreId).select("owner")
+
+    if(!theatre)
+    {
+        return { allowed: false, status: 404, message: "Theatre not found" }
+    }
+
+    if(req.user?.role === "partner" && theatre.owner?.toString() !== req.userId.toString())
+    {
+        return { allowed: false, status: 403, message: "Access denied" }
+    }
+
+    return { allowed: true, theatre }
+}
 
 const addShow = async(req, res, next) => {
     try {
         const {name} = req?.body;
+        const access = await canManageTheatre(req, req.body.theatre)
+
+        if(!access.allowed)
+        {
+            return res.status(access.status).json({
+                success: false,
+                message: access.message,
+            })
+        }
+
         const newShow = new Show(req?.body);
         await newShow.save();
         return res.send({
@@ -20,6 +47,39 @@ const updateShow = async(req, res, next) => {
     try 
     {
         const {name} = req?.body;
+        const existingShow = await Show.findById(req?.params?.id).select("theatre")
+
+        if(!existingShow)
+        {
+            return res.send({
+                    success: false,
+                    message: `${name} not found`,
+                });
+        }
+
+        const currentTheatreAccess = await canManageTheatre(req, existingShow.theatre)
+
+        if(!currentTheatreAccess.allowed)
+        {
+            return res.status(currentTheatreAccess.status).json({
+                success: false,
+                message: currentTheatreAccess.message,
+            })
+        }
+
+        if(req.body.theatre && req.body.theatre.toString() !== existingShow.theatre.toString())
+        {
+            const targetTheatreAccess = await canManageTheatre(req, req.body.theatre)
+
+            if(!targetTheatreAccess.allowed)
+            {
+                return res.status(targetTheatreAccess.status).json({
+                    success: false,
+                    message: targetTheatreAccess.message,
+                })
+            }
+        }
+
         const updatedShow = await Show.findByIdAndUpdate(
             req?.params?.id, 
             req?.body, 
@@ -50,6 +110,26 @@ const updateShow = async(req, res, next) => {
 const deleteShow = async(req, res, next) => {
     try
     {
+        const show = await Show.findById(req?.params?.id).select("theatre")
+
+        if(!show)
+        {
+            return res.send({
+                    success: false,
+                    message: "Show not found",
+                });
+        }
+
+        const access = await canManageTheatre(req, show.theatre)
+
+        if(!access.allowed)
+        {
+            return res.status(access.status).json({
+                success: false,
+                message: access.message,
+            })
+        }
+
         const deletedShow = await Show.findByIdAndDelete(req?.params?.id);
         if(!deletedShow)
         {
@@ -101,6 +181,16 @@ const getAllShowsByTheatre = async(req, res, next) => {
     try
     {
         const theatreId = req.params.id;
+        const access = await canManageTheatre(req, theatreId)
+
+        if(!access.allowed)
+        {
+            return res.status(access.status).json({
+                success: false,
+                message: access.message,
+            })
+        }
+
         const shows = await Show.find({theatre: theatreId}).populate("movie");
         if(!shows)
         {

@@ -10,7 +10,7 @@ const cache = new NodeCache({
 })
 
 function makeKey(req) {
-  // Keyed by method + path + query string; exclude auth headers so response cache is shared
+  // Shared cache is only mounted on catalogue-style GET routes whose output does not depend on user identity.
   return `${req.method}:${req.originalUrl}`
 }
 
@@ -28,6 +28,7 @@ function cacheMiddleware(ttlSec = 60) {
       res.status(hit.status)
       Object.entries(hit.headers || {}).forEach(([k, v]) => res.setHeader(k, v))
       res.setHeader("X-Cache", "HIT")
+      res.setHeader("Cache-Control", `public, max-age=${ttlSec}`)
       return res.send(hit.body)
     }
 
@@ -50,6 +51,7 @@ function cacheMiddleware(ttlSec = 60) {
         console.error("[Cache] Failed to cache response:", error.message)
       }
       res.setHeader("X-Cache", "MISS")
+      res.setHeader("Cache-Control", `public, max-age=${ttlSec}`)
       return originalSend(body)
     }
 

@@ -22,11 +22,15 @@ const bookingSchema = new mongoose.Schema(
         },
         transactionId: {
             type: String,
-            required: true
+            required: true,
+            unique: true,
+            index: true,
         },
         orderId: {
             type: String,
-            required: true
+            required: true,
+            unique: true,
+            index: true,
         },
         receipt: {
             type: String,

@@ -13,7 +13,12 @@ const addTheatre = async(req, res, next) => {
                     message: `${name} Theatre already exists`
                 });
         }
-        const newTheatre = new Theatre(req?.body);
+        const theatrePayload = {
+            ...req.body,
+            owner: req.user?.role === "partner" ? req.userId : req.body.owner,
+        }
+
+        const newTheatre = new Theatre(theatrePayload);
         await newTheatre.save();
         res.send({
             success: true,
@@ -30,9 +35,31 @@ const updateTheatre = async(req, res, next) => {
     try {
         const id = req?.params.id;
         const {name} = req?.body;
+        const theatre = await Theatre.findById(id).select("owner")
+
+        if(!theatre){
+            return res.send({
+                success: false,
+                message: `${name} Theatre not found!`,
+            });
+        }
+
+        if(req.user?.role === "partner" && theatre.owner?.toString() !== req.userId.toString())
+        {
+            return res.status(403).json({
+                success: false,
+                message: "Access denied"
+            })
+        }
+
+        const theatrePayload = {
+            ...req.body,
+            owner: req.user?.role === "partner" ? req.userId : req.body.owner,
+        }
+
         const updatedTheatre = await Theatre.findByIdAndUpdate(
             id, 
-            req?.body, 
+            theatrePayload, 
             {
                 returnDocument: "after",
                 runValidators: true
@@ -61,6 +88,24 @@ const updateTheatre = async(req, res, next) => {
 const deleteTheatre = async(req, res, next) => {
     try {
         const id = req?.params.id;
+        const theatre = await Theatre.findById(id).select("owner")
+
+        if(!theatre)
+        {
+            return res.send({
+                    success: false,
+                    message: "Theatre not found!",
+                });
+        }
+
+        if(req.user?.role === "partner" && theatre.owner?.toString() !== req.userId.toString())
+        {
+            return res.status(403).json({
+                success: false,
+                message: "Access denied"
+            })
+        }
+
         const deletedTheatre = await Theatre.findByIdAndDelete(id)
         if(!deletedTheatre)
         {

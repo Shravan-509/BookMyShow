@@ -1,14 +1,15 @@
 
 const router = require("express").Router();
 const { bookSeat, createOrder, getBookingsByUserId, validateSeats, getAllBookings, getBookingsByTheatre, getRevenueByOwner } = require("../controllers/BookingController");
+const { validateRole } = require("../middlewares/authorization");
 
 router.post("/validateSeats", validateSeats)
 router.post("/bookSeat", bookSeat);
 router.post("/createOrder", createOrder);
+router.get("/admin/all", validateRole(["admin"]), getAllBookings)
+router.get("/theatre/:theatreId", validateRole(["admin", "partner"]), getBookingsByTheatre)
+router.get("/revenue/:ownerId", validateRole(["admin", "partner"]), getRevenueByOwner)
 router.get("/:id", getBookingsByUserId);
-router.get("/admin/all", getAllBookings)
-router.get("/theatre/:theatreId", getBookingsByTheatre)
-router.get("/revenue/:ownerId", getRevenueByOwner)
 
 // createBooking()
 // getBookings()

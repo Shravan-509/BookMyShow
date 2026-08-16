@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
+const User = require("../models/userSchema");
 
-const validateJWT = (req, res, next) => {
+const validateJWT = async (req, res, next) => {
     try {
         // Get token from cookies or Authorization header
         const access_token = req.cookies.access_token || req.header("authorization")?.split(" ")[1] || req.header("x-auth-token");
@@ -17,9 +18,14 @@ const validateJWT = (req, res, next) => {
             return res.status(401).json({ success: false, message: 'Unauthorized: Invalid token' });
         }
 
+        const user = await User.findById(decoded.userId).select("role");
+        if (!user) {
+            return res.status(401).json({ success: false, message: 'Unauthorized: User not found' });
+        }
+
         // Attach userId to request for downstream use
         req.userId = decoded.userId;
-        req.user = { userId: decoded.userId };
+        req.user = { userId: decoded.userId, role: user.role };
         
         next();
     } catch (error) {
