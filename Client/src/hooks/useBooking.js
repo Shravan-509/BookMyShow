@@ -1,3 +1,4 @@
+import { useCallback } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { 
     bookSeatsRequest,
@@ -23,25 +24,25 @@ export const useBooking = () => {
     const userBookings = useSelector(selectUserBookings)
 
     // Actions
-    const validateSeatBooking = (payload) => {
+    const validateSeatBooking =  useCallback((payload) => {
         dispatch(validateSeatBookingRequest(payload))
-    }
+    }, [dispatch])
 
-    const bookSeats = (payload) => {
+    const bookSeats =  useCallback((payload) => {
         dispatch(bookSeatsRequest(payload))
-    }
+    }, [dispatch])
 
-    const getUserBookings = (userId) => {
+    const getUserBookings =  useCallback((userId) => {
         dispatch(getUserBookingsRequest(userId))
-    }
+    }, [dispatch])
 
-    const clearValidation = () => {
+    const clearValidation =  useCallback(() => {
         dispatch(clearValidationResult())
-    }
+    }, [dispatch])
 
-    const clearBooking = () => {
+    const clearBooking =  useCallback(() => {
         dispatch(clearBookingData())
-    }
+    }, [dispatch])
 
     return {
         // State

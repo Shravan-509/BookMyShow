@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState} from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import { Alert, Button, Card, Collapse, Divider, Radio, Space, Spin, Typography } from 'antd'
 import { 
     BankOutlined, 
@@ -14,8 +14,9 @@ import {
 } from '@ant-design/icons';
 import { 
     selectValidationResult, validateSeatBookingRequest,
-    selectRazorpayOrder, selectIsPaymentProcessing, selectPaymentError, createRazorpayOrderRequest,
-    selectBookingLoading, selectBookingData, bookSeatsRequest
+    selectRazorpayOrder, selectIsPaymentProcessing, selectPaymentError, 
+    createRazorpayOrderRequest, bookSeatsRequest, clearValidationResult, clearBookingData,
+    selectBookingData, selectBookingError
 } from '../../../redux/slices/bookingSlice';
 import { useAuth } from '../../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -24,6 +25,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { formatDate, formatParsedTime } from '../../../utils/dateFormatter';
 const { Title ,Text, Paragraph } = Typography;
 const { Panel } = Collapse; 
+
 const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID;
 
 const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
@@ -35,29 +37,84 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
     const razorpayOrder = useSelector(selectRazorpayOrder);
     const isPaymentProcessing = useSelector(selectIsPaymentProcessing);
     const paymentError = useSelector(selectPaymentError);
-    const validationLoading= useSelector(selectBookingLoading);
     const bookingData = useSelector(selectBookingData);
+    const bookingError = useSelector(selectBookingError)
 
-    console.log(razorpayKey);
+    /*
+    * paymentStatus controls what the user sees.
+    *
+    * ""           -> normal payment screen
+    * "processing" -> payment workflow in progress
+    * "success"    -> booking confirmed
+    * "failed"     -> workflow failed
+    */
+    const [paymentStatus, setPaymentStatus] = useState("")
 
-    // const { validateSeatBooking, validationResult, loading: validationLoading } = useBooking()
-    // const [isPaymentProcessing, setIsProcessingPayment] = useState(false)
+    /*
+    * paymentStage controls the async workflow.
+    *
+    * idle
+    * validating
+    * creating-order
+    * checkout
+    * booking
+    */
+    const [paymentStage, setPaymentStage] = useState("idle")
 
-    const [paymentStatus, setPaymentStatus] = useState("") // 'processing', 'success', 'failed'
     const [paymentMethod, setPaymentMethod] = useState("UPI")
     const [deviceType, setDeviceType] = useState('desktop')
     const [error, setError] = useState(null)
     const [retryCount, setRetryCount] = useState(0)
     const maxRetries = 3
 
-    const [feePerTicket] = useState(Math.floor(Math.random() * (20 - 15 + 1)) + 15);
-    const ticketAmount = useMemo(() => show.ticketPrice * seats.length, [show, seats]);
-    const baseAmount = useMemo(() => feePerTicket * seats.length, [feePerTicket, seats]);
-    const gst = useMemo(() => baseAmount * 0.18, [baseAmount]);
-    const convenienceFee = useMemo(() => baseAmount + gst, [baseAmount, gst]);
-    const totalAmount = useMemo(() => ticketAmount +  convenienceFee, [ticketAmount, convenienceFee]);
+    /*
+    * Prevent the same Razorpay order from being opened more than once
+    * if the component happens to re-render.
+    */
+    const openedOrderIdRef = useRef(null)
 
-    // Enhanced device detection with debouncing
+    /*
+    * Keep the payment ID available for failure/support messages
+    * after Razorpay completes.
+    */
+    const paymentIdRef = useRef(null)
+
+    const bookingStartedRef = useRef(false)
+
+    const [feePerTicket] = useState(
+        () => Math.floor(Math.random() * (20 - 15 + 1)) + 15
+    ) 
+
+    const ticketAmount = useMemo(
+        () => show.ticketPrice * seats.length, 
+        [show.ticketPrice, seats.length]
+    )
+
+    const baseAmount = useMemo(
+        () => feePerTicket * seats.length, 
+        [feePerTicket, seats.length]
+    )
+
+    const gst = useMemo(
+        () => baseAmount * 0.18, 
+        [baseAmount]
+    )
+
+    const convenienceFee = useMemo(
+        () => baseAmount + gst, 
+        [baseAmount, gst]
+    )
+
+    const totalAmount = useMemo(
+        () => ticketAmount +  convenienceFee, 
+        [ticketAmount, convenienceFee]
+    )
+
+    /*
+    * ============================================================
+    * Responsive handling
+    * ============================================================
+    */
     useEffect(() => {
         const getDeviceType = (width) => {
             if (width < 640) return 'mobile'
@@ -66,8 +123,9 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
         }
 
         const handleResize = () => {
-            const width = window.innerWidth
-            setDeviceType(getDeviceType(width))
+            setDeviceType(
+                getDeviceType(window.innerWidth)
+            )
         }
 
         // Initial check
@@ -91,6 +149,14 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
     const isMobile = deviceType === 'mobile'
     const isTablet = deviceType === 'tablet'
 
+    const paymentInProgress = paymentStatus === "processing" || isPaymentProcessing
+
+    /*
+    * ============================================================
+    * Load Razorpay SDK
+    * ============================================================
+    */
+
     const loadRazorpayScript = useCallback(() => {
         return new Promise((resolve) => {
             // Check if script already exists
@@ -99,13 +165,36 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
                 return;
             }
 
+            /*
+            * Prevent duplicate script tags if the user retries
+            * while the previous script is still present.
+            */
+            const existingScript =
+                document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]'
+            )
+            if (existingScript) 
+            {
+                existingScript.addEventListener(
+                    "load",
+                    () => resolve(true),
+                    { once: true }
+                )
+
+                existingScript.addEventListener(
+                    "error",
+                    () => resolve(false),
+                    { once: true }
+                )
+
+                return
+            }
+
             const script = document.createElement("script");
             script.src = "https://checkout.razorpay.com/v1/checkout.js";
             script.async = true;
             script.defer = true;
 
             script.onload = () => {
-                console.log("Razorpay SDK loaded successfully");
                 resolve(true);
             };
 
@@ -118,269 +207,385 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
         });
     }, []);
 
-    const validateSeatAvailability = useCallback(async () => {
-        try 
-        {
-            console.log("Validating seat availability for: ", seats)
-            setError(null)
-            
-            // Use Redux action to validate seats
-            dispatch(validateSeatBookingRequest({ showId: show._id, seats }))
-            // validateSeatBooking({ showId: show._id, seats })
-
-            // Wait for validation result
-            return new Promise((resolve) => {
-                let attempts = 0
-                const maxAttempts = 50 
-
-                const checkResult = () => {
-                    attempts++
-                    console.log(`Validation attempt ${attempts}:`, validationResult)
-
-                    if(validationResult)
-                    {
-                        if (validationResult.success) 
-                        {
-                            resolve(true)
-                        } 
-                        else 
-                        {
-                            setError(validationResult.message || "Seats are no longer available")
-                            resolve(false)
-                        }
-                    }
-                    else if(!validationLoading && attempts > 10)
-                    {
-                        // If not loading and we've waited enough, assume failure
-                        setError("Unable to validate seat availability. Please try again.")
-                        resolve(false)
-                    }
-                    else if (attempts >= maxAttempts) 
-                    {
-                        setError("Validation timeout. Please try again.")
-                        resolve(false)
-                    }
-                    else
-                    {
-                        // Still loading check again
-                        setTimeout(checkResult, 100)
-                    }
-                }
-                checkResult()
-            })
-        } 
-        catch (error) 
-        {
-            console.error("Seat validation error: ", error)
-            setError("Failed to validate seats. Please try again.")
-            return false
-        }
-    }, [seats, show._id, validationResult, validationLoading, dispatch]);
-
-    const handleRazorPaymentSucess = useCallback(
-        async(payment) => {
-            try {
-                console.log("Processing booking after succesful payment: ", payment);
-
-                // Send these to backend to verify & book
-                const { razorpay_payment_id, razorpay_order_id, razorpay_signature } = payment;
-
-                const { amount: order_amount, receipt: order_receipt } = razorpayOrder;
-
-                const bookingPayload = {
-                    show: show._id,
-                    user: user.id,
-                    seats,
-                    transactionId: razorpay_payment_id,
-                    orderId: razorpay_order_id,
-                    receipt: order_receipt,
-                    amount: order_amount,
-                    convenienceFee : convenienceFee,
-                    signature: razorpay_signature,
-                }
-
-                dispatch(bookSeatsRequest(bookingPayload))
-
-                return new Promise((resolve) => {
-                    let attempts = 0
-                    const maxAttempts = 50
-
-                    const checkBookingStatus = () => {
-                        attempts++
-                        console.log(`Booking Attempt ${attempts}: `, bookingData)
-                        if(bookingData)
-                        {
-                            setPaymentStatus("success");
-                            notify("success", "Booking Confirmed! Redirecting...");
-
-                            setTimeout(()=> {
-                                navigate("/my-profile/purchase-history");
-                            }, 1500) 
-                            resolve(true);                           
-                        }
-                        else if (paymentError && attempts > 5) {
-                            notify("error", "Booking failed after payment. Please contact support.")
-                            setPaymentStatus("failed")
-                            resolve(false)
-                        }
-                        else if (attempts >= maxAttempts) 
-                        {
-                            notify("warning", "Booking confirmation timeout. Your seats are reserved.")
-                            setPaymentStatus("success")
-                            setTimeout(() => {
-                                navigate("/my-profile/purchase-history");
-                            }, 2000)
-                            resolve(true)
-                        }
-                        else
-                        {
-                            setTimeout(checkBookingStatus, 100)
-                        }
-                    }
-                    checkBookingStatus()
-                })
-            } catch (error) {
-                console.log("Error in Booking after payment: ", error);
-                notify(
-                    "error", 
-                    `Booking failed. Please contact support with your payment ID: ${payment?.razorpay_payment_id}`
-                );
-                setPaymentStatus("failed");
-            }
-        },
-        [razorpayOrder, show._id, user.id, seats, convenienceFee, dispatch, bookingData, paymentError, navigate]
-    );
+    /*
+    * ============================================================
+    * STEP 1
+    * User clicks Pay -> start seat validation
+    * ============================================================
+    */
 
     const handleRazorPay = useCallback(async () => {
-        if(isPaymentProcessing)
+        if(isPaymentProcessing || paymentStatus === "processing")
         {
             notify("warning", "Payment is already in progress. Please wait...");
             return;
         }
 
-        try 
+        if (!show?._id || !seats?.length) 
         {
-            setPaymentStatus("processing");
-            setError(null);
+            notify("error","Invalid booking information. Please select your seats again.")
+            return
+        }
 
-            const seatsAvailable = await validateSeatAvailability();
+        setError(null)
+        setRetryCount(0)
+        setPaymentStatus("processing")
+        setPaymentStage("validating")
 
-            if(!seatsAvailable)
-            {
-                notify("error", error || "Selected seats are no longer available. Please select different seats.");
-                setPaymentStatus("failed");
-                return;
+        /*
+        * Clear stale values from any previous payment attempt.
+        */
+        dispatch(clearValidationResult())
+        dispatch(clearBookingData())
+
+        bookingStartedRef.current = false
+        paymentIdRef.current = null
+        openedOrderIdRef.current = null
+        dispatch(validateSeatBookingRequest({ showId: show._id, seats }))
+
+    }, [isPaymentProcessing, paymentStatus, show?._id, seats, dispatch])
+
+    /*
+    * ============================================================
+    * STEP 2
+    * React to seat-validation SUCCESS
+    * ============================================================
+    */
+    useEffect(() => {
+        if (paymentStage !== "validating") 
+        {
+            return
+        }
+
+        if (!validationResult) {
+            return
+        }
+
+        if (!validationResult.success) 
+        {
+            setError(validationResult.message || "Selected seats are no longer available.")
+            setPaymentStatus("failed")
+            setPaymentStage("idle")
+            return
+        }
+
+        /*
+        * Important:
+        * We are no longer reading razorpayOrder immediately
+        * after dispatch.
+        *
+        * The next useEffect waits for Redux to actually receive it.
+        */
+        setPaymentStage("creating-order")
+
+        dispatch(createRazorpayOrderRequest({
+            showId: show._id,
+            seats,
+            feePerTicket,
+        }))
+
+        /*
+        * Prevent this same validation result from being
+        * reused later.
+        */
+        dispatch(clearValidationResult())
+    }, [paymentStage, validationResult, show._id, seats, feePerTicket, dispatch])
+
+    /*
+    * ============================================================
+    * STEP 2 failure
+    *
+    * Validation failures in bookingSlice use the generic
+    * booking error field.
+    * ============================================================
+    */
+
+    useEffect(() => {
+        if (paymentStage !== "validating") 
+        {
+            return
+        }
+
+        if (!bookingError) {
+            return
+        }
+
+        setError(bookingError || "Unable to validate the selected seats.")
+        setPaymentStatus("failed")
+        setPaymentStage("idle")
+    }, [paymentStage, bookingError])
+
+    /*
+    * ============================================================
+    * STEP 3 failure
+    * Payment order creation failed
+    * ============================================================
+    */
+
+    useEffect(() => {
+        if (paymentStage !== "creating-order") 
+        {
+            return
+        }
+
+        if (!paymentError) {
+            return
+        }
+
+        setError(paymentError || "Failed to create payment order.")
+        setPaymentStatus("failed")
+        setPaymentStage("idle")
+    }, [paymentStage, paymentError])
+
+    /*
+    * ============================================================
+    * STEP 3
+    * Razorpay order actually arrived in Redux -> open Checkout
+    * ============================================================
+    */
+
+    useEffect(() => {
+        if (paymentStage !== "creating-order") 
+        {
+            return
+        }
+
+        if (!razorpayOrder?.id) 
+        {
+            return
+        }
+
+        /*
+        * Protect against accidentally opening the same
+        * Razorpay order twice.
+        */
+        if (openedOrderIdRef.current === razorpayOrder.id) 
+        {
+            return
+        }
+
+        openedOrderIdRef.current = razorpayOrder.id
+
+        let cancelled = false
+
+        const openRazorpayCheckout =
+            async () => {
+                const loaded = await loadRazorpayScript()
+
+                if (cancelled) {
+                    return
+                }
+
+                if (!loaded || !window.Razorpay) 
+                {
+                    setError("Unable to initialize Razorpay. Please try again.")
+                    setPaymentStatus("failed")
+                    setPaymentStage("idle")
+                    return
+                }
+
+                setPaymentStage("checkout")
+
+                const options = {
+                    key: razorpayKey,
+                    /*
+                    * Razorpay order amount comes directly from
+                    * the newly-created Redux order.
+                    */
+                    amount: razorpayOrder.amount,
+                    currency: "INR",
+                    name: "BookMyShow",
+                    description: `Movie Ticket Booking - ${show.movie.movieName}`,
+                    order_id: razorpayOrder.id,
+
+                    /*
+                    * ====================================================
+                    * STEP 4
+                    * Razorpay payment succeeded
+                    * ====================================================
+                    */
+                    handler: (response) => {
+                        paymentIdRef.current = response.razorpay_payment_id
+                        bookingStartedRef.current = true
+
+                        const bookingPayload = {
+                            show: show._id,
+                            user: user.id,
+                            seats,
+                            transactionId: response.razorpay_payment_id,
+                            orderId: response.razorpay_order_id,
+                            receipt: razorpayOrder.receipt,
+                            amount: razorpayOrder.amount,
+                            feePerTicket,
+                            convenienceFee: razorpayOrder.convenienceFee ?? convenienceFee,
+                            signature:
+                            response.razorpay_signature,
+                        }
+
+                        /*
+                        * Clear any old booking result before the
+                        * new booking begins.
+                        */
+                        dispatch(clearBookingData())
+                        setPaymentStage("booking")
+                        dispatch(bookSeatsRequest(bookingPayload))
+                    },
+
+                    modal: { 
+                        ondismiss: () => {
+                            /*
+                            * Only treat this as cancellation if
+                            * booking confirmation has not already
+                            * started.
+                            */
+                            if (!bookingStartedRef.current)
+                            {
+                                setPaymentStatus("")
+                                setPaymentStage("idle")
+                                notify("info", "Payment cancelled")
+                            }
+                        },
+                    },
+
+                    prefill: {
+                        name: user?.name || "",
+                        email: user?.email || "",
+                        contact: user?.phone || "",
+                    },
+
+                    theme: {
+                        color: "#F37254",
+                    },
+
+                    notes: {
+                        booking_type: "movie_ticket",
+                        show_id: show._id,
+                        seats: seats.join(","),
+                    },
+                }
+
+                const paymentObject = new window.Razorpay(options)
+                paymentObject.open()
             }
 
-            // Create payment order
-            const amount = Number.parseFloat(totalAmount.toFixed(2));
-        
-            dispatch(createRazorpayOrderRequest({ amount }));
+            openRazorpayCheckout()
 
-            const { id: order_id, amount: order_amount } = razorpayOrder;
-
-            return new Promise((resolve) => {
-                    let attempts = 0
-                    const maxAttempts = 50
-
-                    const checkOrderCreation = () => {
-                        attempts++
-                        if(razorpayOrder && razorpayOrder.id)
-                        {
-                            loadRazorpayScript().then((loaded) => {
-                                if(loaded && window.Razorpay)
-                                {
-                                    
-                                    const options = {
-                                        key: razorpayKey, // Razorpay key
-                                        amount: order_amount,
-                                        currency: "INR",
-                                        name: "BookMyShow",
-                                        description: `Movie Ticket Booking - ${show.movie.movieName}`,
-                                        order_id,
-                                        handler: async function (response) {
-                                            console.log("Payment Successful, processing booking...", response.razorpay_payment_id)
-                                            await handleRazorPaymentSucess(response)
-                                        },
-                                        modal: {
-                                            ondismiss: () => {
-                                                console.log("Payment modal dismissed");
-                                                // setIsProcessingPayment(false);
-                                                // setPaymentStatus("");
-                                                notify("info", "Payment cancelled");
-                                            }
-                                        },
-                                        prefill: {
-                                            name: user?.name || "",
-                                            email: user?.email || "",
-                                            contact: user?.phone || "",
-                                        },
-                                        theme: {
-                                            color: "#F37254",
-                                        },
-                                        notes: {
-                                            booking_type: "movie_ticket",
-                                            show_id: show._id,
-                                            seats: seats.join(",")
-                                        }
-                                    }
-                                    const paymentObject = new window.Razorpay(options);
-                                    paymentObject.open();
-                                }
-                            })
-                            resolve(true);
-                        }
-                        else if(paymentError && attempts > 5)
-                        {
-                            notify("error", paymentError || "Failed to create payment order");
-                            setPaymentStatus("failed");
-                            resolve(false);
-                        }
-                        else if(attempts >= maxAttempts)
-                        {
-                            notify("error", "Payment initialization timeout");
-                            setPaymentStatus("failed");
-                            resolve(false);
-                        }
-                        else
-                        {
-                            setTimeout(checkOrderCreation, 100);
-                        }
-                    }
-                    checkOrderCreation()
-                })
-        } 
-        catch (error) 
-        {
-            console.log("Payment error: ", error);
-            setError(error.message);
-            notify("error", error.message);
-            setPaymentStatus("failed");
-        }
-    }, [
-        isPaymentProcessing,
-        validateSeatAvailability,
-        totalAmount,
-        razorpayOrder,
-        paymentError,
-        error,
-        loadRazorpayScript,
-        show._id,
-        show.movie.movieName,
-        user,
-        seats,
-        handleRazorPaymentSucess,
-        dispatch
+            return () => { cancelled = true }
+        }, [
+            paymentStage,
+            razorpayOrder,
+            loadRazorpayScript,
+            show._id,
+            show.movie.movieName,
+            user,
+            seats,
+            feePerTicket,
+            convenienceFee,
+            dispatch,
     ])
 
-    const renderPaymentStatus = useCallback(() => {
-        if(paymentStatus === "processing")
+    /*
+    * ============================================================
+    * STEP 5
+    * Backend verified Razorpay signature and booking succeeded
+    * ============================================================
+    */
+
+    useEffect(() => {
+        if (paymentStage !== "booking") 
         {
+            return
+        }
+
+        if (!bookingData) {
+            return
+        }
+
+        setPaymentStatus("success")
+        // setPaymentStage("idle")
+
+        /*
+        * bookSeatsSaga already sends the success notification,
+        * therefore we do not send another duplicate toast here.
+        */
+
+        const timer = setTimeout(() => {
+            navigate("/my-profile/purchase-history")
+        }, 1500)
+
+        return () => {
+            clearTimeout(timer)
+        }
+    }, [
+        paymentStage,
+        bookingData,
+        navigate,
+    ])
+
+    /*
+    * ============================================================
+    * STEP 5 failure
+    * Payment succeeded but backend booking/signature verification
+    * failed.
+    * ============================================================
+    */
+
+    useEffect(() => {
+        if (paymentStage !== "booking") {
+            return
+        }
+
+        if (!bookingError) {
+            return
+        }
+
+        const paymentReference =paymentIdRef.current
+
+        const message =
+            paymentReference
+                ? `Booking failed after payment. Please contact support with your payment ID: ${paymentReference}`
+                : "Booking could not be confirmed. Please contact support."
+
+        setError(message)
+        setPaymentStatus("failed")
+        setPaymentStage("idle")
+    }, [
+        paymentStage,
+        bookingError,
+    ])
+
+    /*
+    * ============================================================
+    * UI Helpers
+    * ============================================================
+    */
+
+    const renderPaymentStatus = useCallback(() => {
+        if (paymentStatus === "processing") 
+        {
+            let processingMessage = "Initializing payment...";
+
+            if (paymentStage === "validating") 
+            {
+                processingMessage = "Validating selected seats...";
+            } 
+            else if (paymentStage === "creating-order") 
+            {
+                processingMessage = "Creating secure payment order...";
+            } 
+            else if (paymentStage === "checkout") 
+            {
+                processingMessage = "Complete the payment in the Razorpay window...";
+            } 
+            else if (paymentStage === "booking") 
+            {
+                processingMessage = "Payment received. Confirming your booking...";
+            }
             return (
                 <div className='text-center py-6'>
                     <Spin indicator={<LoadingOutlined style={{fontSize: 32}} spin />} />
-                    <div className='mt-3 text-gray-600 text-base'>Initializing payment...</div>
-                    <div className="mt-1 text-gray-500 text-sm">Please wait while we process your request</div>
+                    <div className='mt-3 text-gray-600 text-base'>{ processingMessage }</div>
+                    <div className="mt-1 text-gray-500 text-sm">Please do not refresh or close this page.</div>
                 </div>
             )
         }
@@ -391,7 +596,7 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
                 <div className='text-center py-6'>
                     <CheckCircleOutlined style={{fontSize: 32, color: '#52c41a'}} />
                     <div className='mt-3 text-green-600 text-base font-medium'>
-                        Payment Successful! Confirming your booking...
+                         Booking Confirmed!
                     </div>
                     <div className='mt-2 text-gray-500 text-sm'>You will be redirected to your booking history shortly.</div>
                 </div>
@@ -403,15 +608,15 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
                 <div className='text-center py-6'>
                     <CloseCircleOutlined style={{fontSize: 32, color: '#ff4d4f'}} />
                     <div className='mt-3 text-red-600 text-base font-medium'>
-                        Payment Failed
+                        Payment / Booking Failed
                     </div>
-                    <div className='mt-2 text-gray-500 text-sm'>Please try again or contact support if the issue persists.</div>
+                    <div className='mt-2 text-gray-500 text-sm'>Please review the error and try again or contact support if the issue persists.</div>
                 </div>
             );
         }
 
         return null;
-    }, [paymentStatus])
+    }, [paymentStatus,  paymentStage])
 
     const renderErrorAlert = useCallback(() => {
         if (!error) return null;
@@ -426,7 +631,8 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
                 onClose={() => setError(null)}
                 className="mb-4"
                 action={
-                    retryCount < maxRetries && (
+                    retryCount < maxRetries &&  paymentStage === "idle" && 
+                    (
                         <Button 
                             size="small" 
                             onClick={() => {
@@ -441,7 +647,7 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
                 }
             />
         );
-    }, [error, retryCount, maxRetries, handleRazorPay]);
+    }, [error, retryCount, paymentStage, handleRazorPay]);
 
     const paymentMethods = useMemo(() => [
         {
@@ -608,7 +814,7 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
                             <Radio
                                 key={method.key}
                                 value={method.key}
-                                disabled={method.disabled || isPaymentProcessing}
+                                disabled={method.disabled || paymentInProgress}
                                 className="border! p-3! md:p-4! rounded-lg! hover:border-[#f84464]! transition-colors w-full! m-0!"
                                 aria-describedby={`${method.key}-description`}
                             >
@@ -679,7 +885,7 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
                 <Button 
                     size="large" 
                     onClick={handlePreviousStep}
-                    disabled={isPaymentProcessing}
+                    disabled={paymentInProgress}
                     className={`${isMobile ? "order-2" : ""} min-h-12! w-full! ${isMobile ? "w-full!" : "w-auto!"}`}
                     aria-label="Go back to seat selection"
                 >
@@ -688,20 +894,20 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
                 <Button 
                     type="primary"
                     size="large" 
-                    loading={isPaymentProcessing}
-                    disabled={isPaymentProcessing}
+                    loading={paymentInProgress}
+                    disabled={paymentInProgress}
                     onClick= {handleRazorPay}
                     className={`bg-[#f84464]! hover:bg-[#dc3558]! ${isMobile ? "order-1" : ""} min-h-12! ${
                         isMobile ? "text-base! font-semibold! w-full!" : "w-auto!"
                     }`}
                     aria-label={`Pay ₹${totalAmount.toFixed(2)} using ${paymentMethod}`}
                 >
-                    {isPaymentProcessing ? "Processing..." : `Pay ₹${totalAmount.toFixed(2)}`}
+                    {paymentInProgress ? "Processing..." : `Pay ₹${totalAmount.toFixed(2)}`}
                 </Button>
             </div>
 
             {/* Mobile Sticky Footer */}
-            {isMobile && !isPaymentProcessing && (
+            {isMobile && !paymentInProgress && (
                 <div 
                     className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-50 shadow-lg"
                     role="complementary"
@@ -723,13 +929,13 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
                         <Button
                             type="primary"
                             size="large"
-                            loading={isPaymentProcessing}
-                            disabled={isPaymentProcessing}
+                            loading={paymentInProgress}
+                            disabled={paymentInProgress}
                             onClick={handleRazorPay}
                             className="bg-[#f84464]! hover:bg-[#dc3558]! w-full min-h-12! text-base! font-semibold!"
                             aria-label={`Pay ₹${totalAmount.toFixed(2)} using ${paymentMethod}`}
                         >
-                            {isPaymentProcessing ? "Processing..." : `Pay Now ₹${totalAmount.toFixed(2)}`}
+                            {paymentInProgress ? "Processing..." : `Pay Now ₹${totalAmount.toFixed(2)}`}
                         </Button>
                     </div>
                 </div>

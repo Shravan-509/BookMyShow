@@ -40,6 +40,7 @@ const bookingSlice = createSlice({
         bookSeatsRequest: (state) => {
             state.loading = true
             state.error = null
+            state.bookingData = null
         },
         bookSeatsSuccess: (state, action) => {
             state.loading = false
@@ -125,6 +126,7 @@ const bookingSlice = createSlice({
         createRazorpayOrderRequest: (state) => {
             state.isPaymentProcessing = true
             state.paymentError = null
+            state.razorpayOrder = null
         },
         createRazorpayOrderSuccess: (state, action) => {
             state.isPaymentProcessing = false
