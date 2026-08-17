@@ -8,6 +8,23 @@ export default defineConfig({
     tailwindcss(),
   ],
 
+  test: {
+    globals: true,
+    environment: "jsdom",
+    setupFiles: "./src/test/setup.js",
+    css: true,
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "html", "lcov"],
+      include: ["src/**/*.{js,jsx}"],
+      exclude: [
+        "src/main.jsx",
+        "src/assets/**",
+        "src/test/**",
+      ],
+    },
+  },
+
   server: {
     proxy: {
       "/bms/v1": {
