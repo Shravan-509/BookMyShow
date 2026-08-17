@@ -3,7 +3,6 @@ require("dotenv").config();
 const express = require("express");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
-// const mongoSanitize = require("express-mongo-sanitize");
 
 const connectDB = require("./config/db");
 
@@ -15,11 +14,11 @@ const showRoute = require("./routes/showRoute");
 const bookingRoute = require("./routes/bookingRoute");
 
 const errorHandler = require("./middlewares/errorHandler");
+const notFound = require("./middlewares/notFound");
 const { validateJWT } = require("./middlewares/authorization");
 const performanceOptimization = require("./middlewares/performanceOptimization");
 
 const app = express();
-const isProd = process.env.NODE_ENV === "production";
 
 // ✅ Required for correct IP detection (important for rate limiting)
 app.set("trust proxy", 1);
@@ -30,9 +29,6 @@ app.set("trust proxy", 1);
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
 app.use(cookieParser());
-
-// Mongo sanitize (prevent NoSQL injection)
-// app.use(mongoSanitize());
 
 // Fix req.query mutability (optional but fine)
 // app.use((req, _res, next) => {
@@ -94,6 +90,7 @@ app.use(
 
 // ------------------ ERROR HANDLING ------------------
 
+app.use("/bms/v1", notFound);
 app.use(errorHandler);
 
 // ------------------ START SERVER ------------------
