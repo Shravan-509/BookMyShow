@@ -952,6 +952,13 @@ VITE_RAZORPAY_KEY_ID=rzp_test_xxxxx
 
 ```text
 BookMyShow/
+├── .github/
+│   ├── ISSUE_TEMPLATE/
+│   ├── workflows/
+│   │   └── ci.yml
+│   ├── PULL_REQUEST_TEMPLATE.md
+│   └── dependabot.yml
+│
 ├── Client/
 │   ├── public/
 │   ├── src/
@@ -972,10 +979,17 @@ BookMyShow/
 │   │   │   ├── sagas/
 │   │   │   ├── slices/
 │   │   │   └── store.js
-│   │   └── utils/
-│   ├── src/test/
+│   │   ├── test/
+│   │   │   ├── setup.js
+│   │   │   └── renderWithProviders.jsx
+│   │   ├── utils/
+│   │   ├── App.jsx
+│   │   ├── App.test.jsx
+│   │   └── main.jsx
+│   ├── eslint.config.js
 │   ├── package.json
 │   └── vite.config.js
+│
 ├── Server/
 │   ├── config/
 │   ├── controllers/
@@ -983,18 +997,38 @@ BookMyShow/
 │   ├── models/
 │   ├── routes/
 │   ├── tests/
+│   │   ├── helpers/
+│   │   ├── integration/
+│   │   └── unit/
 │   ├── utils/
 │   │   └── email_templates/
 │   ├── jest.config.js
 │   ├── package.json
 │   └── server.js
+│
 ├── docs/
-│   ├── ARCHITECTURE.md
+│   ├── screenshots/
 │   ├── API_REFERENCE.md
+│   ├── ARCHITECTURE.md
 │   ├── DATABASE.md
-│   └── PROJECT_DOCUMENTATION.md
+│   ├── DATABASE_SCHEMA.md
+│   ├── DEPLOYMENT.md
+│   ├── DIAGRAMS.md
+│   ├── ERROR_HANDLING.md
+│   ├── FOLDER_STRUCTURE.md
+│   ├── PERFORMANCE.md
+│   ├── PROJECT_DOCUMENTATION.md
+│   ├── SCREENSHOTS.md
+│   ├── SECURITY.md
+│   └── STATE_MANAGEMENT.md
+│
+├── .gitignore
+├── CHANGELOG.md
+├── CODE_OF_CONDUCT.md
+├── CONTRIBUTING.md
+├── LICENSE
 ├── README.md
-└── LICENSE
+└── SECURITY.md
 ```
 
 ## 15. Reusable Components & Utilities

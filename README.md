@@ -95,27 +95,44 @@ Razorpay webhooks are not implemented in the current codebase. Asynchronous paym
 
 ```text
 BookMyShow/
+├── .github/
+│   └── workflows/               # CI workflow for automated validation
+│
 ├── Client/
+│   ├── public/                  # Static frontend assets
 │   ├── src/
 │   │   ├── api/                 # Axios API modules
-│   │   ├── assets/              # SVG/WebP assets
-│   │   ├── components/          # MainLayout, SeatLayout, recommendations
-│   │   ├── features/            # auth, home, movies, admin, partner, profile
-│   │   ├── hooks/               # Custom hooks
-│   │   ├── redux/               # store, slices, actions, sagas
-│   │   └── utils/               # Formatting, notifications, validation helpers
+│   │   ├── assets/              # SVG/WebP and application assets
+│   │   ├── components/          # Reusable layouts, seat UI, loaders, recommendations
+│   │   ├── features/            # Auth, home, movies, admin, partner, profile
+│   │   ├── hooks/               # Custom React hooks
+│   │   ├── redux/               # Store, slices, actions, reducers, and sagas
+│   │   ├── test/                # Shared Vitest/React Testing Library setup
+│   │   └── utils/               # Formatting, notifications, reminders, validation
 │   ├── package.json
 │   └── vite.config.js
+│
 ├── Server/
-│   ├── config/                  # MongoDB connection
+│   ├── config/                  # MongoDB configuration
 │   ├── controllers/             # Auth, user, movie, theatre, show, booking logic
-│   ├── middlewares/             # JWT, error, cache, performance/security middleware
-│   ├── models/                  # User, movie, theatre, show, booking, verification schemas
-│   ├── routes/                  # /auth, /users, /movies, /theatres, /shows, /bookings
-│   ├── utils/                   # Brevo email, booking id, PDF ticket generation
-│   └── package.json
-├── docs/                        # Centralized technical documentation
-└── README.md
+│   ├── middlewares/             # Authorization, error, cache, and performance middleware
+│   ├── models/                  # Mongoose application schemas
+│   ├── routes/                  # REST API route definitions
+│   ├── tests/                   # Jest unit and integration tests
+│   ├── utils/                   # Email, ID generation, PDF ticket, shared utilities
+│   ├── jest.config.js           # Backend Jest configuration
+│   ├── package.json
+│   └── server.js                # Express application entry point
+│
+├── docs/
+│   ├── screenshots/             # Application screenshots
+│   └── ...                      # Architecture, API, database, security, deployment docs
+│
+├── README.md                    # Project overview and setup instructions
+├── CHANGELOG.md                 # Project change history
+├── CONTRIBUTING.md              # Contribution guidelines
+├── SECURITY.md                  # Security policy
+└── LICENSE                      # Project license
 ```
 
 ## Local Setup
