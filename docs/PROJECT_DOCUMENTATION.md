@@ -10,7 +10,7 @@ The project is split into:
 | --- | --- | --- |
 | Frontend | `Client/` | React + Vite UI, route guards, Redux Toolkit state, Redux-Saga side effects, Ant Design UI, Razorpay checkout launch |
 | Backend | `Server/` | Express API, MongoDB access through Mongoose, JWT auth, payment verification, booking/ticket workflows |
-| Shared documentation | `README.md`, `docs/`, `Client/DOCUMENTATION.md`, `Server/DOCUMENTATION.md` | Onboarding, architecture, API, schema, setup, and operational reference |
+| Shared documentation | `README.md`, `docs/` | Onboarding, architecture, API, schema, setup, and operational reference |
 
 Primary user roles:
 
@@ -193,7 +193,7 @@ sequenceDiagram
 
 ## 3. Frontend Structure
 
-The client is a React 18 application created around Vite. It uses feature folders for screens and global folders for API clients, reusable components, Redux, hooks, utilities, and assets.
+The client is a React 19 application created around Vite. It uses feature folders for screens and global folders for API clients, reusable components, Redux, hooks, utilities, and assets.
 
 | Path | Purpose |
 | --- | --- |
@@ -241,12 +241,11 @@ The backend is an Express app mounted under `/bms/v1`.
 Middleware order in `server.js`:
 
 1. JSON/urlencoded parsing and cookies.
-2. NoSQL sanitization via `express-mongo-sanitize`.
-3. Helmet security headers, compression, response-time header, request logging, cache headers.
-4. Global rate limiter.
-5. CORS with `origin: process.env.PUBLIC_APP_URL` and credentials enabled.
-6. Route mounting.
-7. Central error handler.
+2. Helmet security headers, compression, response-time header, request logging, cache headers.
+3. Global rate limiter.
+4. CORS with `origin: process.env.PUBLIC_APP_URL` and credentials enabled.
+5. Route mounting.
+6. Central error handler.
 
 ## 5. Authentication & Authorization Flow
 
@@ -470,10 +469,10 @@ Authorization details:
 
 | Mechanism | Current behavior |
 | --- | --- |
-| JWT validation | `validateJWT` reads `req.cookies.access_token`, `Authorization: Bearer`, or `x-auth-token`, verifies with `JWT_SECRET`, and sets `req.userId` |
+| JWT validation | `validateJWT` reads `req.cookies.access_token`, `Authorization: Bearer`, or `x-auth-token`, verifies with `JWT_SECRET`, loads the user role, and sets `req.userId`/`req.user.role` |
 | Cookie flags | `httpOnly`; `secure` only in production; `sameSite=None` in production and `Lax` locally |
 | Route protection | Users, movies, theatres, shows, and bookings are protected in `server.js` |
-| Role authorization | `validateRole(roles)` exists but is not mounted in current routes; role-sensitive behavior is mostly implemented in controllers and frontend route/navigation logic |
+| Role authorization | `validateRole(roles)` is mounted on clear admin/partner route groups, with controller-level partner ownership checks for theatre, show, booking, and revenue workflows |
 | Session invalidation intent | `tokenVersion` is incremented on password/email changes, but JWT validation currently verifies only `userId` from token payload |
 
 ## 6. API Documentation
@@ -733,7 +732,7 @@ The `MainLayout` adapts navigation by user role:
 
 ## 10. Payment Integration
 
-Razorpay is integrated with an order-create and signature-verify flow.
+Razorpay is integrated with an order-create, server-side price calculation, signature verification, and amount-verification flow.
 
 ```mermaid
 sequenceDiagram
@@ -870,9 +869,9 @@ Payment implementation notes:
 
 | Concern | Implementation |
 | --- | --- |
-| Order creation | `createOrder` creates Razorpay order with amount converted to paise and receipt `BMS_TICKET_<timestamp>` |
+| Order creation | `createOrder` accepts `showId`, `seats`, and `feePerTicket`; it loads `show.ticketPrice`, validates the ₹15-₹20 fee, recalculates GST/total, and creates a Razorpay order with the server-calculated paise amount |
 | Client checkout | `Checkout.jsx` loads `https://checkout.razorpay.com/v1/checkout.js` dynamically and uses `VITE_RAZORPAY_KEY_ID` |
-| Signature verification | `bookSeat` verifies `orderId|transactionId` with `RAZORPAY_KEY_SECRET` |
+| Signature verification | `bookSeat` verifies `orderId|transactionId` with `RAZORPAY_KEY_SECRET`, fetches Razorpay order/payment data, and confirms the paid amount matches server-calculated pricing |
 | Double-booking prevention | `Show.findOneAndUpdate({ _id, bookedSeats: { $nin: seats } }, { $push: { bookedSeats: { $each: seats } } })` |
 | Rollback | If booking save fails after seat reservation, booked seats are pulled back from the show |
 | Ticket delivery | PDF generation and email are attempted after booking; failures are logged and do not cancel the booking |
@@ -882,12 +881,11 @@ Payment implementation notes:
 | Area | Implementation |
 | --- | --- |
 | Frontend code splitting | Lazy imports for major routes in `App.jsx` |
-| Frontend perceived performance | Skeleton loader components for movies, seats, profile, checkout, tables, and booking history |
+| Frontend perceived performance | Ant Design `Skeleton` and `Spin` loading states on selected movie, show, seat, and booking screens |
 | Frontend render performance | `memo`, `useMemo`, `useCallback`, and Reselect selectors are used in several shared components/slices |
-| Image handling | `OptimizedImage`, `MoviePoster`, `TheatreImage`, and `HeroBanner` set dimensions and lazy/eager loading hints |
 | Backend compression | `compression` middleware with threshold of 1KB |
-| Backend cache headers | Static resources receive long-lived immutable cache headers; API defaults to short revalidation headers |
-| Route-level cache | `node-cache` middleware is applied to `GET /movies`, `GET /theatres`, `GET /shows/:id`, and `GET /shows/theatre/:id` |
+| Backend cache headers | Static resources receive long-lived immutable cache headers; API responses default to `private, no-store` |
+| Route-level cache | `node-cache` middleware remains on shared catalogue GET routes such as `GET /movies` and `GET /shows/:id`; role-dependent theatre/show-owner responses are not shared-cached |
 | Rate limiting | General limiter plus stricter auth and booking limiters |
 | Seat booking atomicity | MongoDB atomic update prevents concurrent booking of the same seats |
 
@@ -899,10 +897,10 @@ Payment implementation notes:
 | Email verification | 6-digit code stored in `verification` with 10-minute expiry |
 | Two-factor authentication | Email 2FA code by default, toggleable from profile |
 | JWT handling | HTTP-only cookie plus support for authorization headers |
-| NoSQL injection mitigation | `express-mongo-sanitize` applied globally |
+| NoSQL injection mitigation | Evaluated as a recommended hardening measure; `express-mongo-sanitize` is not currently enabled |
 | Headers | Helmet CSP, frameguard deny, no-sniff, XSS filter, HSTS, referrer policy |
 | Rate limiting | `express-rate-limit` for global, auth, and booking routes |
-| Payment verification | Razorpay HMAC signature verification on booking confirmation |
+| Payment verification | Razorpay HMAC signature verification plus expected order/payment amount verification on booking confirmation |
 | Account lifecycle | Password/email changes clear auth cookie; account deletion cascades verification, booking, and owned theatre records |
 | Client validation utilities | Email, phone, password strength, redirect URL, length, and sanitization helpers in `securityValidation.js` |
 
@@ -975,7 +973,7 @@ BookMyShow/
 │   │   │   ├── slices/
 │   │   │   └── store.js
 │   │   └── utils/
-│   ├── DOCUMENTATION.md
+│   ├── src/test/
 │   ├── package.json
 │   └── vite.config.js
 ├── Server/
@@ -984,18 +982,19 @@ BookMyShow/
 │   ├── middlewares/
 │   ├── models/
 │   ├── routes/
+│   ├── tests/
 │   ├── utils/
 │   │   └── email_templates/
-│   ├── DOCUMENTATION.md
+│   ├── jest.config.js
 │   ├── package.json
 │   └── server.js
 ├── docs/
 │   ├── ARCHITECTURE.md
 │   ├── API_REFERENCE.md
-│   ├── DATABASE_SCHEMA.md
+│   ├── DATABASE.md
 │   └── PROJECT_DOCUMENTATION.md
 ├── README.md
-└── Todo.md
+└── LICENSE
 ```
 
 ## 15. Reusable Components & Utilities
@@ -1005,8 +1004,6 @@ BookMyShow/
 | `MainLayout.jsx` | Authenticated shell with role-aware navigation, drawer menu, header, footer, logout |
 | `SeatLayout.jsx` | Interactive seat grid, booked/selected states, mouse/touch pan, wheel/pinch zoom |
 | `SeatRecommendation.jsx` | Scores seat groups based on center position, viewing distance, aisle/back preferences |
-| `SkeletonLoaders.jsx` | Loading placeholders for major app surfaces |
-| `imageOptimization.jsx` | Picture/image wrappers with explicit dimensions and loading hints |
 | `notificationUtils.js` | Unified Ant Design `message`/`notification` helper |
 | `dateFormatter.js` | date-fns helpers replacing heavier date libraries |
 | `format-duration.js` | Converts movie duration minutes into `xh ym` display |
@@ -1044,15 +1041,19 @@ Deployment checklist:
 
 ## 17. Error Handling Strategy
 
-Backend controllers use `try/catch`, set an HTTP status where needed, and pass errors to `next(error)`. The central `errorHandler` returns:
+Backend controllers use `try/catch`, set an HTTP status where needed, and pass unexpected errors to `next(error)`. Known domain failures are usually returned directly from controllers with a consistent `success: false` and `message` shape.
+
+The central `errorHandler` normalizes uncaught backend errors into the frontend-compatible shape:
 
 ```json
 {
-  "message": "error message"
+  "success": false,
+  "message": "error message",
+  "code": "OPTIONAL_SAFE_CODE"
 }
 ```
 
-Domain errors are usually returned directly from controllers with a consistent `success: false` and `message` shape. Examples include invalid credentials, unverified email, expired verification codes, unavailable seats, missing fields, and duplicate movie/theatre/user records.
+It maps common Mongoose validation, invalid-id, duplicate-key, JWT, JSON parsing, Razorpay SDK, and API 404 cases to safe responses without exposing stack traces or provider/database internals. Examples include invalid credentials, unverified email, expired verification codes, unavailable seats, missing fields, payment replay, and duplicate movie/theatre/user records.
 
 Frontend sagas normalize API errors by reading `error.response?.data?.message` where available, dispatching failure actions, and showing Ant Design notifications for important user-visible failures.
 
@@ -1076,10 +1077,10 @@ Implementation-aligned enhancements:
 
 | Area | Enhancement |
 | --- | --- |
-| Authorization | Mount `validateRole` or controller-level role checks for admin/partner-only APIs |
+| Authorization | Continue manual role-intent review for APIs whose backend access policy remains ambiguous |
 | Token invalidation | Include and verify `tokenVersion` in JWT payloads after password/email changes |
 | Booking lifecycle | Add cancellation/refund APIs and explicit payment status transitions |
-| Webhooks | Add Razorpay webhook endpoint for asynchronous payment reconciliation |
+| Webhooks | Add Razorpay webhook support for asynchronous payment reconciliation |
 | Cache invalidation | Clear route-level caches after movie/theatre/show mutations |
 | Tests | Add controller, saga, and route integration tests around auth, payments, and seat concurrency |
 | Monitoring | Add structured logging, error tracking, and metrics dashboards |
@@ -1092,7 +1093,7 @@ Prerequisites:
 
 | Tool | Purpose |
 | --- | --- |
-| Node.js 16+ | Runtime for both client and server |
+| Node.js `^20.19.0 || >=22.13.0` | Runtime for both client and server |
 | npm | Dependency installation and scripts |
 | MongoDB | Local or Atlas database |
 | Razorpay account | Payment testing |

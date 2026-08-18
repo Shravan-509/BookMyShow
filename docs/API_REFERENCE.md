@@ -128,12 +128,12 @@ Show body fields:
 | Method | Endpoint | Body | Purpose |
 | --- | --- | --- | --- |
 | `POST` | `/bookings/validateSeats` | `{ showId, seats }` | Checks if selected seats are still available |
-| `POST` | `/bookings/createOrder` | `{ amount }` | Creates a Razorpay INR order; amount is converted to paise |
-| `POST` | `/bookings/bookSeat` | Booking confirmation payload | Verifies Razorpay signature, reserves seats atomically, saves booking, sends ticket |
-| `GET` | `/bookings/:id` | none | Returns simplified bookings for a user id |
-| `GET` | `/bookings/admin/all` | none | Returns simplified booking list for all users |
-| `GET` | `/bookings/theatre/:theatreId` | none | Returns bookings for all shows in a theatre |
-| `GET` | `/bookings/revenue/:ownerId` | none | Returns revenue summary, revenue by theatre, and six-month revenue trend |
+| `POST` | `/bookings/createOrder` | `{ showId, seats, feePerTicket }` | Loads authoritative show price, validates the ₹15-₹20 fee, recalculates GST/total, and creates a Razorpay INR order in paise |
+| `POST` | `/bookings/bookSeat` | Booking confirmation payload | Verifies Razorpay signature and expected order/payment amount, reserves seats atomically, saves booking, sends ticket |
+| `GET` | `/bookings/:id` | none | Returns simplified bookings only when `:id` matches the authenticated JWT user |
+| `GET` | `/bookings/admin/all` | none | Admin-only simplified booking list for all users |
+| `GET` | `/bookings/theatre/:theatreId` | none | Admin/partner route; partners can access only owned theatre bookings |
+| `GET` | `/bookings/revenue/:ownerId` | none | Admin/partner route; partners can access only their own revenue summary |
 
 Booking confirmation payload:
 
@@ -144,9 +144,8 @@ Booking confirmation payload:
   "signature": "razorpay_signature",
   "seats": ["A1", "A2"],
   "show": "SHOW_OBJECT_ID",
-  "amount": 59000,
   "seatType": "Standard",
-  "convenienceFee": 40,
+  "feePerTicket": 18,
   "gstPercent": 18,
   "paymentMethod": "UPI",
   "receipt": "BMS_TICKET_..."
@@ -158,7 +157,7 @@ Important booking behavior:
 | Step | Detail |
 | --- | --- |
 | Seat validation | `validateSeats` returns unavailable seats if any requested seat is already in `show.bookedSeats` |
-| Payment verification | `bookSeat` computes HMAC SHA256 with `RAZORPAY_KEY_SECRET` |
+| Payment verification | `bookSeat` computes HMAC SHA256 with `RAZORPAY_KEY_SECRET`, fetches Razorpay order/payment details, and verifies the paid amount against server-calculated pricing |
 | Seat reservation | Seats are added with a conditional MongoDB update using `$nin` and `$push/$each` |
 | Booking save | Booking stores Razorpay ids, receipt, generated booking id, amount, fees, GST, payment method, and status |
 | Ticket side effects | PDF and email failures are logged but do not undo the booking |

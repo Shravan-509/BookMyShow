@@ -143,7 +143,7 @@ sequenceDiagram
     Express->>Middleware: Execute Middleware Chain
     activate Middleware
 
-    Note over Middleware: body-parser<br/>helmet<br/>cors<br/>compression<br/>mongo-sanitize<br/>rate-limit
+    Note over Middleware: body-parser<br/>helmet<br/>cors<br/>compression<br/>rate-limit
 
     %% ==========================================
     %% Authentication
@@ -152,7 +152,8 @@ sequenceDiagram
     Note over Middleware,Controller: Authentication & Authorization
 
     Middleware->>Middleware: validateJWT()
-    Middleware->>Middleware: authorizeRoles()
+    Middleware->>Middleware: validateRole() for privileged route groups
+    Middleware->>Controller: Controller ownership checks where applicable
 
     Middleware->>Controller: Forward Request
     deactivate Middleware
@@ -534,11 +535,12 @@ sequenceDiagram
 
     User->>UI: Proceed To Payment
 
-    UI->>API: Create Payment Order
+    UI->>API: Create Payment Order with showId, seats, feePerTicket
 
     activate API
 
-    API->>Razorpay: Create Order
+    API->>API: Load show ticket price and recalculate total
+    API->>Razorpay: Create Order with server-calculated amount
 
     activate Razorpay
 
@@ -560,7 +562,7 @@ sequenceDiagram
 
     activate API
 
-    API->>API: Verify Payment Signature
+    API->>API: Verify payment signature and expected amount
 
     alt Payment Successful
 
@@ -610,26 +612,25 @@ sequenceDiagram
 | Order | Middleware | Purpose |
 | --- | --- | --- |
 | 1 | `express.json`, `express.urlencoded`, `cookieParser` | Request body and cookie parsing |
-| 2 | `express-mongo-sanitize` | NoSQL injection mitigation |
-| 3 | Helmet security headers | CSP, frameguard, HSTS, no-sniff, referrer policy |
-| 4 | Compression | Gzip compression for responses larger than 1KB |
-| 5 | Response-time and request logging | `X-Response-Time` plus console request duration logs |
-| 6 | Static/API cache headers | Cache-Control headers |
-| 7 | General rate limiter | Global request throttling |
-| 8 | CORS | Allows `PUBLIC_APP_URL` with credentials |
-| 9 | Route-specific middleware | Auth limiter, JWT validation, booking limiter, route-level cache |
-| 10 | Error handler | Final JSON error response |
+| 2 | Helmet security headers | CSP, frameguard, HSTS, no-sniff, referrer policy |
+| 3 | Compression | Gzip compression for responses larger than 1KB |
+| 4 | Response-time and request logging | `X-Response-Time` plus console request duration logs |
+| 5 | Static/API cache headers | Static asset cache headers and private no-store API defaults |
+| 6 | General rate limiter | Global request throttling |
+| 7 | CORS | Allows `PUBLIC_APP_URL` with credentials |
+| 8 | Route-specific middleware | Auth limiter, JWT validation, role checks, booking limiter, selected shared catalogue cache |
+| 9 | Error handler | Final JSON error response |
 
 ## Route Groups
 
 | Base path | Router | Protection |
 | --- | --- | --- |
 | `/bms/v1/auth` | `authRoute.js` | Public with auth rate limiter |
-| `/bms/v1/users` | `userRoute.js` | JWT |
-| `/bms/v1/movies` | `movieRoute.js` | JWT |
-| `/bms/v1/theatres` | `theatreRoute.js` | JWT |
-| `/bms/v1/shows` | `showRoute.js` | JWT |
-| `/bms/v1/bookings` | `bookingRoute.js` | JWT plus booking rate limiter |
+| `/bms/v1/users` | `userRoute.js` | JWT; admin role for user list |
+| `/bms/v1/movies` | `movieRoute.js` | JWT; admin role for mutations |
+| `/bms/v1/theatres` | `theatreRoute.js` | JWT; admin/partner role and partner ownership checks |
+| `/bms/v1/shows` | `showRoute.js` | JWT; admin/partner role for management and partner ownership checks |
+| `/bms/v1/bookings` | `bookingRoute.js` | JWT plus booking rate limiter; admin/partner roles and ownership checks on privileged booking views |
 
 ## Data Relationships
 
