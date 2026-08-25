@@ -3,8 +3,7 @@ import { useEffect, lazy, Suspense, memo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Spin } from 'antd';
-import Cookies from "js-cookie";
-import { authStatusChecked, checkAuthStatus, selectAuth } from './redux/slices/authSlice';
+import { checkAuthStatus, selectAuth } from './redux/slices/authSlice';
 import MainLayout from './components/MainLayout';
 import './App.css';
 
@@ -98,19 +97,10 @@ function App() {
     // Preload Home component for faster navigation
     import("./features/home/pages/Home")
 
-    const token = Cookies.get("access_token");
-    if(token)
-    {
-      dispatch(checkAuthStatus());
+    dispatch(checkAuthStatus());
 
-      // Preload user-specific components if authenticated
-      import("./features/movies/pages/MovieDetails")
-    }
-    else 
-    {
-      // If no token, mark auth check as complete
-      dispatch(authStatusChecked({ isAuthenticated: false, user: null, token: null }))
-    }
+    // Preload user-specific components; route guards still wait for auth status.
+    import("./features/movies/pages/MovieDetails")
     
   }, [dispatch]);
   

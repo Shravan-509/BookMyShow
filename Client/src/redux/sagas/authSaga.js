@@ -1,5 +1,4 @@
 import { takeLatest, put, call } from "redux-saga/effects";
-import Cookies from "js-cookie";
 import { 
     authStatusChecked, 
     checkAuthStatus, 
@@ -31,7 +30,7 @@ function* handleCheckAuthStatus() {
         yield put(
             authStatusChecked({
                 isAuthenticated: true,
-                token: Cookies.get("access_token"), // For State tracking, not for auth
+                token: null,
                 user: userData.user
             })
         )

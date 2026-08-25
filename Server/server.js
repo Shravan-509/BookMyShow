@@ -5,6 +5,7 @@ const cookieParser = require("cookie-parser");
 const cors = require("cors");
 
 const connectDB = require("./config/db");
+const { corsOptions } = require("./config/corsOptions");
 
 const authRoute = require("./routes/authRoute");
 const userRoute = require("./routes/userRoute");
@@ -54,12 +55,7 @@ app.use(performanceOptimization.generalLimiter);
 
 // ------------------ CORS ------------------
 
-app.use(
-  cors({
-    origin: process.env.PUBLIC_APP_URL,
-    credentials: true,
-  })
-);
+app.use(cors(corsOptions));
 
 // ------------------ DATABASE ------------------
 

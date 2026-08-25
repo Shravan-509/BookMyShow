@@ -3,6 +3,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const {createVerification, sendVerificationEmail, sendPasswordResetEmail} = require("../utils/email");
 const Verification = require('../models/verificationSchema');
+const { setAuthCookie, clearAuthCookie } = require("../utils/authCookie");
 
 const register = async (req, res, next) => {
     try {
@@ -276,12 +277,7 @@ const login = async (req, res, next) => {
             { expiresIn }
         );
 
-        res.cookie('access_token', access_token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",  // true only in production
-            sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
-            maxAge: 24 * 60 * 60 * 1000 // 1 day
-        })
+        setAuthCookie(res, access_token)
 
         return res.status(200).send({
             success: true,
@@ -382,12 +378,7 @@ const verify2FA = async(req, res, next) => {
             { expiresIn }
         );
 
-        res.cookie('access_token', access_token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",  // true only in production
-            sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
-            maxAge: 24 * 60 * 60 * 1000 // 1 day
-        })
+        setAuthCookie(res, access_token)
 
         return res.status(200).send({
             success: true,
@@ -482,11 +473,7 @@ const reverifyEmail = async(req, res, next) => {
 
 const logoutUser = async(req, res, next) => {
     try {
-       res.clearCookie("access_token", {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
-        });
+       clearAuthCookie(res);
         return res.status(200).send({
             success: true,
             message: "You've Successfully Logged out"

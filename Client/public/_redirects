@@ -1,1 +1,2 @@
+/api/*    https://bookmyshow-sycx.onrender.com/bms/v1/:splat    200
 /*    /index.html   200

@@ -35,7 +35,7 @@ flowchart LR
 Required variables:
 
 ```env
-VITE_API_URL=https://<render-backend-domain>/bms/v1
+VITE_API_URL=/api
 VITE_RAZORPAY_KEY_ID=<razorpay-public-key>
 ```
 
@@ -54,6 +54,7 @@ Required variables:
 PORT=3000
 NODE_ENV=production
 PUBLIC_APP_URL=https://bkmyshow.netlify.app
+CORS_ALLOWED_ORIGINS=https://bkmyshow.netlify.app
 MONGODB_CONNECTION_STRING=<mongodb-atlas-uri>
 JWT_SECRET=<long-random-secret>
 RAZORPAY_KEY_ID=<razorpay-key-id>
@@ -66,8 +67,9 @@ BREVO_EMAIL_FROM=<verified-sender>
 
 - Configure HTTPS on both frontend and backend.
 - Confirm CORS `PUBLIC_APP_URL` matches the Netlify origin exactly.
+- Use optional `CORS_ALLOWED_ORIGINS` for additional comma-separated preview or custom domains.
+- If Netlify is configured with a same-site `/api/*` proxy to Render, set production `VITE_API_URL=/api`.
 - Use live/test Razorpay keys consistently across client and server.
 - Verify Brevo sender and templates.
 - Keep secrets out of Git and only in hosting provider environment variables.
 - Confirm MongoDB Atlas network access and database user permissions.
-

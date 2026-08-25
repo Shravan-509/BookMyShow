@@ -5,6 +5,7 @@ const User = require('../models/userSchema');
 const Verification = require('../models/verificationSchema');
 const Booking = require('../models/bookingSchema');
 const Theatre = require('../models/theatreSchema');
+const { clearAuthCookie } = require("../utils/authCookie");
 
 const userInfo = async (req, res, next) => {
     try {
@@ -154,11 +155,7 @@ const changePassword = async (req, res, next) => {
         );
 
         // Clear the current session cookie
-        res.clearCookie("access_token", {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "strict",
-        })
+        clearAuthCookie(res)
 
         res.send({
             success: true,
@@ -341,11 +338,7 @@ const verifyEmailChange = async (req, res, next) => {
         })
 
         // Clear the current session cookie
-        res.clearCookie("access_token", {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "strict",
-        })
+        clearAuthCookie(res)
 
         res.send({
             success: true,
@@ -444,11 +437,7 @@ const deleteAccount = async(req, res, next) => {
         await User.findByIdAndDelete(user._id);
 
         // Clear the current session cookie
-        res.clearCookie("access_token", {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "strict",
-        })
+        clearAuthCookie(res)
 
         return res.status(200).send({
             success: true,

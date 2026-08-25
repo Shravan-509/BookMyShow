@@ -215,7 +215,7 @@ Important frontend implementation details:
 | Area | Implementation |
 | --- | --- |
 | Code splitting | `App.jsx` uses `React.lazy` and `Suspense` for major page bundles |
-| Auth bootstrap | On mount, `App.jsx` checks the `access_token` cookie through `js-cookie`; if present it dispatches `checkAuthStatus()` |
+| Auth bootstrap | On mount, `App.jsx` dispatches `checkAuthStatus()` and lets the backend validate the HTTP-only auth cookie |
 | Route protection | `ProtectedRoute` requires authentication; `PublicRoute` redirects authenticated users to `/home`; `UserRoute` blocks non-customer roles from customer booking routes |
 | UI framework | Ant Design components and icons, with global styles in `App.css` and Tailwind utility classes |
 | API transport | `axiosInstance` uses `VITE_API_URL` as base URL and `withCredentials: true` for cookie-based auth |
@@ -477,7 +477,7 @@ Authorization details:
 
 ## 6. API Documentation
 
-All backend routes are mounted under `/bms/v1`. The client should set `VITE_API_URL` to this base path or full backend URL plus `/bms/v1`.
+All backend routes are mounted under `/bms/v1`. Local development can set `VITE_API_URL` to `http://localhost:3000/bms/v1`; production should use `/api` when the Netlify proxy forwards `/api/*` to the Render backend.
 
 Focused endpoint reference is maintained in [API_REFERENCE.md](./API_REFERENCE.md).
 
@@ -912,7 +912,8 @@ Backend:
 | --- | --- | --- | --- |
 | `PORT` | No | `server.js` | API port, defaults to `3000` |
 | `NODE_ENV` | No | server/auth/profile | Production cookie and security behavior |
-| `PUBLIC_APP_URL` | Yes | CORS, password reset | Allowed frontend origin and reset-link base URL |
+| `PUBLIC_APP_URL` | Yes | CORS, password reset | Primary allowed frontend origin and reset-link base URL |
+| `CORS_ALLOWED_ORIGINS` | No | CORS | Additional comma-separated frontend origins for previews or custom domains |
 | `MONGODB_CONNECTION_STRING` | Yes | `config/db.js` | MongoDB connection |
 | `JWT_SECRET` | Yes | auth/authorization | JWT signing and verification |
 | `RAZORPAY_KEY_ID` | Yes for payments | booking controller | Razorpay server key id |
@@ -924,7 +925,7 @@ Frontend:
 
 | Variable | Required | Used by | Purpose |
 | --- | --- | --- | --- |
-| `VITE_API_URL` | Yes | `Client/src/api/index.js` | Axios base URL, usually backend origin plus `/bms/v1` |
+| `VITE_API_URL` | Yes | `Client/src/api/index.js` | Axios base URL, usually backend origin plus `/bms/v1`; use `/api` when a same-site proxy forwards to the backend |
 | `VITE_RAZORPAY_KEY_ID` | Yes for payments | `Checkout.jsx` | Public Razorpay checkout key |
 
 Example local values:
@@ -934,6 +935,7 @@ Example local values:
 PORT=3000
 NODE_ENV=development
 PUBLIC_APP_URL=http://localhost:5173
+CORS_ALLOWED_ORIGINS=http://localhost:5173
 MONGODB_CONNECTION_STRING=mongodb://localhost:27017/bookmyshow
 JWT_SECRET=replace-with-a-long-random-secret
 RAZORPAY_KEY_ID=rzp_test_xxxxx
@@ -1067,11 +1069,12 @@ The codebase is structured for separate frontend and backend deployments.
 Deployment checklist:
 
 1. Set `PUBLIC_APP_URL` on the server to the deployed frontend origin.
-2. Set `VITE_API_URL` on the client to the deployed backend URL ending in `/bms/v1`.
-3. Enable HTTPS for production so `secure` cookies and `sameSite=None` work correctly.
-4. Configure Razorpay test/live keys consistently on client and server.
-5. Configure Brevo sender verification and `BREVO_EMAIL_FROM`.
-6. Confirm CORS allows the deployed frontend only.
+2. Add any preview/custom frontend origins to `CORS_ALLOWED_ORIGINS` as a comma-separated list.
+3. Set production `VITE_API_URL=/api` so Netlify forwards `/api/*` to `https://bookmyshow-sycx.onrender.com/bms/v1/*`.
+4. Enable HTTPS for production so `secure` cookies and `sameSite=None` work correctly.
+5. Configure Razorpay test/live keys consistently on client and server.
+6. Configure Brevo sender verification and `BREVO_EMAIL_FROM`.
+7. Confirm CORS allows only the intended deployed frontend origins.
 
 ## 17. Error Handling Strategy
 

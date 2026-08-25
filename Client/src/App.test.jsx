@@ -1,13 +1,8 @@
 import { screen } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
 import App from "./App";
+import { authStatusChecked } from "./redux/slices/authSlice";
 import { renderWithProviders } from "./test/renderWithProviders";
-
-vi.mock("js-cookie", () => ({
-  default: {
-    get: vi.fn(() => undefined),
-  },
-}));
 
 vi.mock("./components/MainLayout", () => ({
   default: ({ children }) => <div>{children}</div>,
@@ -51,7 +46,7 @@ vi.mock("./features/auth/pages/ResetPassword", () => ({
 
 describe("App routing", () => {
   test("redirects unauthenticated protected route to public auth screen", async () => {
-    renderWithProviders(<App />, {
+    const { store } = renderWithProviders(<App />, {
       route: "/booking/show-1",
       preloadedState: {
         auth: {
@@ -64,6 +59,8 @@ describe("App routing", () => {
         },
       },
     });
+
+    store.dispatch(authStatusChecked({ isAuthenticated: false, user: null, token: null }));
 
     expect(await screen.findByText("Auth Tabs")).toBeInTheDocument();
     expect(screen.queryByText("Seat Selection Page")).not.toBeInTheDocument();

@@ -160,6 +160,7 @@ Server `.env`:
 PORT=3000
 NODE_ENV=development
 PUBLIC_APP_URL=http://localhost:5173
+CORS_ALLOWED_ORIGINS=http://localhost:5173
 MONGODB_CONNECTION_STRING=<mongodb-atlas-uri>
 JWT_SECRET=<long-random-secret>
 RAZORPAY_KEY_ID=<razorpay-key-id>
@@ -198,7 +199,7 @@ Open `http://localhost:5173`.
 | Razorpay | Use matching test/live key id on the client and key secret on the server |
 | Brevo | Use a verified sender in `BREVO_EMAIL_FROM` |
 
-Set `PUBLIC_APP_URL=https://bkmyshow.netlify.app` on Render so CORS and cookie behavior match the deployed frontend.
+Set `PUBLIC_APP_URL=https://bkmyshow.netlify.app` on Render so CORS, password-reset links, and cookie behavior match the deployed frontend. Use optional `CORS_ALLOWED_ORIGINS` for additional explicit preview/custom domains as a comma-separated list. Netlify proxies `/api/*` to `https://bookmyshow-sycx.onrender.com/bms/v1/*`, so set production `VITE_API_URL=/api` to keep browser API requests on the frontend origin.
 
 ## API Documentation
 

@@ -713,7 +713,7 @@ Required production alignment:
 | Setting | Requirement |
 | --- | --- |
 | `PUBLIC_APP_URL` | Must match frontend origin for CORS and password reset links |
-| `VITE_API_URL` | Must point to backend `/bms/v1` |
-| HTTPS | Required for production cross-site secure cookies |
+| `VITE_API_URL` | Use `/api` in production when Netlify proxies to the Render backend; use the local backend `/bms/v1` URL during development |
+| HTTPS | Required for production secure cookies |
 | Razorpay keys | Client public key and server secret must belong to same environment |
 | Brevo sender | `BREVO_EMAIL_FROM` must be verified/configured |
