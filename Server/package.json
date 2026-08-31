@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@getbrevo/brevo": "^6.0.3",
-    "axios": "^1.19.0",
+    "axios": "^1.20.0",
     "bcrypt": "^6.0.0",
     "compression": "^1.8.1",
     "cookie-parser": "^1.4.7",
