@@ -21,6 +21,8 @@ BookMyShow/
 │   │   ├── features/
 │   │   │   ├── admin/
 │   │   │   │   └── pages/
+│   │   │   │       ├── CityManagement.jsx
+│   │   │   │       ├── CityManagement.test.jsx
 │   │   │   │       └── UserManagement.test.jsx
 │   │   │   ├── auth/
 │   │   │   │   └── pages/
@@ -33,6 +35,7 @@ BookMyShow/
 │   │   │   │       └── Bookings.test.jsx
 │   │   │   ├── partner/
 │   │   │   │   └── pages/
+│   │   │   │       ├── TheatreForm.test.jsx
 │   │   │   │       └── TheatreBooking.test.jsx
 │   │   │   └── profile/
 │   │   │       └── pages/
@@ -61,16 +64,27 @@ BookMyShow/
 │   ├── controllers/
 │   ├── middlewares/
 │   ├── models/
+│   ├── repositories/
 │   ├── routes/
+│   ├── scripts/
+│   │   ├── backfillTheatreCities.js
+│   │   └── importCities.js
+│   ├── services/
 │   ├── tests/
 │   │   ├── helpers/
 │   │   │   └── mockExpress.js
 │   │   ├── integration/
 │   │   │   ├── authAuthorization.test.js
 │   │   │   ├── cacheSecurity.test.js
+│   │   │   ├── cityRoute.test.js
 │   │   │   └── errorHandling.test.js
 │   │   └── unit/
+│   │       ├── backfillTheatreCities.test.js
 │   │       ├── bookingController.test.js
+│   │       ├── citySchema.test.js
+│   │       ├── cityService.test.js
+│   │       ├── importCities.test.js
+│   │       ├── theatreCity.test.js
 │   │       └── utils.test.js
 │   ├── utils/
 │   ├── jest.config.js
@@ -110,6 +124,7 @@ BookMyShow/
 - `Client/src/test` contains shared Vitest/React Testing Library setup and rendering helpers.
 - `Server/routes` maps HTTP endpoints to controller methods.
 - `Server/controllers` owns validation, business workflows, payment verification, and email/PDF side effects.
+- `Server/services` and `Server/repositories` introduce the incremental City domain service/repository foundation.
 - `Server/models` keeps Mongoose schemas independent from controllers.
 - `Server/tests` separates backend unit, integration, and reusable test-helper code.
 - `docs` contains centralized technical documentation for reviewers and maintainers.

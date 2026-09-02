@@ -35,6 +35,31 @@ Source: `Server/models/movieSchema.js`
 | `poster` | `String` | Yes | - | Poster URL |
 | `createdAt`, `updatedAt` | `Date` | Auto | timestamps | Managed by Mongoose |
 
+## cities
+
+Source: `Server/models/citySchema.js`
+
+| Field | Type | Required | Constraints / Default | Notes |
+| --- | --- | --- | --- | --- |
+| `cityCode` | `String` | No | trimmed, uppercase, unique sparse, `2-5` letters | Business identifier such as `BLR`; MongoDB `_id` remains the primary reference |
+| `cityName` | `String` | Yes | trimmed | Display city name |
+| `state` | `String` | Yes | trimmed | State or region |
+| `country` | `String` | Yes | trimmed | Country |
+| `isActive` | `Boolean` | No | default `true` | Inactive cities remain stored but are blocked for new theatre mapping |
+| `tier` | `String` | No | enum `TIER_1`, `TIER_2`, `TIER_3` | Stored for catalogue classification; not used for pricing |
+| `location` | GeoJSON `Point` | No | coordinates `[longitude, latitude]` | Optional 2dsphere-indexed city location |
+| `createdAt`, `updatedAt` | `Date` | Auto | timestamps | Managed by Mongoose |
+
+Indexes:
+
+```js
+{ cityName: 1, state: 1, country: 1 } // unique
+{ cityCode: 1 } // unique, sparse
+{ location: "2dsphere" }
+```
+
+`cityCode`, `tier`, and `location` are optional for backward compatibility with City records created before Phase 1.1.
+
 ## theatres
 
 Source: `Server/models/theatreSchema.js`
@@ -46,6 +71,7 @@ Source: `Server/models/theatreSchema.js`
 | `phone` | `Number` | Yes | - | Theatre contact |
 | `email` | `String` | Yes | - | Theatre contact |
 | `owner` | `ObjectId` | No | ref `users` | Partner owner |
+| `city` | `ObjectId` | No | ref `City` | Optional Phase 1 city mapping; not required for legacy theatres |
 | `isActive` | `Boolean` | No | default `false` | Theatre status |
 | `createdAt`, `updatedAt` | `Date` | Auto | timestamps | Managed by Mongoose |
 
@@ -106,12 +132,14 @@ flowchart TD
 
     User["users"]
     Theatre["theatres"]
+    City["cities"]
     Booking["bookings"]
     Verification["verification"]
     Movie["movies"]
     Show["shows"]
 
     User -->|owner| Theatre
+    City -->|city| Theatre
     User -->|user| Booking
     User -->|userId| Verification
     Movie -->|movie| Show

@@ -40,6 +40,13 @@ const TheatreList = () => {
             responsive: ['md', 'lg', 'xl'],
         },
         {
+            title: "City",
+            key : "city",
+            dataIndex: "city",
+            render: (city) => city ? `${city.cityName}, ${city.state}` : "Not mapped",
+            responsive: ['md', 'lg', 'xl'],
+        },
+        {
             title: "Phone Number",
             key : "phone",
             dataIndex: "phone",

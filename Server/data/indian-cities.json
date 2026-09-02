@@ -1,0 +1,202 @@
+[
+    {
+        "city_id": "MUM",
+        "city_name": "Mumbai",
+        "state": "Maharashtra",
+        "tier": "Tier 1",
+        "latitude": 19.076,
+        "longitude": 72.8777
+    },
+    {
+        "city_id": "DEL",
+        "city_name": "Delhi NCR",
+        "state": "Delhi",
+        "tier": "Tier 1",
+        "latitude": 28.6139,
+        "longitude": 77.209
+    },
+    {
+        "city_id": "BLR",
+        "city_name": "Bengaluru",
+        "state": "Karnataka",
+        "tier": "Tier 1",
+        "latitude": 12.9716,
+        "longitude": 77.5946
+    },
+    {
+        "city_id": "HYD",
+        "city_name": "Hyderabad",
+        "state": "Telangana",
+        "tier": "Tier 1",
+        "latitude": 17.385,
+        "longitude": 78.4867
+    },
+    {
+        "city_id": "CHN",
+        "city_name": "Chennai",
+        "state": "Tamil Nadu",
+        "tier": "Tier 1",
+        "latitude": 13.0827,
+        "longitude": 80.2707
+    },
+    {
+        "city_id": "KOL",
+        "city_name": "Kolkata",
+        "state": "West Bengal",
+        "tier": "Tier 1",
+        "latitude": 22.5726,
+        "longitude": 88.3639
+    },
+    {
+        "city_id": "AMD",
+        "city_name": "Ahmedabad",
+        "state": "Gujarat",
+        "tier": "Tier 1",
+        "latitude": 23.0225,
+        "longitude": 72.5714
+    },
+    {
+        "city_id": "PNQ",
+        "city_name": "Pune",
+        "state": "Maharashtra",
+        "tier": "Tier 1",
+        "latitude": 18.5204,
+        "longitude": 73.8567
+    },
+    {
+        "city_id": "JAI",
+        "city_name": "Jaipur",
+        "state": "Rajasthan",
+        "tier": "Tier 2",
+        "latitude": 26.9124,
+        "longitude": 75.7873
+    },
+    {
+        "city_id": "LKO",
+        "city_name": "Lucknow",
+        "state": "Uttar Pradesh",
+        "tier": "Tier 2",
+        "latitude": 26.8467,
+        "longitude": 80.9462
+    },
+    {
+        "city_id": "COK",
+        "city_name": "Kochi",
+        "state": "Kerala",
+        "tier": "Tier 2",
+        "latitude": 9.9312,
+        "longitude": 76.2673
+    },
+    {
+        "city_id": "VTZ",
+        "city_name": "Visakhapatnam",
+        "state": "Andhra Pradesh",
+        "tier": "Tier 2",
+        "latitude": 17.6868,
+        "longitude": 83.2185
+    },
+    {
+        "city_id": "NAG",
+        "city_name": "Nagpur",
+        "state": "Maharashtra",
+        "tier": "Tier 2",
+        "latitude": 21.1458,
+        "longitude": 79.0882
+    },
+    {
+        "city_id": "IND",
+        "city_name": "Indore",
+        "state": "Madhya Pradesh",
+        "tier": "Tier 2",
+        "latitude": 22.7196,
+        "longitude": 75.8577
+    },
+    {
+        "city_id": "BUI",
+        "city_name": "Chandigarh",
+        "state": "Chandigarh",
+        "tier": "Tier 2",
+        "latitude": 30.7333,
+        "longitude": 76.7794
+    },
+    {
+        "city_id": "BHO",
+        "city_name": "Bhopal",
+        "state": "Madhya Pradesh",
+        "tier": "Tier 2",
+        "latitude": 23.2599,
+        "longitude": 77.4126
+    },
+    {
+        "city_id": "CBE",
+        "city_name": "Coimbatore",
+        "state": "Tamil Nadu",
+        "tier": "Tier 2",
+        "latitude": 11.0168,
+        "longitude": 76.9558
+    },
+    {
+        "city_id": "BBI",
+        "city_name": "Bhubaneswar",
+        "state": "Odisha",
+        "tier": "Tier 2",
+        "latitude": 20.2961,
+        "longitude": 85.8245
+    },
+    {
+        "city_id": "PAT",
+        "city_name": "Patna",
+        "state": "Bihar",
+        "tier": "Tier 2",
+        "latitude": 25.5941,
+        "longitude": 85.1376
+    },
+    {
+        "city_id": "SUR",
+        "city_name": "Surat",
+        "state": "Gujarat",
+        "tier": "Tier 2",
+        "latitude": 21.1702,
+        "longitude": 72.8311
+    },
+    {
+        "city_id": "VGA",
+        "city_name": "Vijayawada",
+        "state": "Andhra Pradesh",
+        "tier": "Tier 2",
+        "latitude": 16.5062,
+        "longitude": 80.648
+    },
+    {
+        "city_id": "GUW",
+        "city_name": "Guwahati",
+        "state": "Assam",
+        "tier": "Tier 2",
+        "latitude": 26.1158,
+        "longitude": 91.7086
+    },
+    {
+        "city_id": "RPR",
+        "city_name": "Raipur",
+        "state": "Chhattisgarh",
+        "tier": "Tier 2",
+        "latitude": 21.2514,
+        "longitude": 81.6296
+    },
+    {
+        "city_id": "RNC",
+        "city_name": "Ranchi",
+        "state": "Jharkhand",
+        "tier": "Tier 2",
+        "latitude": 23.3441,
+        "longitude": 85.3096
+    },
+    {
+        "city_id": "TRV",
+        "city_name": "Thiruvananthapuram",
+        "state": "Kerala",
+        "tier": "Tier 2",
+        "latitude": 8.5241,
+        "longitude": 76.9366
+    }
+]

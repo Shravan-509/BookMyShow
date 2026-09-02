@@ -79,9 +79,9 @@ Movie body fields:
 
 | Method | Endpoint | Body | Purpose |
 | --- | --- | --- | --- |
-| `POST` | `/theatres` | Theatre document | Adds a theatre after duplicate `name` check |
-| `GET` | `/theatres` | none | Returns all theatres for admin or owned theatres for partner; cached for 60 seconds |
-| `PATCH` | `/theatres/:id` | Partial theatre document | Updates theatre |
+| `POST` | `/theatres` | Theatre document | Adds a theatre after duplicate `name` check and validates optional active `city` reference |
+| `GET` | `/theatres` | none | Returns all theatres for admin or owned theatres for partner, with owner and optional city populated |
+| `PATCH` | `/theatres/:id` | Partial theatre document | Updates theatre and validates optional active `city` reference |
 | `DELETE` | `/theatres/:id` | none | Deletes theatre |
 
 Theatre body fields:
@@ -93,9 +93,24 @@ Theatre body fields:
   "phone": 9876543210,
   "email": "pvr@example.com",
   "owner": "USER_OBJECT_ID",
+  "city": "CITY_OBJECT_ID",
   "isActive": true
 }
 ```
+
+`city` is optional for backward compatibility with existing theatre records.
+
+## Cities
+
+| Method | Endpoint | Body | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/cities` | none | Returns active cities; admins may pass `?includeInactive=true` |
+| `GET` | `/cities/:id` | none | Returns one city |
+| `POST` | `/cities` | `{ cityName, state, country, cityCode?, tier?, location?, isActive? }` | Admin-only city creation |
+| `PATCH` | `/cities/:id` | Partial city document | Admin-only city update |
+| `DELETE` | `/cities/:id` | none | Admin-only soft deactivation by setting `isActive=false` |
+
+City records are protected by a compound unique index on `cityName`, `state`, and `country`, and an optional unique sparse `cityCode` index. `location`, when supplied, must be a GeoJSON Point with coordinates in `[longitude, latitude]` order. `tier` accepts `TIER_1`, `TIER_2`, or `TIER_3`; it is not used for pricing in the current implementation.
 
 ## Shows
 

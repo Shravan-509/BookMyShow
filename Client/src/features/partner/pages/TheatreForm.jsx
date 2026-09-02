@@ -1,9 +1,10 @@
-import React from 'react';
-import { Button, Col, Form, Input, Modal, Row } from 'antd'
+import React, { useEffect } from 'react';
+import { Button, Col, Form, Input, Modal, Row, Select } from 'antd'
 import TextArea from 'antd/es/input/TextArea'
 import { notify } from '../../../utils/notificationUtils';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { addTheatreRequest, updateTheatreRequest } from '../../../redux/slices/theatreSlice';
+import { fetchCitiesRequest, selectActiveCities } from '../../../redux/slices/citySlice';
 import { useAuth } from '../../../hooks/useAuth';
 import { sanitizeInput, validateLength, validateEmail,validatePhone } from '../../../utils/securityValidation';
 
@@ -17,6 +18,15 @@ const TheatreForm = ({
    
     const dispatch = useDispatch();
     const {user} = useAuth();
+    const cities = useSelector(selectActiveCities);
+    const initialValues = {
+        ...selectedTheatre,
+        city: selectedTheatre?.city?._id || selectedTheatre?.city,
+    };
+
+    useEffect(() => {
+        dispatch(fetchCitiesRequest());
+    }, [dispatch]);
    
     const handleCancel = () => {
         setIsModalOpen(false);
@@ -30,9 +40,7 @@ const TheatreForm = ({
             address: sanitizeInput(values.address),
             email: sanitizeInput(values.email),
             phone: sanitizeInput(values.phone),
-            city: sanitizeInput(values.city),
-            state: sanitizeInput(values.state),
-            zipCode: sanitizeInput(values.zipCode)
+            city: values.city
         };
         
         // Validate inputs
@@ -78,7 +86,7 @@ const TheatreForm = ({
             width={800}
             footer={null}
         >
-            <Form layout='vertical' initialValues = {selectedTheatre} onFinish={onFinish}>
+            <Form layout='vertical' initialValues = {initialValues} onFinish={onFinish}>
                 <Row gutter={{xs: 6, sm: 10, md: 12, lg: 16}}>
                     <Col span={24}>
                         <Form.Item
@@ -89,6 +97,26 @@ const TheatreForm = ({
                         >
                             <Input size="large" id='name' type='text' placeholder="Theatre name"></Input>
 
+                        </Form.Item>
+                    </Col>
+                    <Col span={24}>
+                        <Form.Item
+                            label="City"
+                            name="city"
+                            htmlFor='city'
+                        >
+                            <Select
+                                allowClear
+                                showSearch
+                                size="large"
+                                id="city"
+                                placeholder="Select city"
+                                optionFilterProp="label"
+                                options={cities.map((city) => ({
+                                    value: city._id,
+                                    label: `${city.cityName}, ${city.state}, ${city.country}`,
+                                }))}
+                            />
                         </Form.Item>
                     </Col>
                     <Col span={24}>

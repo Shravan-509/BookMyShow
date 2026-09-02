@@ -25,6 +25,7 @@ flowchart LR
 | `forgotPassword` | Forgot password and reset password |
 | `profile` | Profile, password/email changes, 2FA toggle, account deletion |
 | `movie` | Movie list and CRUD state |
+| `city` | Shared City list and admin City create/update/deactivate workflows |
 | `theatre` | Theatre list and CRUD state |
 | `show` | Show list, selected show, theatre-by-movie results |
 | `booking` | Seat validation, Razorpay order, booking creation, bookings, revenue |
@@ -35,4 +36,3 @@ flowchart LR
 ## Persisted State
 
 The root reducer is wrapped with `redux-persist`. On `logout`, the root reducer resets all slices by returning `undefined` state to the combined reducer.
-

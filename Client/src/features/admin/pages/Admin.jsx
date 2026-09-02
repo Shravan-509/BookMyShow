@@ -4,6 +4,7 @@ import TheatreList from './TheatreList'
 import { Tabs } from 'antd'
 import Title from 'antd/es/typography/Title'
 import UserManagement from './UserManagement'
+import CityManagement from './CityManagement'
 
 const Admin = () => {
   const tabItems = [
@@ -16,6 +17,11 @@ const Admin = () => {
       key: "theatres",
       label: "Theatres",
       children: <TheatreList/>
+    },
+    {
+      key: "cities",
+      label: "Cities",
+      children: <CityManagement />,
     },
     {
       key: "bookings",

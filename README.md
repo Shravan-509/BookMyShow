@@ -1,6 +1,6 @@
 # BookMyShow - Full Stack Movie Ticket Booking Platform
 
-BookMyShow is a production-style MERN movie ticket booking application with role-aware dashboards, movie discovery, theatre/show management, seat booking, Razorpay Checkout payments, Brevo transactional emails, and PDF ticket generation.
+BookMyShow is a production-style MERN movie ticket booking application with role-aware dashboards, movie discovery, city-aware theatre/show management, seat booking, Razorpay Checkout payments, Brevo transactional emails, and PDF ticket generation.
 
 | Resource | Link |
 | --- | --- |
@@ -17,14 +17,14 @@ The application supports three primary user roles:
 | Role | Main capabilities |
 | --- | --- |
 | User | Register, verify email, complete 2FA, browse movies, select shows/seats, pay through Razorpay, view booking history, manage profile security |
-| Admin | Manage movies, view theatres, manage users, view all bookings |
-| Partner | Register/manage owned theatres, create shows, track theatre bookings and revenue |
+| Admin | Manage movies, cities, theatres, users, and all bookings |
+| Partner | Register/manage owned theatres, optionally map theatres to active cities, create shows, track theatre bookings and revenue |
 
 ## Key Features
 
 - Email-based registration verification, two-factor login, password reset, email change verification, and account deletion.
 - JWT authentication through HTTP-only cookies with fallback support for bearer or `x-auth-token` headers.
-- Movie, theatre, show, user, and booking APIs backed by Mongoose models.
+- Movie, city, theatre, show, user, and booking APIs backed by Mongoose models.
 - Razorpay order creation with server-side price calculation, Checkout integration, payment signature and amount verification, atomic seat reservation, booking persistence, PDF ticket creation, and ticket email delivery.
 - Redux Toolkit slices with Redux-Saga workflows for async API calls.
 - React Router route guards and lazy-loaded route components.
@@ -213,8 +213,41 @@ Key groups:
 | Users | `/bms/v1/users` |
 | Movies | `/bms/v1/movies` |
 | Theatres | `/bms/v1/theatres` |
+| Cities | `/bms/v1/cities` |
 | Shows | `/bms/v1/shows` |
 | Bookings | `/bms/v1/bookings` |
+
+## BookMyShow v2 Phase 1
+
+Phase 1 introduces a City domain and an optional Theatre-to-City relationship while preserving existing theatre records without a city reference. Phase 1.1 extends City with optional `cityCode`, `tier`, and GeoJSON `location` metadata while keeping MongoDB `_id` as the Theatre reference. City management uses a new service/repository foundation on the backend and a small shared Redux/Saga slice on the frontend because both Admin City Management and theatre forms consume active City data.
+
+Current hierarchy:
+
+```text
+City -> Theatre -> Show -> Booking
+```
+
+Planned future hierarchy, not implemented in Phase 1:
+
+```text
+City -> Theatre -> Screen -> Seat
+```
+
+The safe backfill script defaults to dry-run mode:
+
+```bash
+cd Server
+node scripts/backfillTheatreCities.js --dry-run
+node scripts/backfillTheatreCities.js --apply
+```
+
+City metadata import defaults to dry-run mode, validates the seed data, and requires the `--apply` flag to persist changes:
+
+```bash
+cd Server
+node scripts/importCities.js --file ./path/to/indian-cities.json
+node scripts/importCities.js --file ./path/to/indian-cities.csv --apply
+```
 
 ## Security
 

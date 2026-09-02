@@ -1,5 +1,23 @@
 const Theatre = require("../models/theatreSchema");
 const User = require('../models/userSchema');
+const cityService = require("../services/cityService");
+
+const buildTheatrePayload = async (req) => {
+    const theatrePayload = {
+        ...req.body,
+        owner: req.user?.role === "partner" ? req.userId : req.body.owner,
+    };
+
+    if (Object.prototype.hasOwnProperty.call(theatrePayload, "city")) {
+        if (theatrePayload.city) {
+            await cityService.ensureActiveCity(theatrePayload.city);
+        } else {
+            delete theatrePayload.city;
+        }
+    }
+
+    return theatrePayload;
+};
 
 const addTheatre = async(req, res, next) => {
     try {
@@ -13,10 +31,7 @@ const addTheatre = async(req, res, next) => {
                     message: `${name} Theatre already exists`
                 });
         }
-        const theatrePayload = {
-            ...req.body,
-            owner: req.user?.role === "partner" ? req.userId : req.body.owner,
-        }
+        const theatrePayload = await buildTheatrePayload(req)
 
         const newTheatre = new Theatre(theatrePayload);
         await newTheatre.save();
@@ -52,10 +67,7 @@ const updateTheatre = async(req, res, next) => {
             })
         }
 
-        const theatrePayload = {
-            ...req.body,
-            owner: req.user?.role === "partner" ? req.userId : req.body.owner,
-        }
+        const theatrePayload = await buildTheatrePayload(req)
 
         const updatedTheatre = await Theatre.findByIdAndUpdate(
             id, 
@@ -64,7 +76,7 @@ const updateTheatre = async(req, res, next) => {
                 returnDocument: "after",
                 runValidators: true
             }
-        )
+        ).populate("city", "cityName state country isActive")
         
         if(!updatedTheatre){
             return res.send({
@@ -153,10 +165,12 @@ const getTheatres = async(req, res, next) => {
         }
 
         //Fetch theatres based on query (Admin, Partner)
-        const theatres = await Theatre.find(query).populate({
-            path: "owner",
-            select: "-password"  // exclude password field
-          });
+        const theatres = await Theatre.find(query)
+            .populate({
+                path: "owner",
+                select: "-password"  // exclude password field
+            })
+            .populate("city", "cityName state country isActive");
           
         return res.send({
                 success: true,

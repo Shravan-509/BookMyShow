@@ -73,3 +73,31 @@ BREVO_EMAIL_FROM=<verified-sender>
 - Verify Brevo sender and templates.
 - Keep secrets out of Git and only in hosting provider environment variables.
 - Confirm MongoDB Atlas network access and database user permissions.
+
+## City Migration
+
+BookMyShow v2 Phase 1 adds optional `theatres.city` references. Existing theatre records continue to work without a city, so this migration is not required before deployment.
+
+The backfill script is dry-run by default and skips ambiguous records rather than guessing from free-form addresses:
+
+```bash
+cd Server
+node scripts/backfillTheatreCities.js --dry-run
+node scripts/backfillTheatreCities.js --apply
+```
+
+Run `--apply` only after reviewing the dry-run summary and confirming legacy theatre records contain explicit `cityName`, `state`, and `country` fields.
+
+## City Metadata Import
+
+BookMyShow v2 Phase 1.1 adds optional `cityCode`, `tier`, and GeoJSON `location` metadata to City records. Existing City records remain valid without these fields.
+
+The Indian city seed/import script accepts JSON or CSV input, defaults to dry-run mode, validates each record, and only writes when `--apply` is explicitly supplied:
+
+```bash
+cd Server
+node scripts/importCities.js --file ./path/to/indian-cities.json
+node scripts/importCities.js --file ./path/to/indian-cities.csv --apply
+```
+
+Review invalid, skipped, inserted, updated, and reused counts before running `--apply`. After all existing production cities have valid unique `cityCode` values, `cityCode` can be evaluated for a future required-field migration.

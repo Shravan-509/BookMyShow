@@ -22,6 +22,10 @@ const theatreSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: "users"
         },
+        city:{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "City"
+        },
         isActive:{
             type: Boolean,
             default: false

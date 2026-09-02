@@ -113,8 +113,8 @@ flowchart TB
 | Client state | `Client/src/redux` | Redux Toolkit slices, persisted root reducer, Redux-Saga side effects |
 | API client | `Client/src/api` | Axios calls grouped by backend domain |
 | HTTP API | `Server/server.js`, `Server/routes` | Middleware and route mounting |
-| Business logic | `Server/controllers` | Auth, users, movies, theatres, shows, bookings, payments |
-| Data model | `Server/models` | Mongoose schemas and relations |
+| Business logic | `Server/controllers`, `Server/services` | Auth, users, movies, theatres, shows, bookings, payments, and incremental City service logic |
+| Data model | `Server/models`, `Server/repositories` | Mongoose schemas and relations; City uses a repository for database operations |
 | Integrations | `Server/utils/email.js`, `Server/utils/ticket-pdf.js`, Razorpay SDK | Email, PDF ticket, payment gateway |
 
 ## Backend Request Flow
@@ -620,6 +620,36 @@ sequenceDiagram
 | 7 | CORS | Allows `PUBLIC_APP_URL` with credentials |
 | 8 | Route-specific middleware | Auth limiter, JWT validation, role checks, booking limiter, selected shared catalogue cache |
 | 9 | Error handler | Final JSON error response |
+
+## BookMyShow v2 Phase 1 City Architecture
+
+Phase 1 introduces City as the first incremental service/repository-backed domain while preserving the existing controller-driven architecture for established modules. Phase 1.1 enriches City with optional `cityCode`, `tier`, and GeoJSON `location` metadata; it does not introduce tier-based pricing or Screen/Seat hierarchy changes.
+
+```mermaid
+flowchart LR
+    Admin["Admin UI"] --> CityRedux["citySlice + citySaga"]
+    TheatreForm["Theatre Form"] --> CityRedux
+    CityRedux --> CityAPI["Client CityAPI"]
+    CityAPI --> CityRoutes["/bms/v1/cities"]
+    CityRoutes --> CityController["CityController"]
+    CityController --> CityService["cityService"]
+    CityService --> CityRepository["cityRepository"]
+    CityRepository --> CityModel["City model"]
+    CityModel --> MongoDB[("MongoDB")]
+    TheatreController["TheatreController"] --> CityService
+```
+
+Current implemented relationship:
+
+```text
+City -> Theatre -> Show -> Booking
+```
+
+Future target, not implemented in this phase:
+
+```text
+City -> Theatre -> Screen -> Seat
+```
 
 ## Route Groups
 

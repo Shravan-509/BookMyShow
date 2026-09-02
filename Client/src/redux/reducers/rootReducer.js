@@ -10,6 +10,7 @@ import verificationReducer from "../slices/verificationSlice"
 import forgotPasswordReducer from "../slices/forgotPasswordSlice"
 import profileReducer from "../slices/profileSlice"
 import bookingReducer from "../slices/bookingSlice"
+import cityReducer from "../slices/citySlice"
 
 const appReducer = combineReducers({
    loader: loaderReducer,
@@ -22,7 +23,8 @@ const appReducer = combineReducers({
     verification: verificationReducer,
     forgotPassword: forgotPasswordReducer,
     profile: profileReducer,
-    booking: bookingReducer
+    booking: bookingReducer,
+    city: cityReducer
 });
 
 const rootReducer = (state, action) => {

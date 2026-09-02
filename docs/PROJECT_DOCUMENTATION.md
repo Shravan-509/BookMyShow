@@ -2,7 +2,7 @@
 
 ## 1. Project Overview
 
-BookMyShow is a MERN movie-ticket booking application with role-aware dashboards for customers, theatre partners, and administrators. The implementation includes authentication with email verification and optional two-factor authentication, movie and theatre management, show scheduling, seat validation, Razorpay payments, booking persistence, ticket PDF generation, and transactional emails through Brevo.
+BookMyShow is a MERN movie-ticket booking application with role-aware dashboards for customers, theatre partners, and administrators. The implementation includes authentication with email verification and optional two-factor authentication, movie, city, and theatre management, show scheduling, seat validation, Razorpay payments, booking persistence, ticket PDF generation, and transactional emails through Brevo.
 
 The project is split into:
 
@@ -17,8 +17,8 @@ Primary user roles:
 | Role | Capabilities in the current implementation |
 | --- | --- |
 | `user` | Browse movies, view shows, select seats, pay, receive tickets, view booking history, manage profile/security settings |
-| `partner` | Manage theatres owned by the partner, manage shows, view theatre bookings and revenue metrics |
-| `admin` | Manage movies, view theatres, view users, view all bookings |
+| `partner` | Manage theatres owned by the partner, optionally map theatres to active cities, manage shows, view theatre bookings and revenue metrics |
+| `admin` | Manage movies, cities, theatres, users, and all bookings |
 
 ## 2. Architecture Overview
 
@@ -116,6 +116,20 @@ flowchart LR
     Services --> PDF
 ```
 
+
+BookMyShow v2 Phase 1 introduces the City domain as the first incremental service/repository-backed module. Phase 1.1 adds optional City metadata fields: `cityCode`, `tier`, and GeoJSON `location`. Existing modules remain controller-driven unless they need a small integration point with City.
+
+Implemented Phase 1 hierarchy:
+
+```text
+City -> Theatre -> Show -> Booking
+```
+
+Planned future hierarchy, not implemented in this phase:
+
+```text
+City -> Theatre -> Screen -> Seat
+```
 
 Request flow:
 
@@ -228,9 +242,11 @@ The backend is an Express app mounted under `/bms/v1`.
 | --- | --- |
 | `Server/server.js` | App bootstrap, middleware stack, DB connection, route mounting, server startup |
 | `Server/config/db.js` | Mongoose connection using `MONGODB_CONNECTION_STRING` |
-| `Server/routes/` | Express routers for auth, users, movies, theatres, shows, bookings |
+| `Server/routes/` | Express routers for auth, users, movies, cities, theatres, shows, bookings |
 | `Server/controllers/` | Request validation, business workflows, database operations, external integrations |
-| `Server/models/` | Mongoose schemas for users, movies, theatres, shows, bookings, verification codes |
+| `Server/services/` | City business rules and theatre city-reference validation |
+| `Server/repositories/` | City database operations |
+| `Server/models/` | Mongoose schemas for users, movies, cities, theatres, shows, bookings, verification codes |
 | `Server/middlewares/authorization.js` | JWT validation and role-check helper |
 | `Server/middlewares/performanceOptimization.js` | Helmet, compression, rate limiting, request timing/logging, cache headers |
 | `Server/middlewares/cache.js` | Route-level in-memory GET response cache via `node-cache` |
@@ -243,7 +259,7 @@ Middleware order in `server.js`:
 1. JSON/urlencoded parsing and cookies.
 2. Helmet security headers, compression, response-time header, request logging, cache headers.
 3. Global rate limiter.
-4. CORS with `origin: process.env.PUBLIC_APP_URL` and credentials enabled.
+4. CORS with explicit allowed origins and credentials enabled.
 5. Route mounting.
 6. Central error handler.
 
@@ -489,6 +505,7 @@ High-level route groups:
 | Users | `/users` | JWT required |
 | Movies | `/movies` | JWT required |
 | Theatres | `/theatres` | JWT required |
+| Cities | `/cities` | JWT required for reads; admin role required for create/update/deactivate |
 | Shows | `/shows` | JWT required |
 | Bookings | `/bookings` | JWT required plus stricter booking rate limiter |
 
@@ -500,6 +517,7 @@ Focused model reference is maintained in [DATABASE_SCHEMA.md](./DATABASE_SCHEMA.
 erDiagram
 
     USERS ||--o{ THEATRES : owns
+    CITIES ||--o{ THEATRES : contains
     USERS ||--o{ BOOKINGS : books
     USERS ||--o{ VERIFICATIONS : receives
 
@@ -950,6 +968,26 @@ VITE_API_URL=http://localhost:3000/bms/v1
 VITE_RAZORPAY_KEY_ID=rzp_test_xxxxx
 ```
 
+City backfill:
+
+```bash
+cd Server
+node scripts/backfillTheatreCities.js --dry-run
+node scripts/backfillTheatreCities.js --apply
+```
+
+The script is idempotent, defaults to dry-run behavior, reuses existing City records through upsert, preserves legacy theatre location/address data, and skips ambiguous records that do not contain explicit `cityName`, `state`, and `country` fields.
+
+City metadata import:
+
+```bash
+cd Server
+node scripts/importCities.js --file ./path/to/indian-cities.json
+node scripts/importCities.js --file ./path/to/indian-cities.csv --apply
+```
+
+The metadata importer defaults to dry-run mode, accepts JSON or CSV input, maps `city_id` to `cityCode`, maps `city_name` to `cityName`, stores GeoJSON coordinates as `[longitude, latitude]`, and reports inserted, updated, reused, skipped, and invalid records.
+
 ## 14. Folder Structure
 
 ```text
@@ -997,7 +1035,10 @@ BookMyShow/
 │   ├── controllers/
 │   ├── middlewares/
 │   ├── models/
+│   ├── repositories/
 │   ├── routes/
+│   ├── scripts/
+│   ├── services/
 │   ├── tests/
 │   │   ├── helpers/
 │   │   ├── integration/

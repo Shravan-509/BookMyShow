@@ -13,6 +13,7 @@ const movieRoute = require("./routes/movieRoute");
 const theatreRoute = require("./routes/theatreRoute");
 const showRoute = require("./routes/showRoute");
 const bookingRoute = require("./routes/bookingRoute");
+const cityRoute = require("./routes/cityRoute");
 
 const errorHandler = require("./middlewares/errorHandler");
 const notFound = require("./middlewares/notFound");
@@ -75,6 +76,7 @@ app.use("/bms/v1/users", validateJWT, userRoute);
 app.use("/bms/v1/movies", validateJWT, movieRoute);
 app.use("/bms/v1/theatres", validateJWT, theatreRoute);
 app.use("/bms/v1/shows", validateJWT, showRoute);
+app.use("/bms/v1/cities", validateJWT, cityRoute);
 
 // Booking route with stricter limiter
 app.use(
