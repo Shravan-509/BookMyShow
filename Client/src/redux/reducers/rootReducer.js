@@ -11,6 +11,7 @@ import forgotPasswordReducer from "../slices/forgotPasswordSlice"
 import profileReducer from "../slices/profileSlice"
 import bookingReducer from "../slices/bookingSlice"
 import cityReducer from "../slices/citySlice"
+import screenReducer from "../slices/screenSlice"
 
 const appReducer = combineReducers({
    loader: loaderReducer,
@@ -24,7 +25,8 @@ const appReducer = combineReducers({
     forgotPassword: forgotPasswordReducer,
     profile: profileReducer,
     booking: bookingReducer,
-    city: cityReducer
+    city: cityReducer,
+    screen: screenReducer
 });
 
 const rootReducer = (state, action) => {

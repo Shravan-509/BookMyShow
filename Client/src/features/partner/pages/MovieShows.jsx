@@ -1,12 +1,19 @@
-import React, { useEffect, useState } from "react";
-import { Button, Col, Form, Input, InputNumber, Modal, Popconfirm, Row, Select, Spin, Table, Tooltip } from "antd";
+import React, { useEffect, useMemo, useState } from "react";
+import { Alert, Button, Col, Form, Input, InputNumber, Modal, Popconfirm, Row, Select, Spin, Table, Tooltip } from "antd";
 import Title from "antd/es/typography/Title";
 import { EditOutlined, DeleteOutlined, ArrowLeftOutlined } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 import { addShowRequest, deleteShowRequest, getShowsByTheatreRequest, selectShow, selectShowError, selectShowLoading, updateShowRequest } from "../../../redux/slices/showSlice";
 import { getMoviesRequest, selectMovie } from "../../../redux/slices/movieSlice";
+import { fetchScreensByTheatreRequest, selectActiveScreensByTheatre } from "../../../redux/slices/screenSlice";
 import { notify } from "../../../utils/notificationUtils";
 import { formatDate, formatParsedTime } from "../../../utils/dateFormatter";
+import { getAvailableSeats, getResolvedTotalSeats } from "./showCapacityUtils";
+
+const normalizeScreenId = (screen) => {
+    const value = screen?._id || screen;
+    return value ? String(value) : undefined;
+};
 
 const MovieShows = ({
     isShowModalOpen,
@@ -17,18 +24,70 @@ const MovieShows = ({
 
     const [view, setView] = useState("table");
     const [selectedShow, setSelectedShow] = useState(null);
+    const [form] = Form.useForm();
 
     const dispatch = useDispatch();
     const loading = useSelector(selectShowLoading);
     const showError = useSelector(selectShowError);
     const shows = useSelector(selectShow);
     const movies = useSelector(selectMovie);
+    const activeScreens = useSelector(selectActiveScreensByTheatre(selectedTheatre?._id));
+    const selectedScreenId = normalizeScreenId(Form.useWatch("screen", form));
+    const screenOptions = useMemo(() => activeScreens.map((screen) => ({
+        key: normalizeScreenId(screen),
+        value: normalizeScreenId(screen),
+        label: `${screen.name} (${screen.capacity} seats)`,
+    })), [activeScreens]);
+    const selectedScreen = activeScreens.find((screen) => normalizeScreenId(screen) === selectedScreenId);
 
     useEffect(() =>{
         if (selectedTheatre?._id) {
              dispatch(getShowsByTheatreRequest(selectedTheatre._id))
+             dispatch(fetchScreensByTheatreRequest({ theatreId: selectedTheatre._id, activeOnly: true }))
         }
     }, [dispatch, selectedTheatre?._id])
+
+    useEffect(() => {
+        if (view === "table") {
+            form.resetFields();
+            return;
+        }
+
+        if (view === "add") {
+            form.resetFields();
+        }
+
+        if (view === "edit" && selectedShow) {
+            form.setFieldsValue(selectedShow);
+        }
+    }, [form, selectedShow, view]);
+
+    useEffect(() => {
+        if (!["add", "edit"].includes(view) || activeScreens.length === 0) {
+            return;
+        }
+
+        const currentScreenId = normalizeScreenId(form.getFieldValue("screen"));
+        const validScreenSelected = activeScreens.some((screen) => normalizeScreenId(screen) === currentScreenId);
+
+        if (currentScreenId && !validScreenSelected) {
+            form.setFieldsValue({
+                screen: view === "add" && activeScreens.length === 1
+                    ? normalizeScreenId(activeScreens[0])
+                    : undefined
+            });
+            return;
+        }
+
+        if (currentScreenId && form.getFieldValue("screen") !== currentScreenId) {
+            form.setFieldsValue({ screen: currentScreenId });
+            return;
+        }
+
+        if (view === "add" && !currentScreenId && activeScreens.length === 1) {
+            form.setFieldsValue({ screen: normalizeScreenId(activeScreens[0]) });
+        }
+    }, [activeScreens, form, view]);
 
     const handleCancel= () => {
         setIsShowModalOpen(false);
@@ -38,6 +97,7 @@ const MovieShows = ({
     const onFinish =  (values) => {
         const show = {
             ...values,
+            screen: normalizeScreenId(values.screen),
             theatre: selectedTheatre._id
         };
         if(view === "add")
@@ -90,6 +150,12 @@ const MovieShows = ({
             } 
         },
         {
+            title: "Screen",
+            key : "screen",
+            dataIndex: "screen",
+            render: (screen) => screen?.name || "Legacy / Unassigned"
+        },
+        {
             title: "Ticket Price",
             key : "ticketPrice",
             dataIndex: "ticketPrice"
@@ -97,14 +163,12 @@ const MovieShows = ({
         {
             title: "Total Seats",
             key : "totalSeats",
-            dataIndex: "totalSeats"
+            render: (text, data) => getResolvedTotalSeats(data)
         },
         {
             title: "Available Seats",
             key : "seats",
-            render: (text, data) => {
-                return data.totalSeats - data.bookedSeats.length;
-            } 
+            render: (text, data) => getAvailableSeats(data)
         },
         {
             title : "Actions",
@@ -119,7 +183,8 @@ const MovieShows = ({
                                     setSelectedShow({
                                         ...data,
                                         date: formatDate(data.date, "yyyy-MM-dd"),
-                                        movie: data.movie._id
+                                        movie: data.movie._id,
+                                        screen: normalizeScreenId(data.screen)
                                     });
                                     dispatch(getMoviesRequest());
                                 }}
@@ -194,12 +259,13 @@ const MovieShows = ({
         </div>
 
         {
-            view === "table" && <Table dataSource={shows} columns={columns} scroll={{ x: 600 }}/>
+            view === "table" && <Table rowKey="_id" dataSource={shows} columns={columns} scroll={{ x: 600 }}/>
         }
 
         {
             (view === "add" || view === "edit") && (
                 <Form 
+                    form={form}
                     layout="vertical" 
                     initialValues = {selectedShow} 
                     onFinish={onFinish}
@@ -242,6 +308,45 @@ const MovieShows = ({
                         </Col>
                     </Row>
                     <Row gutter={{xs: 6, sm: 10, md: 12, lg: 16}}>
+                        <Col span={24}>
+                            {activeScreens.length === 0 && (
+                                <Alert
+                                    showIcon
+                                    type="warning"
+                                    className="mb-4"
+                                    title="No screens are configured for this theatre. Add a screen before creating a new show."
+                                />
+                            )}
+                        </Col>
+                        <Col span={8}>
+                            <Form.Item
+                                label="Select Screen"
+                                name="screen"
+                                htmlFor="screen"
+                                className="block"
+                                rules={[{required: true, message: "Screen is required for new show setup"}]}
+                            >
+                               <Select
+                                id= "screen"
+                                name= "screen"
+                                size="large"
+                                className="custom-select"
+                                placeholder= "Select Screen"
+                                disabled={activeScreens.length === 0}
+                                options={screenOptions}
+                              />
+                            </Form.Item>
+                        </Col>
+                        <Col span={8}>
+                            {selectedScreen && (
+                                <Alert
+                                    showIcon
+                                    type="info"
+                                    title={`Screen: ${selectedScreen.name}`}
+                                    description={`Capacity: ${selectedScreen.capacity} seats`}
+                                />
+                            )}
+                        </Col>
                         <Col span={8}>
                             <Form.Item
                                 label="Select the Movie"
@@ -276,17 +381,6 @@ const MovieShows = ({
                                 <InputNumber min={20} style={{ width: '100%' }}  suffix="Rs" id="ticketPrice" size="large" placeholder="Ticket Price"/>
                             </Form.Item>
                         </Col>
-                        <Col span={8}>
-                            <Form.Item
-                                label="Total Seats"
-                                htmlFor="totalSeats"
-                                name="totalSeats"
-                                className="block"
-                                rules={[{required: true, message: "Total Seats are required"}]}
-                            >
-                                <InputNumber min={10} style={{ width: '100%' }} id="totalSeats" size="large" placeholder="Total number of Seats"/>
-                            </Form.Item>
-                        </Col>
                     </Row>
                    
                     <div className="flex gap-3">
@@ -306,6 +400,7 @@ const MovieShows = ({
                                 block
                                 type="primary"
                                 htmlType="submit"
+                                disabled={activeScreens.length === 0}
                                 className='bg-[#f84464]! hover:bg-[#dc3558]! text-base!'
                             >
                                 {view === "add" ? "Add Show" : "Update Show"}

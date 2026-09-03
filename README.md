@@ -214,24 +214,29 @@ Key groups:
 | Movies | `/bms/v1/movies` |
 | Theatres | `/bms/v1/theatres` |
 | Cities | `/bms/v1/cities` |
+| Screens | `/bms/v1/screens` |
 | Shows | `/bms/v1/shows` |
 | Bookings | `/bms/v1/bookings` |
 
-## BookMyShow v2 Phase 1
+## BookMyShow v2
 
 Phase 1 introduces a City domain and an optional Theatre-to-City relationship while preserving existing theatre records without a city reference. Phase 1.1 extends City with optional `cityCode`, `tier`, and GeoJSON `location` metadata while keeping MongoDB `_id` as the Theatre reference. City management uses a new service/repository foundation on the backend and a small shared Redux/Saga slice on the frontend because both Admin City Management and theatre forms consume active City data.
 
-Current hierarchy:
+Phase 2 introduces the Screen domain as the physical auditorium inside a Theatre. Every Theatre conceptually has at least one Screen, including traditional single-screen theatres, but Screen records must be configured with actual auditorium capacity rather than fabricated data.
+
+Current target hierarchy:
 
 ```text
-City -> Theatre -> Show -> Booking
+City -> Theatre -> Screen -> Show -> Booking
 ```
 
-Planned future hierarchy, not implemented in Phase 1:
+Future Seat hierarchy, not implemented in Phase 2:
 
 ```text
 City -> Theatre -> Screen -> Seat
 ```
+
+During Phase 2, `Show.theatre` remains supported for booking compatibility and `Show.screen` is optional for legacy Shows. The updated Admin/Partner Show UI uses explicit Screen selection for new Shows.
 
 The safe backfill script defaults to dry-run mode:
 

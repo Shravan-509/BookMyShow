@@ -497,3 +497,175 @@ describe("BookingController seat validation and history", () => {
     expect(Booking.find).not.toHaveBeenCalled();
   });
 });
+
+describe("BookingController partner booking and revenue compatibility", () => {
+  test("Theatre bookings include historical legacy and screen-aware Show bookings", async () => {
+    const { controller, Booking, Show, Theatre } = loadController();
+    const screenAwareBooking = {
+      _id: "booking-screen-aware",
+      user: { name: "Screen User", email: "screen@example.com", phone: "9999999999" },
+      show: {
+        movie: { movieName: "Dune", poster: "poster.jpg" },
+        theatre: { _id: THEATRE_ID, name: "INOX" },
+        screen: { name: "Screen 2", screenNumber: 2, capacity: 210 },
+        date: "2026-09-03",
+        time: "14:30",
+        ticketPrice: 250,
+      },
+      seats: ["A1"],
+      amount: 267.7,
+      convenienceFee: 17.7,
+      gstPercent: 18,
+      ticketStatus: "Confirmed",
+      seatType: "Standard",
+      bookingId: "BMS0001",
+      createdAt: new Date("2026-09-03T10:00:00Z"),
+      paymentMethod: "Razorpay",
+    };
+    const legacyBooking = {
+      _id: "booking-legacy",
+      user: { name: "Legacy User", email: "legacy@example.com", phone: "8888888888" },
+      show: {
+        movie: { movieName: "Interstellar", poster: "poster2.jpg" },
+        theatre: { _id: THEATRE_ID, name: "INOX" },
+        date: "2026-08-20",
+        time: "10:15",
+        ticketPrice: 200,
+      },
+      seats: ["B1", "B2"],
+      amount: 435.4,
+      convenienceFee: 35.4,
+      gstPercent: 18,
+      ticketStatus: "Confirmed",
+      seatType: "Standard",
+      bookingId: "BMS0002",
+      createdAt: new Date("2026-08-20T10:00:00Z"),
+      paymentMethod: "Razorpay",
+    };
+
+    Theatre.findById.mockReturnValue(createSelectableQuery({ _id: THEATRE_ID, owner: USER_ID }));
+    Show.find.mockReturnValue(createSelectableQuery([{ _id: "show-1" }, { _id: "show-2" }]));
+    Booking.find.mockReturnValue(createSortPopulateQuery([screenAwareBooking, legacyBooking]));
+    const res = createMockResponse();
+
+    await controller.getBookingsByTheatre(
+      {
+        params: { theatreId: THEATRE_ID },
+        userId: USER_ID,
+        user: { role: "partner" },
+      },
+      res,
+      jest.fn(),
+    );
+
+    expect(Show.find).toHaveBeenCalledWith({ theatre: THEATRE_ID });
+    expect(res.send).toHaveBeenCalledWith(expect.objectContaining({
+      success: true,
+      data: [
+        expect.objectContaining({
+          bookingId: "BMS0001",
+          screenName: "Screen 2 / Screen 2",
+          amount: 267.7,
+        }),
+        expect.objectContaining({
+          bookingId: "BMS0002",
+          screenName: null,
+          amount: 435.4,
+        }),
+      ],
+    }));
+  });
+
+  test("Revenue aggregation keeps legacy and screen-aware booking revenue by Theatre", async () => {
+    const { controller, Booking, Show, Theatre } = loadController();
+    const bookings = [
+      {
+        amount: 267.7,
+        seats: ["A1"],
+        createdAt: new Date(),
+        show: {
+          theatre: { _id: THEATRE_ID, name: "INOX" },
+          screen: { name: "Screen 2", screenNumber: 2 },
+        },
+      },
+      {
+        amount: 435.4,
+        seats: ["B1", "B2"],
+        createdAt: new Date(),
+        show: {
+          theatre: { _id: THEATRE_ID, name: "INOX" },
+        },
+      },
+    ];
+
+    Theatre.find.mockReturnValue(createSelectableQuery([{ _id: THEATRE_ID, name: "INOX" }]));
+    Show.find.mockReturnValue(createSelectableQuery([{ _id: "show-1" }, { _id: "show-2" }]));
+    Booking.find.mockReturnValue(createPopulateQuery(bookings));
+    const res = createMockResponse();
+
+    await controller.getRevenueByOwner(
+      {
+        params: { ownerId: USER_ID },
+        userId: USER_ID,
+        user: { role: "partner" },
+      },
+      res,
+      jest.fn(),
+    );
+
+    expect(Show.find).toHaveBeenCalledWith({ theatre: { $in: [THEATRE_ID] } });
+    expect(res.send).toHaveBeenCalledWith(expect.objectContaining({
+      success: true,
+      data: expect.objectContaining({
+        summary: expect.objectContaining({
+          totalRevenue: 703.1,
+          totalBookings: 2,
+          totalTickets: 3,
+        }),
+        revenueByTheatre: [
+          expect.objectContaining({
+            theatreId: THEATRE_ID,
+            theatreName: "INOX",
+            revenue: 703.1,
+            bookings: 2,
+            tickets: 3,
+          }),
+        ],
+      }),
+    }));
+  });
+
+  test("Partner cannot fetch bookings or revenue for another owner", async () => {
+    const { controller, Booking, Show, Theatre } = loadController();
+    const res = createMockResponse();
+
+    Theatre.findById.mockReturnValue(createSelectableQuery({ _id: THEATRE_ID, owner: OTHER_USER_ID }));
+
+    await controller.getBookingsByTheatre(
+      {
+        params: { theatreId: THEATRE_ID },
+        userId: USER_ID,
+        user: { role: "partner" },
+      },
+      res,
+      jest.fn(),
+    );
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(Show.find).not.toHaveBeenCalled();
+    expect(Booking.find).not.toHaveBeenCalled();
+
+    const revenueRes = createMockResponse();
+    await controller.getRevenueByOwner(
+      {
+        params: { ownerId: OTHER_USER_ID },
+        userId: USER_ID,
+        user: { role: "partner" },
+      },
+      revenueRes,
+      jest.fn(),
+    );
+
+    expect(revenueRes.status).toHaveBeenCalledWith(403);
+  });
+});

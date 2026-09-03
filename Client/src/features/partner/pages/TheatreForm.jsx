@@ -126,7 +126,12 @@ const TheatreForm = ({
                             htmlFor='address'
                             rules={[{required: true, message: "Theatre Address is required"}]}
                         >
-                            <TextArea size="large" id="address" rows='3' placeholder="Theatre Address"></TextArea>
+                            <TextArea
+                                size="large"
+                                id="address"
+                                rows='3'
+                                placeholder="Station Road, Dondaparthy, Dwaraka Nagar, 530016"
+                            />
                         </Form.Item>
                     </Col>
                     <Col span={24}>

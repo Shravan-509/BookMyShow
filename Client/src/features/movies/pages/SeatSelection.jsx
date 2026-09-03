@@ -98,6 +98,7 @@ const Booking = () => {
   const loading = useSelector(selectShowLoading)
   const showError = useSelector(selectShowError)
   const show = useSelector(selectSelectedShow)
+  const resolvedTotalSeats = show?.screen?.capacity ?? show?.totalSeats ?? 0
 
   useEffect(() => {
     const checkMobile = () => {
@@ -323,7 +324,7 @@ const Booking = () => {
                   {(!isMobile || !showBookingSummary) && (
                     <>
                       <SeatRecommendation
-                        totalSeats={show?.totalSeats}
+                        totalSeats={resolvedTotalSeats}
                         bookedSeats={show?.bookedSeats}
                         selectedSeats={selectedSeats}
                         onSeatSelect={handleRecommendedSeatSelection}
@@ -335,7 +336,7 @@ const Booking = () => {
                       <div className="mb-6">
                         <div className="seat-selection-area">
                           <SeatLayout
-                            totalSeats={show?.totalSeats}
+                            totalSeats={resolvedTotalSeats}
                             bookedSeats={show?.bookedSeats}
                             selectedSeats={selectedSeats}
                             onSeatSelect={handleSeatSelection}

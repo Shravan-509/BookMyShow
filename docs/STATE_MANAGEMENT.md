@@ -27,7 +27,8 @@ flowchart LR
 | `movie` | Movie list and CRUD state |
 | `city` | Shared City list and admin City create/update/deactivate workflows |
 | `theatre` | Theatre list and CRUD state |
-| `show` | Show list, selected show, theatre-by-movie results |
+| `screen` | Theatre-specific Screen list and Screen create/update/delete workflows |
+| `show` | Show list, selected show, screen-aware show create/edit, theatre-by-movie results |
 | `booking` | Seat validation, Razorpay order, booking creation, bookings, revenue |
 | `user` | Admin user listing |
 | `ui` | Auth tab and login error state |

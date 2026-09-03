@@ -5,6 +5,7 @@ import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import TheatreForm from './TheatreForm';
 import DeleteTheatre from './DeleteTheatre';
 import MovieShows from './MovieShows';
+import ScreenManagement from './ScreenManagement';
 import { getTheatresRequest, selectTheatre, selectTheatreError, selectTheatreLoading } from '../../../redux/slices/theatreSlice';
 import { notify } from '../../../utils/notificationUtils';
 
@@ -12,6 +13,7 @@ const TheatreList = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isShowModalOpen, setIsShowModalOpen] = useState(false);
+    const [isScreenModalOpen, setIsScreenModalOpen] = useState(false);
     const [selectedTheatre, setSelectedTheatre] = useState(null);
     const [formType, setFormType] = useState("add");
 
@@ -99,7 +101,7 @@ const TheatreList = () => {
                                 <DeleteOutlined/>
                             </Button>
                         </Tooltip>
-                        {data.isActive && 
+                        {data.isActive &&
                             <Tooltip  title={"Add Shows"}>
                                 <Button size="large"
                                     onClick={() => {
@@ -108,6 +110,18 @@ const TheatreList = () => {
                                     }}
                                 >
                                     + Shows
+                                </Button>
+                            </Tooltip>
+                        }
+                        {data.isActive &&
+                            <Tooltip title="Manage Screens">
+                                <Button size="large"
+                                    onClick={() => {
+                                        setIsScreenModalOpen(true);
+                                        setSelectedTheatre(data);
+                                    }}
+                                >
+                                    Screens
                                 </Button>
                             </Tooltip>
                         }
@@ -179,6 +193,15 @@ const TheatreList = () => {
             <MovieShows
                 isShowModalOpen={isShowModalOpen} 
                 setIsShowModalOpen={setIsShowModalOpen}
+                selectedTheatre={selectedTheatre}
+                setSelectedTheatre={setSelectedTheatre}
+            />
+        }
+        {
+            isScreenModalOpen &&
+            <ScreenManagement
+                isScreenModalOpen={isScreenModalOpen}
+                setIsScreenModalOpen={setIsScreenModalOpen}
                 selectedTheatre={selectedTheatre}
                 setSelectedTheatre={setSelectedTheatre}
             />

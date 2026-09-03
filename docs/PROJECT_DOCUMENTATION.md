@@ -117,19 +117,21 @@ flowchart LR
 ```
 
 
-BookMyShow v2 Phase 1 introduces the City domain as the first incremental service/repository-backed module. Phase 1.1 adds optional City metadata fields: `cityCode`, `tier`, and GeoJSON `location`. Existing modules remain controller-driven unless they need a small integration point with City.
+BookMyShow v2 Phase 1 introduces the City domain as the first incremental service/repository-backed module. Phase 1.1 adds optional City metadata fields: `cityCode`, `tier`, and GeoJSON `location`. Phase 2 introduces the Screen domain as the physical auditorium inside a Theatre. Existing modules remain controller-driven unless they need a small integration point with City or Screen.
 
-Implemented Phase 1 hierarchy:
+Implemented Phase 2 target hierarchy:
 
 ```text
-City -> Theatre -> Show -> Booking
+City -> Theatre -> Screen -> Show -> Booking
 ```
 
-Planned future hierarchy, not implemented in this phase:
+Future Seat hierarchy, not implemented in Phase 2:
 
 ```text
 City -> Theatre -> Screen -> Seat
 ```
+
+Every Theatre conceptually has at least one Screen. Single-screen theatres use the same model as multiplexes, for example `Theatre -> Screen 1`. `Show.theatre` remains required for booking compatibility and `Show.screen` remains optional for legacy Shows during Phase 2.
 
 Request flow:
 
@@ -242,11 +244,11 @@ The backend is an Express app mounted under `/bms/v1`.
 | --- | --- |
 | `Server/server.js` | App bootstrap, middleware stack, DB connection, route mounting, server startup |
 | `Server/config/db.js` | Mongoose connection using `MONGODB_CONNECTION_STRING` |
-| `Server/routes/` | Express routers for auth, users, movies, cities, theatres, shows, bookings |
+| `Server/routes/` | Express routers for auth, users, movies, cities, theatres, screens, shows, bookings |
 | `Server/controllers/` | Request validation, business workflows, database operations, external integrations |
-| `Server/services/` | City business rules and theatre city-reference validation |
-| `Server/repositories/` | City database operations |
-| `Server/models/` | Mongoose schemas for users, movies, cities, theatres, shows, bookings, verification codes |
+| `Server/services/` | City and Screen business rules, Theatre ownership validation, and reference validation |
+| `Server/repositories/` | City and Screen database operations |
+| `Server/models/` | Mongoose schemas for users, movies, cities, theatres, screens, shows, bookings, verification codes |
 | `Server/middlewares/authorization.js` | JWT validation and role-check helper |
 | `Server/middlewares/performanceOptimization.js` | Helmet, compression, rate limiting, request timing/logging, cache headers |
 | `Server/middlewares/cache.js` | Route-level in-memory GET response cache via `node-cache` |
@@ -506,6 +508,7 @@ High-level route groups:
 | Movies | `/movies` | JWT required |
 | Theatres | `/theatres` | JWT required |
 | Cities | `/cities` | JWT required for reads; admin role required for create/update/deactivate |
+| Screens | `/screens` and `/theatres/:theatreId/screens` | JWT plus admin/partner role; partner access derives from Theatre ownership |
 | Shows | `/shows` | JWT required |
 | Bookings | `/bookings` | JWT required plus stricter booking rate limiter |
 
@@ -523,6 +526,8 @@ erDiagram
 
     MOVIES ||--o{ SHOWS : scheduled_for
     THEATRES ||--o{ SHOWS : hosts
+    THEATRES ||--o{ SCREENS : contains
+    SCREENS ||--o{ SHOWS : scheduled_in
 
     SHOWS ||--o{ BOOKINGS : contains
 
@@ -558,6 +563,16 @@ erDiagram
         number phone
         string email
         ObjectId owner
+        ObjectId city
+        boolean isActive
+    }
+
+    SCREENS {
+        ObjectId _id
+        ObjectId theatre
+        string name
+        number screenNumber
+        number capacity
         boolean isActive
     }
 
@@ -571,6 +586,7 @@ erDiagram
         number totalSeats
         array bookedSeats
         ObjectId theatre
+        ObjectId screen
     }
 
     BOOKINGS {
@@ -612,6 +628,7 @@ Redux Toolkit handles state updates and Redux-Saga handles side effects. `redux-
 | `profile` | Profile fetch/update, password/email changes, 2FA toggle, account deletion |
 | `movie` | Movie list, selected movie, CRUD state |
 | `theatre` | Theatre list and CRUD state |
+| `screen` | Theatre-specific Screen list and Screen create/update/delete workflows |
 | `show` | Show CRUD, selected show, theatres with shows for a movie |
 | `booking` | Seat validation, booking creation, booking lists, revenue, Razorpay order state |
 | `user` | Admin user listing |
@@ -987,6 +1004,16 @@ node scripts/importCities.js --file ./path/to/indian-cities.csv --apply
 ```
 
 The metadata importer defaults to dry-run mode, accepts JSON or CSV input, maps `city_id` to `cityCode`, maps `city_name` to `cityName`, stores GeoJSON coordinates as `[longitude, latitude]`, and reports inserted, updated, reused, skipped, and invalid records.
+
+Show screen backfill:
+
+```bash
+cd Server
+node scripts/backfillShowScreens.js
+node scripts/backfillShowScreens.js --apply
+```
+
+The Show screen backfill is dry-run by default and updates only `Show.screen` when a legacy Show belongs to a Theatre with exactly one active Screen. It skips already assigned Shows, Theatres with no active Screens, and multi-screen Theatres where the correct Screen cannot be determined safely.
 
 ## 14. Folder Structure
 

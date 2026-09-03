@@ -1,5 +1,7 @@
 const Show = require("../models/showSchema");
 const Theatre = require("../models/theatreSchema");
+const screenService = require("../services/screenService");
+const AppError = require("../utils/AppError");
 
 const canManageTheatre = async (req, theatreId) => {
     const theatre = await Theatre.findById(theatreId).select("owner")
@@ -17,6 +19,33 @@ const canManageTheatre = async (req, theatreId) => {
     return { allowed: true, theatre }
 }
 
+const buildShowPayload = async (req, existingShow = {}) => {
+    const targetTheatre = req.body.theatre || existingShow.theatre;
+    const theatreChanged = req.body.theatre
+        && existingShow.theatre
+        && req.body.theatre.toString() !== existingShow.theatre.toString();
+    const showPayload = {
+        ...req.body,
+        theatre: targetTheatre,
+    };
+
+    if (Object.prototype.hasOwnProperty.call(req.body, "screen")) {
+        if (req.body.screen) {
+            const screen = await screenService.ensureActiveScreenForTheatre(req, {
+                screenId: req.body.screen,
+                theatreId: showPayload.theatre,
+            });
+            showPayload.totalSeats = screen.capacity;
+        } else {
+            delete showPayload.screen;
+        }
+    } else if (theatreChanged && existingShow.screen) {
+        throw new AppError("A compatible screen is required when changing theatre for a screen-aware show", 400, "SCREEN_REQUIRED_FOR_THEATRE_CHANGE");
+    }
+
+    return showPayload;
+};
+
 const addShow = async(req, res, next) => {
     try {
         const {name} = req?.body;
@@ -30,7 +59,8 @@ const addShow = async(req, res, next) => {
             })
         }
 
-        const newShow = new Show(req?.body);
+        const showPayload = await buildShowPayload(req);
+        const newShow = new Show(showPayload);
         await newShow.save();
         return res.send({
                 success: true,
@@ -47,7 +77,7 @@ const updateShow = async(req, res, next) => {
     try 
     {
         const {name} = req?.body;
-        const existingShow = await Show.findById(req?.params?.id).select("theatre")
+        const existingShow = await Show.findById(req?.params?.id).select("theatre screen")
 
         if(!existingShow)
         {
@@ -80,14 +110,16 @@ const updateShow = async(req, res, next) => {
             }
         }
 
+        const showPayload = await buildShowPayload(req, existingShow);
+
         const updatedShow = await Show.findByIdAndUpdate(
             req?.params?.id, 
-            req?.body, 
+            showPayload,
             {
                 returnDocument: "after",
                 runValidators: true
             }
-        );
+        ).populate("screen", "name screenNumber capacity theatre isActive");
         if(!updatedShow)
         {
             return res.send({
@@ -155,7 +187,8 @@ const getShowById = async(req, res, next) => {
     {
         const shows = await Show.findById(req.params.id)
             .populate("movie")
-            .populate("theatre");
+            .populate("theatre")
+            .populate("screen", "name screenNumber capacity theatre isActive");
         
         if(!shows)
         {
@@ -191,7 +224,9 @@ const getAllShowsByTheatre = async(req, res, next) => {
             })
         }
 
-        const shows = await Show.find({theatre: theatreId}).populate("movie");
+        const shows = await Show.find({theatre: theatreId})
+            .populate("movie")
+            .populate("screen", "name screenNumber capacity theatre isActive");
         if(!shows)
         {
             return res.send({
@@ -218,7 +253,8 @@ const getTheatresWithShowsByMovie = async (req, res, next) => {
     const { movie, date } = req.body;
 
     const shows = await Show.find({ movie, date })
-      .populate("theatre");
+      .populate("theatre")
+      .populate("screen", "name screenNumber capacity theatre isActive");
 
     if (!shows.length) {
       return res.send({

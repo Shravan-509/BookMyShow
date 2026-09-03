@@ -54,6 +54,78 @@ const calculateBookingPricing = (ticketPrice, seats, feePerTicket) => {
     }
 }
 
+const populateBookingDetails = (query) => query
+    .populate({
+        path: "show",
+        populate: [
+            {
+                path: "movie",
+                model: "movies",
+            },
+            {
+                path: "theatre",
+                model: "theatres",
+            },
+            {
+                path: "screen",
+                model: "Screen",
+                select: "name screenNumber capacity theatre isActive",
+            },
+        ],
+    })
+
+const getScreenLabel = (screen) => {
+    if (!screen) {
+        return null
+    }
+
+    if (screen.name && screen.screenNumber) {
+        return `${screen.name} / Screen ${screen.screenNumber}`
+    }
+
+    return screen.name || (screen.screenNumber ? `Screen ${screen.screenNumber}` : null)
+}
+
+const addCurrency = (amounts) => Number(
+    amounts.reduce((sum, amount) => sum + Number(amount || 0), 0).toFixed(2)
+)
+
+const simplifyBooking = (booking, { includeUser = false } = {}) => {
+    const show = booking.show
+    const movie = show?.movie
+    const theatre = show?.theatre
+    const screen = show?.screen
+    const user = booking.user
+    const simplified = {
+        _id: booking._id,
+        movieTitle: movie?.movieName,
+        theatreName: theatre?.name,
+        screenName: getScreenLabel(screen),
+        screenNumber: screen?.screenNumber,
+        poster: movie?.poster,
+        showDate: show?.date,
+        showTime: show?.time,
+        seats: booking.seats,
+        ticketPrice: show?.ticketPrice,
+        convenienceFee: booking?.convenienceFee,
+        gstPercent: booking?.gstPercent,
+        ticketStatus: booking?.ticketStatus,
+        seatType: booking?.seatType,
+        bookingId: booking?.bookingId,
+        bookingTime: booking?.createdAt,
+        paymentMethod: booking?.paymentMethod,
+        amount: booking?.amount,
+    }
+
+    if (includeUser) {
+        simplified.userName = user?.name
+        simplified.userEmail = user?.email
+        simplified.userPhone = user?.phone
+    }
+
+    return simplified
+}
+
 const validateSeats = async (req, res, next) => {
     try {
         const { showId, seats } = req.body
@@ -435,45 +507,11 @@ const getBookingsByUserId = async(req, res, next) => {
             })
         }
 
-        const populatedBookings = await Booking.find({user : req.userId})
-            .sort({ createdAt: -1 })
-            .populate({
-                path: "show",
-                populate: {
-                    path: "movie",
-                    model: "movies",
-                },
-            })
-            .populate({
-                path: "show",
-                populate: {
-                    path: "theatre",
-                    model: "theatres",
-                },
-            });
+        const populatedBookings = await populateBookingDetails(
+            Booking.find({user : req.userId}).sort({ createdAt: -1 })
+        );
         
-        const simplifiedBookings = populatedBookings.map((booking) => {
-            const show = booking.show;
-            const movie = show?.movie;
-            const theatre = show?.theatre;
-
-            return {
-                movieTitle: movie?.movieName,
-                theatreName: theatre?.name,
-                poster: movie?.poster,
-                showDate: show?.date,
-                showTime: show?.time,
-                seats: booking.seats,
-                ticketPrice: show?.ticketPrice,
-                convenienceFee: booking?.convenienceFee,
-                gstPercent: booking?.gstPercent,
-                ticketStatus: booking?.ticketStatus,
-                seatType: booking?.seatType,
-                bookingId: booking?.bookingId,
-                bookingTime: booking?.createdAt,
-                paymentMethod: booking?.paymentMethod,
-            };
-        });
+        const simplifiedBookings = populatedBookings.map((booking) => simplifyBooking(booking));
         
         return res.send({
                 success: true,
@@ -488,52 +526,13 @@ const getBookingsByUserId = async(req, res, next) => {
 
 const getAllBookings = async (req, res, next) => {
   try {
-    const populatedBookings = await Booking.find()
-      .sort({ createdAt: -1 })
-      .populate("user", "name email phone")
-      .populate({
-        path: "show",
-        populate: {
-          path: "movie",
-          model: "movies",
-        },
-      })
-      .populate({
-        path: "show",
-        populate: {
-          path: "theatre",
-          model: "theatres",
-        },
-      })
+    const populatedBookings = await populateBookingDetails(
+      Booking.find()
+        .sort({ createdAt: -1 })
+        .populate("user", "name email phone")
+    )
 
-    const simplifiedBookings = populatedBookings.map((booking) => {
-      const show = booking.show
-      const movie = show?.movie
-      const theatre = show?.theatre
-      const user = booking.user
-
-      return {
-        _id: booking._id,
-        userName: user?.name,
-        userEmail: user?.email,
-        userPhone: user?.phone,
-        movieTitle: movie?.movieName,
-        theatreName: theatre?.name,
-        poster: movie?.poster,
-        showDate: show?.date,
-        showTime: show?.time,
-        seats: booking.seats,
-        ticketPrice: show?.ticketPrice,
-        convenienceFee: booking?.convenienceFee,
-        gstPercent: booking?.gstPercent,
-        ticketStatus: booking?.ticketStatus,
-        seatType: booking?.seatType,
-        bookingId: booking?.bookingId,
-        bookingTime: booking?.createdAt,
-        paymentMethod: booking?.paymentMethod,
-        amount: booking?.amount,
-      }
-    })
+    const simplifiedBookings = populatedBookings.map((booking) => simplifyBooking(booking, { includeUser: true }))
 
     return res.send({
       success: true,
@@ -571,52 +570,13 @@ const getBookingsByTheatre = async (req, res, next) => {
     const showIds = shows.map((show) => show._id)
 
     // Find all bookings for these shows
-    const populatedBookings = await Booking.find({ show: { $in: showIds } })
-      .sort({ createdAt: -1 })
-      .populate("user", "name email phone")
-      .populate({
-        path: "show",
-        populate: {
-          path: "movie",
-          model: "movies",
-        },
-      })
-      .populate({
-        path: "show",
-        populate: {
-          path: "theatre",
-          model: "theatres",
-        },
-      })
+    const populatedBookings = await populateBookingDetails(
+      Booking.find({ show: { $in: showIds } })
+        .sort({ createdAt: -1 })
+        .populate("user", "name email phone")
+    )
 
-    const simplifiedBookings = populatedBookings.map((booking) => {
-      const show = booking.show
-      const movie = show?.movie
-      const theatre = show?.theatre
-      const user = booking.user
-
-      return {
-        _id: booking._id,
-        userName: user?.name,
-        userEmail: user?.email,
-        userPhone: user?.phone,
-        movieTitle: movie?.movieName,
-        theatreName: theatre?.name,
-        poster: movie?.poster,
-        showDate: show?.date,
-        showTime: show?.time,
-        seats: booking.seats,
-        ticketPrice: show?.ticketPrice,
-        convenienceFee: booking?.convenienceFee,
-        gstPercent: booking?.gstPercent,
-        ticketStatus: booking?.ticketStatus,
-        seatType: booking?.seatType,
-        bookingId: booking?.bookingId,
-        bookingTime: booking?.createdAt,
-        paymentMethod: booking?.paymentMethod,
-        amount: booking?.amount,
-      }
-    })
+    const simplifiedBookings = populatedBookings.map((booking) => simplifyBooking(booking, { includeUser: true }))
 
     return res.send({
       success: true,
@@ -651,14 +611,21 @@ const getRevenueByOwner = async (req, res, next) => {
     // Find all bookings for these shows
     const bookings = await Booking.find({ show: { $in: showIds } }).populate({
       path: "show",
-      populate: {
-        path: "theatre",
-        model: "theatres",
-      },
+      populate: [
+        {
+          path: "theatre",
+          model: "theatres",
+        },
+        {
+          path: "screen",
+          model: "Screen",
+          select: "name screenNumber capacity theatre isActive",
+        },
+      ],
     })
 
     // Calculate revenue metrics
-    const totalRevenue = bookings.reduce((sum, booking) => sum + booking.amount, 0)
+    const totalRevenue = addCurrency(bookings.map((booking) => booking.amount))
     const totalBookings = bookings.length
     const totalTickets = bookings.reduce((sum, booking) => sum + booking.seats.length, 0)
 
@@ -667,6 +634,10 @@ const getRevenueByOwner = async (req, res, next) => {
     bookings.forEach((booking) => {
       const theatreId = booking.show?.theatre?._id?.toString()
       const theatreName = booking.show?.theatre?.name
+
+      if (!theatreId) {
+        return
+      }
 
       if (!revenueByTheatre[theatreId]) {
         revenueByTheatre[theatreId] = {
@@ -678,7 +649,10 @@ const getRevenueByOwner = async (req, res, next) => {
         }
       }
 
-      revenueByTheatre[theatreId].revenue += booking.amount
+      revenueByTheatre[theatreId].revenue = addCurrency([
+        revenueByTheatre[theatreId].revenue,
+        booking.amount,
+      ])
       revenueByTheatre[theatreId].bookings += 1
       revenueByTheatre[theatreId].tickets += booking.seats.length
     })
@@ -696,7 +670,7 @@ const getRevenueByOwner = async (req, res, next) => {
       const bookingDate = new Date(booking.createdAt)
       const monthKey = `${bookingDate.getFullYear()}-${String(bookingDate.getMonth() + 1).padStart(2, "0")}`
       if (revenueByMonth.hasOwnProperty(monthKey)) {
-        revenueByMonth[monthKey] += booking.amount
+        revenueByMonth[monthKey] = addCurrency([revenueByMonth[monthKey], booking.amount])
       }
     })
 

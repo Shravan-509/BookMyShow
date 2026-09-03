@@ -28,12 +28,13 @@ const RevenueTracking = () => {
   const { user } = useSelector(selectAuth)
   const revenueData = useSelector(selectRevenueData)
   const loading = useSelector(selectBookingLoading)
+  const ownerId = user?.id || user?._id
 
   useEffect(() => {
-    if (user?.id) {
-      dispatch(getRevenueDataRequest(user.id))
+    if (ownerId) {
+      dispatch(getRevenueDataRequest(ownerId))
     }
-  }, [user?.id, dispatch])
+  }, [ownerId, dispatch])
 
   // Format month data for charts
   const monthlyData = useMemo(() => {
@@ -57,7 +58,7 @@ const RevenueTracking = () => {
     }))
   }, [revenueData?.revenueByTheatre])
 
-  if (loading) {
+  if (loading || !revenueData) {
     return (
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "400px" }}>
         <Spin size="large" />
@@ -65,7 +66,7 @@ const RevenueTracking = () => {
     )
   }
 
-  if (!revenueData) {
+  if (!revenueData.summary) {
     return (
       <div style={{ padding: "20px" }}>
         <Empty description="No revenue data available" />

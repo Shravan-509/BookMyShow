@@ -75,6 +75,25 @@ Source: `Server/models/theatreSchema.js`
 | `isActive` | `Boolean` | No | default `false` | Theatre status |
 | `createdAt`, `updatedAt` | `Date` | Auto | timestamps | Managed by Mongoose |
 
+## screens
+
+Source: `Server/models/screenSchema.js`
+
+| Field | Type | Required | Constraints / Default | Notes |
+| --- | --- | --- | --- | --- |
+| `theatre` | `ObjectId` | Yes | ref `theatres` | Parent Theatre |
+| `name` | `String` | Yes | trimmed | Auditorium label such as `Screen 1` or `Audi 1` |
+| `screenNumber` | `Number` | Yes | positive integer | Unique within the Theatre |
+| `capacity` | `Number` | Yes | positive integer | Configured auditorium capacity; not derived from Seat documents |
+| `isActive` | `Boolean` | No | default `true` | Deactivated screens remain available for historical Show references |
+| `createdAt`, `updatedAt` | `Date` | Auto | timestamps | Managed by Mongoose |
+
+Index:
+
+```js
+{ theatre: 1, screenNumber: 1 } // unique
+```
+
 ## shows
 
 Source: `Server/models/showSchema.js`
@@ -89,6 +108,7 @@ Source: `Server/models/showSchema.js`
 | `totalSeats` | `Number` | Yes | - | Seat layout capacity |
 | `bookedSeats` | `[String]` | No | default `[]` | Seat ids like `A1`, `A2`; updated atomically during booking |
 | `theatre` | `ObjectId` | Yes | ref `theatres` | Populated in show and booking APIs |
+| `screen` | `ObjectId` | No | ref `Screen` | Optional for legacy Shows; new UI submits it explicitly |
 | `createdAt`, `updatedAt` | `Date` | Auto | timestamps | Managed by Mongoose |
 
 ## bookings
@@ -136,6 +156,7 @@ flowchart TD
     Booking["bookings"]
     Verification["verification"]
     Movie["movies"]
+    Screen["screens"]
     Show["shows"]
 
     User -->|owner| Theatre
@@ -143,7 +164,9 @@ flowchart TD
     User -->|user| Booking
     User -->|userId| Verification
     Movie -->|movie| Show
+    Theatre -->|theatre| Screen
     Theatre -->|theatre| Show
+    Screen -->|screen| Show
     Show -->|show| Booking
 ```
 
@@ -154,4 +177,5 @@ Deletion behavior in controllers:
 | Delete account | Deletes verification records, bookings, and theatres owned by the user, then deletes the user |
 | Delete movie | Deletes the movie document only; related shows/bookings are not cascaded in current code |
 | Delete theatre | Deletes the theatre document only; related shows/bookings are not cascaded in current code |
+| Delete screen | Hard-deletes screens with no Show references; deactivates screens referenced by Shows |
 | Delete show | Deletes the show document only; related bookings are not cascaded in current code |

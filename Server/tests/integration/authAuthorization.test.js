@@ -119,7 +119,8 @@ describe("controller-level ownership authorization", () => {
       select: jest.fn().mockResolvedValue({ owner: theatreOwner }),
     });
     Show.find.mockReturnValue({
-      populate: jest.fn().mockResolvedValue([{ _id: "show-1" }]),
+      populate: jest.fn().mockReturnThis(),
+      then: (resolve) => resolve([{ _id: "show-1" }]),
     });
 
     jest.doMock("../../models/theatreSchema", () => Theatre);

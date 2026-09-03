@@ -112,13 +112,26 @@ Theatre body fields:
 
 City records are protected by a compound unique index on `cityName`, `state`, and `country`, and an optional unique sparse `cityCode` index. `location`, when supplied, must be a GeoJSON Point with coordinates in `[longitude, latitude]` order. `tier` accepts `TIER_1`, `TIER_2`, or `TIER_3`; it is not used for pricing in the current implementation.
 
+## Screens
+
+| Method | Endpoint | Body | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/screens` | none | Lists screens visible to the caller; admins see all, partners see owned-theatre screens |
+| `GET` | `/screens/:id` | none | Returns one screen after Theatre ownership validation |
+| `GET` | `/theatres/:theatreId/screens` | none | Lists screens for one Theatre; supports `?activeOnly=true` |
+| `POST` | `/screens` | `{ theatre, name, screenNumber, capacity, isActive? }` | Creates a screen for an active Theatre |
+| `PATCH` | `/screens/:id` | Partial screen document | Updates screen metadata or active status |
+| `DELETE` | `/screens/:id` | none | Hard-deletes unreferenced screens; deactivates screens referenced by Shows |
+
+Screen authorization derives from Theatre ownership. Partners can manage screens only for their own Theatres. `screenNumber` is unique within a Theatre.
+
 ## Shows
 
 | Method | Endpoint | Body | Purpose |
 | --- | --- | --- | --- |
-| `POST` | `/shows` | Show document | Adds a show |
-| `GET` | `/shows/:id` | none | Returns show with populated movie and theatre; cached for 30 seconds |
-| `GET` | `/shows/theatre/:id` | none | Returns shows for a theatre with populated movie; cached for 30 seconds |
+| `POST` | `/shows` | Show document | Adds a show; `screen` is supported for new Screen-aware flows |
+| `GET` | `/shows/:id` | none | Returns show with populated movie, theatre, and screen; cached for 30 seconds |
+| `GET` | `/shows/theatre/:id` | none | Returns shows for a theatre with populated movie and screen; cached for 30 seconds |
 | `POST` | `/shows/theatres/movie` | `{ movie, date }` | Groups shows by theatre for a selected movie/date |
 | `PATCH` | `/shows/:id` | Partial show document | Updates show |
 | `DELETE` | `/shows/:id` | none | Deletes show |
@@ -134,9 +147,12 @@ Show body fields:
   "ticketPrice": 250,
   "totalSeats": 150,
   "bookedSeats": [],
-  "theatre": "THEATRE_OBJECT_ID"
+  "theatre": "THEATRE_OBJECT_ID",
+  "screen": "SCREEN_OBJECT_ID"
 }
 ```
+
+`Show.theatre` remains required for booking compatibility. `Show.screen` is optional for legacy Shows, but when supplied the backend validates that the Screen exists, is active, and belongs to the selected Theatre.
 
 ## Bookings
 

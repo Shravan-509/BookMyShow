@@ -35,6 +35,11 @@ const showSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: "theatres",
             required: true
+        },
+        screen: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Screen",
+            required: false
         }
     },
     { timestamps: true }

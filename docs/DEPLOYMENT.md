@@ -101,3 +101,21 @@ node scripts/importCities.js --file ./path/to/indian-cities.csv --apply
 ```
 
 Review invalid, skipped, inserted, updated, and reused counts before running `--apply`. After all existing production cities have valid unique `cityCode` values, `cityCode` can be evaluated for a future required-field migration.
+
+## Screen Configuration
+
+BookMyShow v2 Phase 2 adds the Screen domain under Theatre. No automatic Screen migration is provided because existing Theatre and Show records do not contain reliable auditorium names, screen numbers, or capacities.
+
+After deployment, configure real Screen records from the Admin/Partner Theatre screen management UI before creating new Screen-aware Shows. Existing Shows and Bookings continue to work because `Show.theatre` remains required and `Show.screen` is optional for legacy records.
+
+## Show Screen Backfill
+
+After real Screen records are configured, legacy Shows can be backfilled only when the relationship is deterministic. The script assigns `Show.screen` only for Theatres with exactly one active Screen and skips zero-screen or multi-screen Theatres:
+
+```bash
+cd Server
+node scripts/backfillShowScreens.js
+node scripts/backfillShowScreens.js --apply
+```
+
+The script is dry-run by default, does not create Screens or capacities, does not modify `Show.theatre` or Booking records, and is idempotent.

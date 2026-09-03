@@ -621,9 +621,9 @@ sequenceDiagram
 | 8 | Route-specific middleware | Auth limiter, JWT validation, role checks, booking limiter, selected shared catalogue cache |
 | 9 | Error handler | Final JSON error response |
 
-## BookMyShow v2 Phase 1 City Architecture
+## BookMyShow v2 City and Screen Architecture
 
-Phase 1 introduces City as the first incremental service/repository-backed domain while preserving the existing controller-driven architecture for established modules. Phase 1.1 enriches City with optional `cityCode`, `tier`, and GeoJSON `location` metadata; it does not introduce tier-based pricing or Screen/Seat hierarchy changes.
+Phase 1 introduces City as the first incremental service/repository-backed domain while preserving the existing controller-driven architecture for established modules. Phase 1.1 enriches City with optional `cityCode`, `tier`, and GeoJSON `location` metadata. Phase 2 introduces Screen as the physical auditorium under Theatre. It does not introduce Seat, ShowSeat, seat locking, dynamic pricing, or payment refactoring.
 
 ```mermaid
 flowchart LR
@@ -637,19 +637,32 @@ flowchart LR
     CityRepository --> CityModel["City model"]
     CityModel --> MongoDB[("MongoDB")]
     TheatreController["TheatreController"] --> CityService
+    TheatreUI["Theatre Table"] --> ScreenModal["Screen Management"]
+    ScreenModal --> ScreenRedux["screenSlice + screenSaga"]
+    ShowForm["Show Form"] --> ScreenRedux
+    ScreenRedux --> ScreenAPI["Client ScreenAPI"]
+    ScreenAPI --> ScreenRoutes["/bms/v1/screens + /bms/v1/theatres/:id/screens"]
+    ScreenRoutes --> ScreenController["ScreenController"]
+    ScreenController --> ScreenService["screenService"]
+    ScreenService --> ScreenRepository["screenRepository"]
+    ScreenRepository --> ScreenModel["Screen model"]
+    ScreenModel --> MongoDB
+    ShowController["ShowController"] --> ScreenService
 ```
 
-Current implemented relationship:
+Current target relationship:
 
 ```text
-City -> Theatre -> Show -> Booking
+City -> Theatre -> Screen -> Show -> Booking
 ```
 
-Future target, not implemented in this phase:
+Future Seat relationship, not implemented in Phase 2:
 
 ```text
 City -> Theatre -> Screen -> Seat
 ```
+
+Every Theatre conceptually has at least one Screen. A single-screen Theatre is represented as `Theatre -> Screen 1`, while multiplexes create multiple Screen records. `Show.theatre` remains required for booking compatibility and `Show.screen` remains optional for legacy Shows during Phase 2.
 
 ## Route Groups
 
@@ -659,6 +672,7 @@ City -> Theatre -> Screen -> Seat
 | `/bms/v1/users` | `userRoute.js` | JWT; admin role for user list |
 | `/bms/v1/movies` | `movieRoute.js` | JWT; admin role for mutations |
 | `/bms/v1/theatres` | `theatreRoute.js` | JWT; admin/partner role and partner ownership checks |
+| `/bms/v1/screens` | `screenRoute.js` | JWT; admin/partner role and Theatre-derived ownership checks |
 | `/bms/v1/shows` | `showRoute.js` | JWT; admin/partner role for management and partner ownership checks |
 | `/bms/v1/bookings` | `bookingRoute.js` | JWT plus booking rate limiter; admin/partner roles and ownership checks on privileged booking views |
 
@@ -673,6 +687,8 @@ erDiagram
 
     MOVIES ||--o{ SHOWS : scheduled
     THEATRES ||--o{ SHOWS : hosts
+    THEATRES ||--o{ SCREENS : contains
+    SCREENS ||--o{ SHOWS : scheduled_in
 
     SHOWS ||--o{ BOOKINGS : booked_for
 ```

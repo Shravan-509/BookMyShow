@@ -35,6 +35,9 @@ BookMyShow/
 │   │   │   │       └── Bookings.test.jsx
 │   │   │   ├── partner/
 │   │   │   │   └── pages/
+│   │   │   │       ├── MovieShows.test.jsx
+│   │   │   │       ├── ScreenManagement.jsx
+│   │   │   │       ├── ScreenManagement.test.jsx
 │   │   │   │       ├── TheatreForm.test.jsx
 │   │   │   │       └── TheatreBooking.test.jsx
 │   │   │   └── profile/
@@ -68,6 +71,7 @@ BookMyShow/
 │   ├── routes/
 │   ├── scripts/
 │   │   ├── backfillTheatreCities.js
+│   │   ├── backfillShowScreens.js
 │   │   └── importCities.js
 │   ├── services/
 │   ├── tests/
@@ -77,13 +81,18 @@ BookMyShow/
 │   │   │   ├── authAuthorization.test.js
 │   │   │   ├── cacheSecurity.test.js
 │   │   │   ├── cityRoute.test.js
+│   │   │   ├── screenRoute.test.js
 │   │   │   └── errorHandling.test.js
 │   │   └── unit/
 │   │       ├── backfillTheatreCities.test.js
+│   │       ├── backfillShowScreens.test.js
 │   │       ├── bookingController.test.js
 │   │       ├── citySchema.test.js
 │   │       ├── cityService.test.js
 │   │       ├── importCities.test.js
+│   │       ├── screenSchema.test.js
+│   │       ├── screenService.test.js
+│   │       ├── showScreen.test.js
 │   │       ├── theatreCity.test.js
 │   │       └── utils.test.js
 │   ├── utils/
