@@ -1,0 +1,71 @@
+{
+  "base_url": "http://localhost:3000/bms/v1",
+  "request_timeout_seconds": 30,
+  "authentication": {
+    "enabled": true,
+    "email_env": "BMS_SCHEDULER_EMAIL",
+    "password_env": "BMS_SCHEDULER_PASSWORD",
+    "email_field": "email",
+    "password_field": "password",
+    "token_response_field": "",
+    "token_header": "Authorization",
+    "token_prefix": "Bearer "
+  },
+  "endpoints": {
+    "login": "/auth/login",
+     "verify_2fa": "/auth/verify-2fa",
+    "movies": "/movies",
+    "theatres": "/theatres",
+    "screens_by_theatre": "/theatres/{theatreId}/screens",
+    "shows_by_theatre": "/shows/theatre/{theatre_id}",
+    "create_show": "/shows"
+  },
+  "schedule": {
+    "days_ahead": 7,
+    "max_same_movie_per_theatre_per_day": 2,
+    "avoid_same_movie_consecutive_days": true,
+    "start_offset_days": 0,
+    "recent_release_days": 60,
+    "medium_release_days": 180,
+    "recent_weight": 5,
+    "medium_weight": 3,
+    "catalog_weight": 1,
+    "max_catalog_age_days": 730,
+    "default_ticket_price": 175,
+    "default_total_seats": 200,
+    "stale_report_retention_days": 90,
+    "show_slots": [
+      {
+        "name": "Morning Show",
+        "time": "10:30"
+      },
+      {
+        "name": "Afternoon Show",
+        "time": "14:30"
+      },
+      {
+        "name": "First Show",
+        "time": "18:30"
+      },
+      {
+        "name": "Second Show",
+        "time": "21:30"
+      }
+    ],
+    "screen_assignments": {
+      "680d2810b620f83a364be538": {
+        "10:30": "6a9890cd3917c3c0d62f96c1",
+        "14:30": "6a9891133917c3c0d62f96c2",
+        "18:30": "6a98914f3917c3c0d62f96c3",
+        "21:30": "6a9890cd3917c3c0d62f96c1"
+      },
+      "69676c4e2cc6373df7484212": {
+        "10:30": "6a9893913917c3c0d62f96c5",
+        "14:30": "6a98939d3917c3c0d62f96c6",
+        "18:30": "6a9893a33917c3c0d62f96c7",
+        "21:30": "6a9893b33917c3c0d62f96c8"
+      }
+    },
+    "theatre_defaults": {}
+  }
+}
