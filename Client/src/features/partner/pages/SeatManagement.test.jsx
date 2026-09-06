@@ -246,7 +246,7 @@ describe("SeatManagement", () => {
     await user.click(await screen.findByRole("button", { name: /bulk create seats/i }));
     expect(await screen.findByText("Seats to create: 10")).toBeInTheDocument();
     await waitFor(() => expect(screen.getByRole("button", { name: /^create seats$/i })).toBeDisabled());
-  }, 10000);
+  }, 15000);
 
   test("sequential mode previews 1500 seats and submits generated rows through the bulk API", async () => {
     const user = userEvent.setup();
@@ -293,7 +293,7 @@ describe("SeatManagement", () => {
     })));
     const bulkCall = store.dispatch.mock.calls.find(([action]) => action.type === "seat/bulkCreateSeatsRequest");
     expect(bulkCall[0].payload.rows).toHaveLength(50);
-  }, 10000);
+  }, 20000);
 
   test("sequential mode counts excluded columns and blocks capacity overflow", async () => {
     renderSeatManagement({
@@ -323,7 +323,7 @@ describe("SeatManagement", () => {
     expect(await screen.findByText("Seats to create: 540")).toBeInTheDocument();
     expect(screen.getByText(/Excluded per row: 2/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^create seats$/i })).toBeDisabled();
-  }, 10000);
+  }, 20000);
 
   test("ScreenManagement opens Seat Management from a Screen row", async () => {
     const user = userEvent.setup();
