@@ -1,4 +1,5 @@
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, test, vi } from "vitest";
 import SeatManagement from "./SeatManagement";
 import ScreenManagement from "./ScreenManagement";
@@ -235,18 +236,20 @@ describe("SeatManagement", () => {
   });
 
   test("bulk preview counts excluded columns and prevents capacity overflow", async () => {
+    const user = userEvent.setup();
     renderSeatManagement();
 
     expect(countPreviewSeats([
       { row: "A", startColumn: 1, endColumn: 4, excludedColumns: "2,3" },
     ])).toBe(2);
 
-    fireEvent.click(screen.getByRole("button", { name: /bulk create seats/i }));
+    await user.click(await screen.findByRole("button", { name: /bulk create seats/i }));
     expect(await screen.findByText("Seats to create: 10")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /^create seats$/i })).toBeDisabled();
-  });
+    await waitFor(() => expect(screen.getByRole("button", { name: /^create seats$/i })).toBeDisabled());
+  }, 10000);
 
   test("sequential mode previews 1500 seats and submits generated rows through the bulk API", async () => {
+    const user = userEvent.setup();
     const largeScreen = { ...selectedScreen, capacity: 1500 };
     const store = renderSeatManagement({
       screenOverride: largeScreen,
@@ -267,8 +270,8 @@ describe("SeatManagement", () => {
       },
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /bulk create seats/i }));
-    fireEvent.click(screen.getByText("Sequential Rows"));
+    await user.click(await screen.findByRole("button", { name: /bulk create seats/i }));
+    await user.click(await screen.findByText("Sequential Rows"));
     fireEvent.change(screen.getByRole("spinbutton", { name: "Number of Rows" }), { target: { value: "50" } });
     fireEvent.change(screen.getByRole("spinbutton", { name: "Seats Per Row" }), { target: { value: "30" } });
 
@@ -276,7 +279,7 @@ describe("SeatManagement", () => {
     expect(screen.getByText(/Rows: A - AX/)).toBeInTheDocument();
     expect(screen.getByText(/Layout after creation: COMPLETE/)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /^create seats$/i }));
+    await user.click(screen.getByRole("button", { name: /^create seats$/i }));
 
     await waitFor(() => expect(store.dispatch).toHaveBeenCalledWith(expect.objectContaining({
       type: "seat/bulkCreateSeatsRequest",
@@ -322,7 +325,8 @@ describe("SeatManagement", () => {
     expect(screen.getByRole("button", { name: /^create seats$/i })).toBeDisabled();
   }, 10000);
 
-  test("ScreenManagement opens Seat Management from a Screen row", () => {
+  test("ScreenManagement opens Seat Management from a Screen row", async () => {
+    const user = userEvent.setup();
     const store = setupStore({
       ...baseState,
       screen: {
@@ -345,8 +349,10 @@ describe("SeatManagement", () => {
       { store },
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /manage seats/i }));
+    const screenRow = (await screen.findByText("Screen 1")).closest("tr");
+    const manageSeatsButton = within(screenRow).getByRole("button", { name: /manage seats/i });
+    await user.click(manageSeatsButton);
 
-    expect(screen.getByText("Seats - Screen 1")).toBeInTheDocument();
+    expect(await screen.findByText("Seats - Screen 1")).toBeInTheDocument();
   });
 });

@@ -1,4 +1,5 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, test, vi } from "vitest";
 import MovieShows from "./MovieShows";
 import { getAvailableSeats, getResolvedTotalSeats } from "./showCapacityUtils";
@@ -302,6 +303,7 @@ describe("MovieShows screen selection", () => {
   });
 
   test("legacy Show edit starts empty and can be assigned a Screen", async () => {
+    const user = userEvent.setup();
     const store = buildStore([screenOne], [{
       _id: "show-1",
       name: "Legacy Show",
@@ -325,14 +327,14 @@ describe("MovieShows screen selection", () => {
       { store }
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /^edit$/i }));
+    await user.click(await screen.findByRole("button", { name: /^edit$/i }));
 
     expect(screen.queryByText("Screen: Screen 1")).not.toBeInTheDocument();
-    fireEvent.mouseDown(screen.getByRole("combobox", { name: /select screen/i }));
-    fireEvent.click(await screen.findByText("Screen 1 (650 seats)"));
+    await user.click(await screen.findByRole("combobox", { name: /select screen/i }));
+    await user.click(await screen.findByText("Screen 1 (650 seats)"));
 
     expect(await screen.findByText("Screen: Screen 1")).toBeInTheDocument();
-  });
+  }, 10000);
 
   test("Theatre change clears invalid old Screen selection for multiplex Theatre", async () => {
     const store = buildStore({
@@ -362,6 +364,7 @@ describe("MovieShows screen selection", () => {
   });
 
   test("loaded active Screens do not reset a valid user selection", async () => {
+    const user = userEvent.setup();
     const store = buildStore([screenOne, screenTwo]);
     store.dispatch = vi.fn();
 
@@ -374,15 +377,15 @@ describe("MovieShows screen selection", () => {
 
     const { rerender } = renderWithProviders(<MovieShows {...props} />, { store });
 
-    fireEvent.click(screen.getByRole("button", { name: /add show/i }));
-    fireEvent.mouseDown(screen.getByRole("combobox", { name: /select screen/i }));
-    fireEvent.click(await screen.findByText("Screen 2 (250 seats)"));
+    await user.click(await screen.findByRole("button", { name: /add show/i }));
+    await user.click(await screen.findByRole("combobox", { name: /select screen/i }));
+    await user.click(await screen.findByText("Screen 2 (250 seats)"));
 
     expect(await screen.findByText("Screen: Screen 2")).toBeInTheDocument();
 
     rerender(<MovieShows {...props} />);
 
     expect(await screen.findByText("Screen: Screen 2")).toBeInTheDocument();
-    expect(screen.getAllByText("Screen 2 (250 seats)").length).toBeGreaterThan(0);
-  });
+    await waitFor(() => expect(screen.getAllByText("Screen 2 (250 seats)").length).toBeGreaterThan(0));
+  }, 10000);
 });
