@@ -115,7 +115,7 @@ const Login = memo(() => {
                     loginError && (
                         <Form.Item>
                             <Alert
-                                message="Account Not Verified"
+                                title="Account Not Verified"
                                 description={
                                         <div>
                                             {loginError}

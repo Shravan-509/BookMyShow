@@ -77,7 +77,7 @@ const EmailTab = () => {
         {
             emailChangeError && (
                 <Alert
-                    message="Email Change Failed"
+                    title="Email Change Failed"
                     description={emailChangeError}
                     type="error"
                     showIcon

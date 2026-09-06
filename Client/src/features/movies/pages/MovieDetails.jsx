@@ -235,7 +235,7 @@ const MovieInfo = memo(() => {
             <div className="movie-details-error" style={{ padding: isMobile ? '20px 16px' : '40px 0' }}>
                 <div className="inner-container">
                     <Alert
-                        message="Unable to Load Movie Details"
+                        title="Unable to Load Movie Details"
                         description="Sorry, we couldn't load the movie information. Please try again later."
                         type="error"
                         showIcon
@@ -259,7 +259,7 @@ const MovieInfo = memo(() => {
             <div className="movie-details-not-found" style={{ padding: isMobile ? '20px 16px' : '40px 0' }}>
                 <div className="inner-container">
                     <Alert
-                        message="Movie Not Found"
+                        title="Movie Not Found"
                         description="The movie you're looking for doesn't exist or has been removed."
                         type="warning"
                         showIcon
@@ -344,7 +344,7 @@ const MovieInfo = memo(() => {
                             <Space 
                                 size={isMobile ? 12 : 16} 
                                 className="mb-4!"
-                                direction={isMobile ? "vertical" : "horizontal"}
+                                orientation={isMobile ? "vertical" : "horizontal"}
                                 style={{ width: isMobile ? "100%" : "auto" }}
                             >
                                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

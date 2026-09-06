@@ -128,11 +128,11 @@ const ResetPassword = () => {
                             {
                                 error && (
                                     <Form.Item>
-                                        <Alert 
-                                            message="Error" 
-                                            description={error} 
-                                            type='error' 
-                                            showIcon 
+                                        <Alert
+                                            title="Error"
+                                            description={error}
+                                            type='error'
+                                            showIcon
                                             className="mb-4! border-l-4! border-l-red-500!"
                                         />
                                     </Form.Item>

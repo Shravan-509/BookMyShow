@@ -36,12 +36,12 @@ const Profile = memo(() => {
 
   if (error && !profile) {
     return (
-      <Alert 
-        message="Error Loading Profile" 
-        description={error} 
-        type="error" 
-        showIcon 
-        style={{ margin: "20px 0" }} 
+      <Alert
+        title="Error Loading Profile"
+        description={error}
+        type="error"
+        showIcon
+        style={{ margin: "20px 0" }}
       />
     )
   }

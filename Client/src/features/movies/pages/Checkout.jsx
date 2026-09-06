@@ -24,7 +24,6 @@ import { notify } from '../../../utils/notificationUtils';
 import { useDispatch, useSelector } from 'react-redux';
 import { formatDate, formatParsedTime } from '../../../utils/dateFormatter';
 const { Title ,Text, Paragraph } = Typography;
-const { Panel } = Collapse; 
 
 const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID;
 
@@ -623,7 +622,7 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
 
         return (
             <Alert
-                message="Error"
+                title="Error"
                 description={error}
                 type="error"
                 showIcon
@@ -710,7 +709,7 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
                     <Title level={5} className="mb-2! text-base! md:text-lg!">
                         {show.movie.movieName}
                     </Title>
-                    <Space direction="vertical" size={2} className="mb-0!">
+                    <Space orientation="vertical" size={2} className="mb-0!">
                         <Text type="secondary" className="text-sm! md:text-base!">
                             {show.theatre.name}
                         </Text>
@@ -736,49 +735,71 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
                         </Text>
                     </div>
 
-                    <Collapse 
+                    <Collapse
                         bordered={false}
-                        ghost 
-                        expandIconPosition="start" 
+                        ghost
+                        expandIconPlacement="start"
                         className="custom-collapse bg-transparent! p-0!"
                         expandIcon={({ isActive }) => (
-                            <DownCircleOutlined rotate={isActive ? -180 : 0} className="text-gray-500!"/>
+                            <DownCircleOutlined
+                            rotate={isActive ? -180 : 0}
+                            className="text-gray-500!"
+                            />
                         )}
-                    >
-                        <Panel
-                            header={
+                        items={[
+                            {
+                            key: "1",
+                            label: (
                                 <div className="flex justify-between w-full">
-                                    <Text className="text-sm! md:text-base! text-gray-800!">
-                                        Convenience Fee
-                                        </Text>
-                                    <Text className="text-sm! md:text-base! font-medium! text-gray-900!">
-                                        ₹{(convenienceFee).toFixed(2)}
-                                    </Text>
+                                <Text className="text-sm! md:text-base! text-gray-800!">
+                                    Convenience Fee
+                                </Text>
+
+                                <Text className="text-sm! md:text-base! font-medium! text-gray-900!">
+                                    ₹{convenienceFee.toFixed(2)}
+                                </Text>
                                 </div>
-                            }
-                            key="1"
-                            className="border-0!"
-                        >
-                            <div className="space-y-2 pl-0 pt-2 border-t border-gray-100">
+                            ),
+                            children: (
+                                <div className="space-y-2 pl-0 pt-2 border-t border-gray-100">
                                 <div className="flex! justify-between!">
-                                    <Text type='secondary' className="text-xs! md:text-sm!">
-                                        Base Amount
+                                    <Text
+                                    type="secondary"
+                                    className="text-xs! md:text-sm!"
+                                    >
+                                    Base Amount
                                     </Text>
-                                    <Text type='secondary' className="text-xs! md:text-sm!">
-                                        ₹{baseAmount.toFixed(2)}
+
+                                    <Text
+                                    type="secondary"
+                                    className="text-xs! md:text-sm!"
+                                    >
+                                    ₹{baseAmount.toFixed(2)}
                                     </Text>
                                 </div>
+
                                 <div className="flex justify-between">
-                                    <Text type='secondary' className="text-xs! md:text-sm!">
-                                        Integrated GST (IGST) @18%
+                                    <Text
+                                    type="secondary"
+                                    className="text-xs! md:text-sm!"
+                                    >
+                                    Integrated GST (IGST) @18%
                                     </Text>
-                                    <Text type='secondary' className="text-xs! md:text-sm!">
-                                        ₹{gst.toFixed(2)}
+
+                                    <Text
+                                    type="secondary"
+                                    className="text-xs! md:text-sm!"
+                                    >
+                                    ₹{gst.toFixed(2)}
                                     </Text>
                                 </div>
-                            </div>
-                        </Panel>
-                    </Collapse>
+                                </div>
+                            ),
+                            className: "border-0!",
+                            },
+                        ]}
+                    />
+
                 </div>
 
                 <Divider className="my-4!" />

@@ -191,7 +191,7 @@ const Register = memo(() => {
 
                  <Form.Item label="Register as a Partner" name={"role"} initialValue="user" rules={roleRules}>
                     <Radio.Group name="radiogroup">
-                        <Space direction="horizontal">
+                        <Space orientation="horizontal">
                             <Radio value={"partner"}>Yes</Radio>
                             <Radio value={"user"}>No</Radio>
                         </Space>

@@ -199,7 +199,7 @@ const AllBookings = () => {
             onChange={(e) => setSearchText(e.target.value)}
             style={{ width: 400, maxWidth: "100%" }}
           />
-          <RangePicker value={dateRange} onChange={(dates) => setDateRange(dates)} format="DD MMM YYYY" />
+          <RangePicker value={dateRange} onChange={(dates) => setDateRange(dates)} format="dd MMM yyyy" />
         </Space>
 
         <Table

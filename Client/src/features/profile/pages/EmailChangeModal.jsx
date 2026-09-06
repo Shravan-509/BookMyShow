@@ -45,7 +45,7 @@ const EmailChangeModal = () => {
         onCancel={handleClose}
         footer={null}
         centered
-        destroyOnClose
+        destroyOnHidden
         title={
             <Title level={4} className="mb-0!">
                 Verify Email Change

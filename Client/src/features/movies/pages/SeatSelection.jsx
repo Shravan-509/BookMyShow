@@ -192,7 +192,7 @@ const Booking = () => {
         </Text>
         <div className="text-sm text-gray-600 mt-1">{show?.theatre.name}</div>
         <div className="text-sm text-gray-600">
-          {formatDate(show?.date, "EEE, dd MMM, YYYY")} | {" "}
+          {formatDate(show?.date, "EEE, dd MMM, yyyy")} | {" "}
           {formatParsedTime(show?.time)}
         </div>
       </div>
@@ -263,7 +263,7 @@ const Booking = () => {
                   {show?.movie.movieName}
                 </Title>
 
-                <Space direction="vertical" size={4} className="mb-2!">
+                <Space orientation="vertical" size={4} className="mb-2!">
                   <Space size="middle" wrap>
                     <Text className="text-sm md:text-base">{show?.theatre.name}</Text>
                     <Tag color="blue" className="flex! gap-1! text-xs! md:text-sm!">

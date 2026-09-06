@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { act, screen } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
 import App from "./App";
 import { authStatusChecked } from "./redux/slices/authSlice";
@@ -60,7 +60,9 @@ describe("App routing", () => {
       },
     });
 
-    store.dispatch(authStatusChecked({ isAuthenticated: false, user: null, token: null }));
+    act(() => {
+      store.dispatch(authStatusChecked({ isAuthenticated: false, user: null, token: null }));
+    });
 
     expect(await screen.findByText("Auth Tabs")).toBeInTheDocument();
     expect(screen.queryByText("Seat Selection Page")).not.toBeInTheDocument();

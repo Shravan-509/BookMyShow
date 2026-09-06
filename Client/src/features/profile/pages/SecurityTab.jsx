@@ -32,7 +32,7 @@ const Security = () => {
         {
             securityError && (
                 <Alert
-                    message="Security Update Failed"
+                    title="Security Update Failed"
                     description={securityError}
                     type="error"
                     showIcon

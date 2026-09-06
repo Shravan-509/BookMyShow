@@ -87,7 +87,7 @@ const ShowTime = memo(() => {
         return (
             <Card style={{ padding: isMobile ? "16px" : "24px" }}>
                 <Alert
-                    message="Unable to Load Show Times"
+                    title="Unable to Load Show Times"
                     description="Sorry, we couldn't load the show times for this date. Please try again later."
                     type="error"
                     showIcon

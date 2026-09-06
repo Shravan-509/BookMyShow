@@ -57,7 +57,7 @@ const ForgotPassword = () => {
         footer={null}
         centered
         width={600}
-        destroyOnClose={true}
+        destroyOnHidden={true}
         className="forgot-password-modal"
         closeIcon={<CloseCircleOutlined className="text-white! text-lg!" />}
     >
@@ -95,11 +95,11 @@ const ForgotPassword = () => {
 
                     {error && (
                         <Form.Item>
-                            <Alert 
-                                message="Error" 
-                                description={error} 
-                                type="error" 
-                                showIcon 
+                            <Alert
+                                title="Error"
+                                description={error}
+                                type="error"
+                                showIcon
                                 className="mb-4! border-l-4! border-l-red-500! shadow-sm!"
                             />
                         </Form.Item>

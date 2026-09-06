@@ -46,7 +46,7 @@ const  DangerZoneTab = () => {
       { 
         deleteAccountError && (
           <Alert
-            message="Account Deletion Failed"
+            title="Account Deletion Failed"
             description={deleteAccountError}
             type="error"
             showIcon
@@ -107,7 +107,7 @@ const  DangerZoneTab = () => {
       >
         <div className="py-4">
           <Alert
-            message="This action is irreversible!"
+            title="This action is irreversible!"
             description="Once you delete your account, all your data will be permanently removed and cannot be recovered."
             type="error"
             showIcon

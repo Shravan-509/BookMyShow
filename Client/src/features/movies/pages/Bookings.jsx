@@ -9,7 +9,6 @@ import {
   DownCircleOutlined,
 } from "@ant-design/icons"
 const { Text, Title } = Typography
-const { Panel } = Collapse
 import armChairUrl from "../../../assets/arm_chair.svg"
 import { useAuth } from "../../../hooks/useAuth"
 import NoBookings from "./NoBookings"
@@ -78,7 +77,7 @@ const BookingCard = React.memo(function BookingCard({ booking, isMobile, onViewB
             </div>
 
             <Flex vertical className="flex-1">
-              <Space direction="vertical" className="w-full">
+              <Space orientation="vertical" className="w-full">
                 <Title level={4} className="mb-1!">
                   {booking.movieTitle} <span className="text-sm text-gray-500">2D</span>
                 </Title>
@@ -185,38 +184,51 @@ const BookingCard = React.memo(function BookingCard({ booking, isMobile, onViewB
               View Booking Info & QR Code
             </Button>
 
-            <Collapse 
+            <Collapse
               bordered={false}
-              ghost 
-              expandIconPosition="start" 
+              ghost
+              expandIconPlacement="start"
               className="custom-collapse bg-transparent!"
-              expandIcon={({ isActive }) => <DownCircleOutlined rotate={isActive ? -180 : 0} />}
-            >
-            
-              <Panel
-                header={
-                  <div className="flex justify-between items-center w-full pr-4">
-                    <Text strong>Amount Paid</Text>
-                    <Text strong className="text-lg!">{formatCurrency(grandTotal)}</Text>
-                  </div>
-                }
-                key="1"
-              >
-                <div className="space-y-2 pt-2">
-                  <div className="flex justify-between">
-                    <Text className="text-sm">Ticket Price</Text>
-                    <Text className="text-sm">{formatCurrency(baseTotal)}</Text>
-                  </div>
-                  <div className="flex justify-between">
-                    <div>
-                      <Text className="text-sm">Convenience Fee</Text>
-                      <div className="text-xs text-gray-500">Incl. of Tax</div>
+              expandIcon={({ isActive }) => (
+                <DownCircleOutlined rotate={isActive ? -180 : 0} />
+              )}
+              items={[
+                {
+                  key: "1",
+                  label: (
+                    <div className="flex justify-between items-center w-full pr-4">
+                      <Text strong>Amount Paid</Text>
+                      <Text strong className="text-lg!">
+                        {formatCurrency(grandTotal)}
+                      </Text>
                     </div>
-                    <Text className="text-sm">{formatCurrency(convenienceFee)}</Text>
-                  </div>
-                </div>
-              </Panel>
-            </Collapse>
+                  ),
+                  children: (
+                    <div className="space-y-2 pt-2">
+                      <div className="flex justify-between">
+                        <Text className="text-sm">Ticket Price</Text>
+                        <Text className="text-sm">
+                          {formatCurrency(baseTotal)}
+                        </Text>
+                      </div>
+
+                      <div className="flex justify-between">
+                        <div>
+                          <Text className="text-sm">Convenience Fee</Text>
+                          <div className="text-xs text-gray-500">
+                            Incl. of Tax
+                          </div>
+                        </div>
+
+                        <Text className="text-sm">
+                          {formatCurrency(convenienceFee)}
+                        </Text>
+                      </div>
+                    </div>
+                  ),
+                },
+              ]}
+            />
 
             <div className="mt-2 pt-2 border-t border-gray-100 space-y-3">
               <div className="text-center">

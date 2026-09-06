@@ -77,7 +77,7 @@ const Personal_InfoTab = () => {
 
          {profileUpdateError && (
             <Alert
-                message="Update Failed"
+                title="Update Failed"
                 description={profileUpdateError}
                 type="error"
                 showIcon

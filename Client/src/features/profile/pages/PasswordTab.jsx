@@ -72,7 +72,7 @@ const PasswordChangeTab = () => {
         {
             passwordChangeError && (
                 <Alert
-                    message="Password Change Failed"
+                    title="Password Change Failed"
                     description={passwordChangeError}
                     type="error"
                     showIcon

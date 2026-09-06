@@ -155,7 +155,7 @@ const SeatRecommendation = ({
         </Title>
       </div>
 
-      <Space direction="vertical" className="w-full" size="small">
+      <Space orientation="vertical" className="w-full" size="small">
         {
             recommendations.map((rec, index) => {
                 const isSelected = isRecommendationSelected(index)

@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Card, Switch, Select, Button, Space, Typography, List, Tag } from "antd"
+import { Card, Switch, Select, Button, Space, Typography, Tag } from "antd"
 import { BellOutlined, ClockCircleOutlined, DeleteOutlined } from "@ant-design/icons"
 import {
   getReminderSettings,
@@ -44,7 +44,7 @@ const ReminderSettingsTab = () => {
           </div>
         }
       >
-        <Space direction="vertical" className="w-full!" size="large">
+        <Space orientation="vertical" className="w-full!" size="large">
           <div className="flex items-center justify-between">
             <div>
               <Text strong>Email Reminders</Text>
@@ -101,44 +101,32 @@ const ReminderSettingsTab = () => {
             <div className="text-sm">Book a movie to get reminders</div>
           </div>
         ) : (
-          <List
-            dataSource={upcomingReminders}
-            renderItem={(reminder) => (
-              <List.Item
-                key={reminder.bookingId}
-                actions={[
-                  <Button
-                    key={`cancel-${reminder.bookingId}`}
-                    type="text"
-                    danger
-                    icon={<DeleteOutlined />}
-                    onClick={() => handleCancelReminder(reminder.bookingId)}
-                  >
-                    Cancel
-                  </Button>,
-                ]}
-              >
-                <List.Item.Meta
-                  title={
-                    <div className="flex items-center gap-2">
-                      <Text strong>{reminder.movieTitle}</Text>
-                      <Tag color="blue">{formatParsedTime(reminder.showTime)}</Tag>
-                    </div>
-                  }
-                  description={
-                    <div>
-                      <div>{reminder.theatreName}</div>
-                      <div className="text-xs text-gray-500">
-                        Show: {formatDate(reminder.showDate, "MMM dd, yyyy")} • Reminder:{" "}
-                        {formatDate(reminder.reminderTime, "MMM DD")} {" "}
-                        {formatTime(reminder.reminderTime, "hh:mm a")} • Seats: {reminder.seats.join(", ")}
-                      </div>
-                    </div>
-                  }
-                />
-              </List.Item>
-            )}
-          />
+          <div className="divide-y divide-gray-100">
+            {upcomingReminders.map((reminder) => (
+              <div key={reminder.bookingId} className="flex items-start justify-between gap-4 py-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Text strong>{reminder.movieTitle}</Text>
+                    <Tag color="blue">{formatParsedTime(reminder.showTime)}</Tag>
+                  </div>
+                  <div>{reminder.theatreName}</div>
+                  <div className="text-xs text-gray-500">
+                    Show: {formatDate(reminder.showDate, "MMM dd, yyyy")} • Reminder:{" "}
+                    {formatDate(reminder.reminderTime, "MMM dd")}{" "}
+                    {formatTime(reminder.reminderTime, "hh:mm a")} • Seats: {reminder.seats.join(", ")}
+                  </div>
+                </div>
+                <Button
+                  type="text"
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={() => handleCancelReminder(reminder.bookingId)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            ))}
+          </div>
         )}
       </Card>
     </div>
