@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const screenRepository = require("../repositories/screenRepository");
+const seatRepository = require("../repositories/seatRepository");
 const Theatre = require("../models/theatreSchema");
 const Show = require("../models/showSchema");
 const AppError = require("../utils/AppError");
@@ -80,6 +81,18 @@ const validateRequiredScreenFields = (screenPayload) => {
     }
 };
 
+const ensureCapacitySupportsActiveSeats = async (screenId, requestedCapacity) => {
+    const activeSeatCount = await seatRepository.countActiveByScreen(screenId);
+
+    if (requestedCapacity < activeSeatCount) {
+        throw new AppError(
+            `Requested capacity ${requestedCapacity} cannot be lower than ${activeSeatCount} active seats.`,
+            409,
+            "SCREEN_CAPACITY_BELOW_ACTIVE_SEATS"
+        );
+    }
+};
+
 const getScreens = async (req) => {
     if (req.user?.role === "admin") {
         return screenRepository.findScreens();
@@ -144,6 +157,10 @@ const updateScreen = async (req, id, payload) => {
     const screenPayload = sanitizeScreenPayload(payload, existingScreen);
     validateRequiredScreenFields(screenPayload);
     await ensureTheatreManageAccess(req, screenPayload.theatre, { requireActive: true });
+
+    if (payload.capacity !== undefined && screenPayload.capacity !== existingScreen.capacity) {
+        await ensureCapacitySupportsActiveSeats(id, screenPayload.capacity);
+    }
 
     const duplicate = await screenRepository.findDuplicateScreenNumber({
         theatre: screenPayload.theatre,

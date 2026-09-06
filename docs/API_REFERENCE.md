@@ -123,7 +123,49 @@ City records are protected by a compound unique index on `cityName`, `state`, an
 | `PATCH` | `/screens/:id` | Partial screen document | Updates screen metadata or active status |
 | `DELETE` | `/screens/:id` | none | Hard-deletes unreferenced screens; deactivates screens referenced by Shows |
 
-Screen authorization derives from Theatre ownership. Partners can manage screens only for their own Theatres. `screenNumber` is unique within a Theatre.
+Screen authorization derives from Theatre ownership. Partners can manage screens only for their own Theatres. `screenNumber` is unique within a Theatre. `Screen.capacity` is the physical capacity source of truth and cannot be reduced below the number of active physical Seats already configured for that Screen.
+
+## Seats
+
+| Method | Endpoint | Body | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/seats/:id` | none | Returns one Seat after resolving Screen -> Theatre ownership |
+| `GET` | `/screens/:screenId/seats` | none | Lists all Seats for a Screen and returns capacity/layout summary metadata |
+| `POST` | `/seats` | `{ screen, seatNumber, row, column, seatType, isActive? }` | Creates one physical Seat for an active Screen |
+| `PATCH` | `/seats/:id` | Partial Seat document | Updates Seat row/column/type/status; Seat `screen` cannot be changed |
+| `DELETE` | `/seats/:id` | none | Logically disables a Seat by setting `isActive=false` |
+| `POST` | `/screens/:screenId/seats/bulk` | `{ rows }` | Creates a validated physical layout from row definitions |
+
+Single Seat body example:
+
+```json
+{
+  "screen": "SCREEN_OBJECT_ID",
+  "seatNumber": "A1",
+  "row": "A",
+  "column": 1,
+  "seatType": "STANDARD",
+  "isActive": true
+}
+```
+
+Bulk Seat body example:
+
+```json
+{
+  "rows": [
+    {
+      "row": "A",
+      "startColumn": 1,
+      "endColumn": 12,
+      "seatType": "STANDARD",
+      "excludedColumns": [5, 6]
+    }
+  ]
+}
+```
+
+Seat numbers are normalized and must match `row + column`, for example `A + 1 = A1` and `AA + 15 = AA15`. `seatType` accepts `STANDARD`, `PREMIUM`, and `RECLINER`. Bulk creation validates the complete proposed layout before insertion and rejects duplicates or capacity overflow without intentionally creating partial layouts. The frontend supports Manual Rows and Sequential Rows; Sequential Rows are converted into this same canonical bulk row-definition payload before submission. Admins can manage Seats for any Screen; partners can manage Seats only for Screens under their owned Theatres; normal users are denied.
 
 ## Shows
 

@@ -215,6 +215,7 @@ Key groups:
 | Theatres | `/bms/v1/theatres` |
 | Cities | `/bms/v1/cities` |
 | Screens | `/bms/v1/screens` |
+| Seats | `/bms/v1/seats`, `/bms/v1/screens/:screenId/seats` |
 | Shows | `/bms/v1/shows` |
 | Bookings | `/bms/v1/bookings` |
 
@@ -230,13 +231,25 @@ Current target hierarchy:
 City -> Theatre -> Screen -> Show -> Booking
 ```
 
-Future Seat hierarchy, not implemented in Phase 2:
+Phase 3 introduces persistent physical Seat configuration under each Screen:
 
 ```text
 City -> Theatre -> Screen -> Seat
 ```
 
-During Phase 2, `Show.theatre` remains supported for booking compatibility and `Show.screen` is optional for legacy Shows. The updated Admin/Partner Show UI uses explicit Screen selection for new Shows.
+Each Screen owns its own physical layout, so `A1` can exist in multiple Screens but is unique within one Screen. Seat Management supports individual Seat create/edit, logical disable/re-enable, manual bulk rows, sequential large-screen generation, and layout completeness status. `Screen.capacity` remains the physical capacity source of truth: active Seat count cannot exceed capacity, and capacity cannot be reduced below the number of active Seats.
+
+Current v2 status:
+
+| Phase | Status |
+| --- | --- |
+| Phase 1 - City | Complete |
+| Phase 2 - Screen | Complete |
+| Phase 3 - Physical Seat Management | Complete |
+| Phase 4 - ShowSeat Inventory | Planned / Not Started |
+| Phase 5 - Seat Locking | Planned / Not Started |
+
+During Phase 3, physical Seat configuration and customer booking temporarily coexist. The customer booking flow still uses `SeatSelection.jsx`, `SeatLayout.jsx`, `Show.totalSeats`, `Show.bookedSeats`, and `Booking.seats` string labels. Customer Seat selection does not yet read from the physical Seat collection.
 
 The safe backfill script defaults to dry-run mode:
 

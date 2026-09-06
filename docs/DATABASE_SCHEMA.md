@@ -94,6 +94,39 @@ Index:
 { theatre: 1, screenNumber: 1 } // unique
 ```
 
+`Screen.capacity` is the source of truth for physical auditorium capacity. Active Seat documents for a Screen must remain less than or equal to this value. Seat creation, bulk creation, and re-enable operations cannot exceed capacity, and Screen capacity cannot be reduced below the current active Seat count. Seats are not automatically deleted or disabled when capacity changes.
+
+## seats
+
+Source: `Server/models/seatSchema.js`
+
+| Field | Type | Required | Constraints / Default | Notes |
+| --- | --- | --- | --- | --- |
+| `screen` | `ObjectId` | Yes | ref `Screen` | Parent physical auditorium |
+| `seatNumber` | `String` | Yes | trimmed, uppercase | Stable physical Seat label such as `A1` |
+| `row` | `String` | Yes | trimmed, uppercase letters | Physical row label |
+| `column` | `Number` | Yes | positive integer | Physical column within the row |
+| `seatType` | `String` | Yes | enum `STANDARD`, `PREMIUM`, `RECLINER`; default `STANDARD` | Physical Seat category |
+| `isActive` | `Boolean` | No | default `true` | Disabled Seats remain stored and can be re-enabled |
+| `createdAt`, `updatedAt` | `Date` | Auto | timestamps | Managed by Mongoose |
+
+Indexes:
+
+```js
+{ screen: 1, seatNumber: 1 } // unique
+{ screen: 1, row: 1, column: 1 } // unique
+```
+
+Seat labels are unique within a Screen, not globally. `seatNumber` follows the canonical rule `seatNumber = row + column`, for example `A + 1 = A1` and `AA + 15 = AA15`.
+
+Layout status is derived from active Seat count:
+
+| State | Rule | Meaning |
+| --- | --- | --- |
+| `INCOMPLETE` | `activeSeatCount < Screen.capacity` | Physical layout is still being configured |
+| `COMPLETE` | `activeSeatCount === Screen.capacity` | Physical layout is fully configured |
+| Invalid | `activeSeatCount > Screen.capacity` | Prevented by service-level validation |
+
 ## shows
 
 Source: `Server/models/showSchema.js`
@@ -157,6 +190,7 @@ flowchart TD
     Verification["verification"]
     Movie["movies"]
     Screen["screens"]
+    Seat["seats"]
     Show["shows"]
 
     User -->|owner| Theatre
@@ -165,6 +199,7 @@ flowchart TD
     User -->|userId| Verification
     Movie -->|movie| Show
     Theatre -->|theatre| Screen
+    Screen -->|screen| Seat
     Theatre -->|theatre| Show
     Screen -->|screen| Show
     Show -->|show| Booking
@@ -178,4 +213,7 @@ Deletion behavior in controllers:
 | Delete movie | Deletes the movie document only; related shows/bookings are not cascaded in current code |
 | Delete theatre | Deletes the theatre document only; related shows/bookings are not cascaded in current code |
 | Delete screen | Hard-deletes screens with no Show references; deactivates screens referenced by Shows |
+| Delete seat | Logically disables the Seat by setting `isActive=false`; physical identity is retained |
 | Delete show | Deletes the show document only; related bookings are not cascaded in current code |
+
+Physical Seat documents are currently used for Admin/Partner Screen configuration. Customer booking remains compatible with the existing dynamic `SeatLayout.jsx` path: `Booking.seats` and `Show.bookedSeats` continue storing string labels, and customer Seat selection does not yet read the physical Seat collection.

@@ -17,7 +17,7 @@ Primary user roles:
 | Role | Capabilities in the current implementation |
 | --- | --- |
 | `user` | Browse movies, view shows, select seats, pay, receive tickets, view booking history, manage profile/security settings |
-| `partner` | Manage theatres owned by the partner, optionally map theatres to active cities, manage shows, view theatre bookings and revenue metrics |
+| `partner` | Manage theatres owned by the partner, optionally map theatres to active cities, manage screens, configure physical Seats, manage shows, view theatre bookings and revenue metrics |
 | `admin` | Manage movies, cities, theatres, users, and all bookings |
 
 ## 2. Architecture Overview
@@ -117,21 +117,41 @@ flowchart LR
 ```
 
 
-BookMyShow v2 Phase 1 introduces the City domain as the first incremental service/repository-backed module. Phase 1.1 adds optional City metadata fields: `cityCode`, `tier`, and GeoJSON `location`. Phase 2 introduces the Screen domain as the physical auditorium inside a Theatre. Existing modules remain controller-driven unless they need a small integration point with City or Screen.
+BookMyShow v2 Phase 1 introduces the City domain as the first incremental service/repository-backed module. Phase 1.1 adds optional City metadata fields: `cityCode`, `tier`, and GeoJSON `location`. Phase 2 introduces the Screen domain as the physical auditorium inside a Theatre. Phase 3 introduces persistent physical Seat configuration under each Screen.
 
-Implemented Phase 2 target hierarchy:
-
-```text
-City -> Theatre -> Screen -> Show -> Booking
-```
-
-Future Seat hierarchy, not implemented in Phase 2:
+Implemented v2 domain hierarchy:
 
 ```text
 City -> Theatre -> Screen -> Seat
+Movie -> Show -> Screen
+Show -> Booking
 ```
 
-Every Theatre conceptually has at least one Screen. Single-screen theatres use the same model as multiplexes, for example `Theatre -> Screen 1`. `Show.theatre` remains required for booking compatibility and `Show.screen` remains optional for legacy Shows during Phase 2.
+Each Screen owns its own physical layout:
+
+```text
+Theatre
+├── Screen 1
+│   ├── A1
+│   ├── A2
+│   └── ...
+└── Screen 2
+    ├── A1
+    ├── A2
+    └── ...
+```
+
+Seat numbers are unique within a Screen, not globally. `Seat` represents persistent physical auditorium configuration and does not yet represent per-Show availability. `Show.theatre` remains required for booking compatibility and `Show.screen` remains optional for legacy Shows.
+
+Phase status:
+
+| Phase | Status |
+| --- | --- |
+| Phase 1 - City | Complete |
+| Phase 2 - Screen | Complete |
+| Phase 3 - Physical Seat Management | Complete |
+| Phase 4 - ShowSeat Inventory | Planned / Not Started |
+| Phase 5 - Seat Locking | Planned / Not Started |
 
 Request flow:
 
@@ -221,7 +241,7 @@ The client is a React 19 application created around Vite. It uses feature folder
 | `Client/src/features/movies/pages/` | Movie details, show times, seat selection, checkout, booking history |
 | `Client/src/features/profile/pages/` | Profile, password, email, security, reminder, and danger-zone tabs |
 | `Client/src/features/admin/pages/` | Admin dashboard, movie management, theatre list, users, bookings |
-| `Client/src/features/partner/pages/` | Partner dashboard, theatre management, shows, theatre bookings, revenue |
+| `Client/src/features/partner/pages/` | Partner dashboard, theatre management, screen management, physical Seat management, shows, theatre bookings, revenue |
 | `Client/src/redux/` | Store, reducers, slices, sagas, action orchestration |
 | `Client/src/hooks/` | Domain hooks wrapping selectors and dispatches |
 | `Client/src/utils/` | Date formatting, notifications, reminders, security validation, optimized image helpers |
@@ -244,11 +264,11 @@ The backend is an Express app mounted under `/bms/v1`.
 | --- | --- |
 | `Server/server.js` | App bootstrap, middleware stack, DB connection, route mounting, server startup |
 | `Server/config/db.js` | Mongoose connection using `MONGODB_CONNECTION_STRING` |
-| `Server/routes/` | Express routers for auth, users, movies, cities, theatres, screens, shows, bookings |
+| `Server/routes/` | Express routers for auth, users, movies, cities, theatres, screens, seats, shows, bookings |
 | `Server/controllers/` | Request validation, business workflows, database operations, external integrations |
-| `Server/services/` | City and Screen business rules, Theatre ownership validation, and reference validation |
-| `Server/repositories/` | City and Screen database operations |
-| `Server/models/` | Mongoose schemas for users, movies, cities, theatres, screens, shows, bookings, verification codes |
+| `Server/services/` | City, Screen, and Seat business rules, Theatre ownership validation, capacity invariants, and reference validation |
+| `Server/repositories/` | City, Screen, and Seat database operations |
+| `Server/models/` | Mongoose schemas for users, movies, cities, theatres, screens, seats, shows, bookings, verification codes |
 | `Server/middlewares/authorization.js` | JWT validation and role-check helper |
 | `Server/middlewares/performanceOptimization.js` | Helmet, compression, rate limiting, request timing/logging, cache headers |
 | `Server/middlewares/cache.js` | Route-level in-memory GET response cache via `node-cache` |
@@ -509,6 +529,7 @@ High-level route groups:
 | Theatres | `/theatres` | JWT required |
 | Cities | `/cities` | JWT required for reads; admin role required for create/update/deactivate |
 | Screens | `/screens` and `/theatres/:theatreId/screens` | JWT plus admin/partner role; partner access derives from Theatre ownership |
+| Seats | `/seats` and `/screens/:screenId/seats` | JWT plus admin/partner role; partner access derives from Screen -> Theatre ownership |
 | Shows | `/shows` | JWT required |
 | Bookings | `/bookings` | JWT required plus stricter booking rate limiter |
 
@@ -528,6 +549,7 @@ erDiagram
     THEATRES ||--o{ SHOWS : hosts
     THEATRES ||--o{ SCREENS : contains
     SCREENS ||--o{ SHOWS : scheduled_in
+    SCREENS ||--o{ SEATS : contains
 
     SHOWS ||--o{ BOOKINGS : contains
 
@@ -573,6 +595,16 @@ erDiagram
         string name
         number screenNumber
         number capacity
+        boolean isActive
+    }
+
+    SEATS {
+        ObjectId _id
+        ObjectId screen
+        string seatNumber
+        string row
+        number column
+        string seatType
         boolean isActive
     }
 
@@ -629,6 +661,7 @@ Redux Toolkit handles state updates and Redux-Saga handles side effects. `redux-
 | `movie` | Movie list, selected movie, CRUD state |
 | `theatre` | Theatre list and CRUD state |
 | `screen` | Theatre-specific Screen list and Screen create/update/delete workflows |
+| `seat` | Physical Seat list and Screen layout summary by Screen; Seat create/update/disable/re-enable and bulk layout workflows |
 | `show` | Show CRUD, selected show, theatres with shows for a movie |
 | `booking` | Seat validation, booking creation, booking lists, revenue, Razorpay order state |
 | `user` | Admin user listing |
@@ -765,6 +798,23 @@ The `MainLayout` adapts navigation by user role:
 | `partner` | Partner Dashboard |
 | `user` | My Bookings |
 
+### Seat Management Flow
+
+Admin and Partner users manage physical Seats from Partner Theatre Management through `ScreenManagement.jsx` and `SeatManagement.jsx`. Partner access remains limited to Screens that belong to their owned Theatres; admin users can manage Seats for any applicable Screen.
+
+| Operation | Behavior |
+| --- | --- |
+| Create Seat | Creates one physical Seat for the selected Screen; the UI derives `seatNumber` from row and column |
+| Edit Seat | Updates row, column, seat type, or status while preserving the Screen relationship |
+| Disable Seat | Logical delete only; sets `isActive=false` and retains physical identity |
+| Re-enable Seat | Restores `isActive=true` only if active Seat count remains within Screen capacity |
+| Manual bulk rows | Creates irregular row layouts with start/end columns, seat type, and optional excluded columns |
+| Sequential rows | Generates large regular layouts such as `A1-A30` through `AX1-AX30` and submits the same bulk API payload |
+
+Sequential row generation uses spreadsheet-style row names: `A ... Z`, then `AA ... AZ`, `BA`, and beyond. Excluded columns represent consistent gaps or aisles and reduce the actual generated Seat count.
+
+The current customer booking flow does not fetch these physical Seat documents. `SeatSelection.jsx` and `SeatLayout.jsx` continue generating seat labels from capacity, and `Booking.seats`/`Show.bookedSeats` remain string arrays until the planned ShowSeat inventory phase.
+
 ## 10. Payment Integration
 
 Razorpay is integrated with an order-create, server-side price calculation, signature verification, and amount-verification flow.
@@ -794,21 +844,21 @@ sequenceDiagram
 
     activate Booking
 
-    Booking->>DB: Read Seat Inventory
+    Booking->>DB: Read show.bookedSeats labels
 
     activate DB
 
-    DB-->>Booking: Seat Status
+    DB-->>Booking: Label availability
 
     deactivate DB
 
     alt Seats Available
 
-        Booking->>DB: Lock Seats
+        Booking->>DB: Atomically reserve selected labels
 
         activate DB
 
-        DB-->>Booking: Seats Locked
+        DB-->>Booking: bookedSeats updated
 
         deactivate DB
 
@@ -889,9 +939,9 @@ sequenceDiagram
 
     else Payment Failed
 
-        API->>Booking: Release Locked Seats
+        API->>Booking: Roll back reserved labels if needed
 
-        Booking->>DB: Unlock Seats
+        Booking->>DB: Pull labels from bookedSeats
 
         API-->>UI: Payment Failed
 
@@ -1108,6 +1158,8 @@ BookMyShow/
 | `MainLayout.jsx` | Authenticated shell with role-aware navigation, drawer menu, header, footer, logout |
 | `SeatLayout.jsx` | Interactive seat grid, booked/selected states, mouse/touch pan, wheel/pinch zoom |
 | `SeatRecommendation.jsx` | Scores seat groups based on center position, viewing distance, aisle/back preferences |
+| `SeatManagement.jsx` | Admin/Partner physical Seat configuration UI under Screen Management |
+| `seatManagementUtils.js` | Seat label derivation, excluded-column parsing, sequential row generation, and preview calculations |
 | `notificationUtils.js` | Unified Ant Design `message`/`notification` helper |
 | `dateFormatter.js` | date-fns helpers replacing heavier date libraries |
 | `format-duration.js` | Converts movie duration minutes into `xh ym` display |
@@ -1186,6 +1238,8 @@ Implementation-aligned enhancements:
 | Token invalidation | Include and verify `tokenVersion` in JWT payloads after password/email changes |
 | Booking lifecycle | Add cancellation/refund APIs and explicit payment status transitions |
 | Webhooks | Add Razorpay webhook support for asynchronous payment reconciliation |
+| ShowSeat inventory | Add per-Show inventory initialized from physical Seats: `Screen -> Seat -> ShowSeat <- Show` |
+| Seat locking | Add reservation locking and expiry after ShowSeat inventory exists |
 | Cache invalidation | Clear route-level caches after movie/theatre/show mutations |
 | Tests | Add controller, saga, and route integration tests around auth, payments, and seat concurrency |
 | Monitoring | Add structured logging, error tracking, and metrics dashboards |

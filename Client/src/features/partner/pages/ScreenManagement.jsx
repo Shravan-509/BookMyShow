@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Button, Form, Input, InputNumber, Modal, Popconfirm, Space, Switch, Table, Tag, Tooltip, Typography } from "antd";
 import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
+import SeatManagement from "./SeatManagement";
 import {
   createScreenRequest,
   deleteScreenRequest,
@@ -19,6 +20,7 @@ const ScreenManagement = ({
   setSelectedTheatre,
 }) => {
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isSeatModalOpen, setIsSeatModalOpen] = useState(false);
   const [selectedScreen, setSelectedScreen] = useState(null);
   const dispatch = useDispatch();
   const loading = useSelector(selectScreenLoading);
@@ -124,6 +126,15 @@ const ScreenManagement = ({
               </Button>
             </Tooltip>
           </Popconfirm>
+          <Button
+            size="large"
+            onClick={() => {
+              setSelectedScreen(screen);
+              setIsSeatModalOpen(true);
+            }}
+          >
+            Manage Seats
+          </Button>
         </Space>
       ),
     },
@@ -216,6 +227,16 @@ const ScreenManagement = ({
           </Button>
         </Form>
       </Modal>
+
+      {isSeatModalOpen && (
+        <SeatManagement
+          isSeatModalOpen={isSeatModalOpen}
+          setIsSeatModalOpen={setIsSeatModalOpen}
+          selectedTheatre={selectedTheatre}
+          selectedScreen={selectedScreen}
+          setSelectedScreen={setSelectedScreen}
+        />
+      )}
     </Modal>
   );
 };

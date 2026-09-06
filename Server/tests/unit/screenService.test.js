@@ -36,6 +36,9 @@ const loadService = ({ theatre = { _id: THEATRE_ID, owner: PARTNER_ID, isActive:
     updateScreen: jest.fn(),
     deleteScreen: jest.fn(),
   };
+  const seatRepository = {
+    countActiveByScreen: jest.fn(),
+  };
   const Theatre = {
     findById: jest.fn(() => selectQuery(theatre)),
     find: jest.fn(() => selectQuery([{ _id: THEATRE_ID }])),
@@ -45,11 +48,13 @@ const loadService = ({ theatre = { _id: THEATRE_ID, owner: PARTNER_ID, isActive:
   };
 
   jest.doMock("../../repositories/screenRepository", () => repository);
+  jest.doMock("../../repositories/seatRepository", () => seatRepository);
   jest.doMock("../../models/theatreSchema", () => Theatre);
   jest.doMock("../../models/showSchema", () => Show);
 
   return {
     repository,
+    seatRepository,
     Theatre,
     Show,
     service: require("../../services/screenService"),
@@ -159,8 +164,9 @@ describe("screenService", () => {
   });
 
   test("updates Screen details with duplicate validation", async () => {
-    const { service, repository } = loadService();
+    const { service, repository, seatRepository } = loadService();
     repository.findById.mockResolvedValue({ _id: SCREEN_ID, ...screenPayload });
+    seatRepository.countActiveByScreen.mockResolvedValue(500);
     repository.findDuplicateScreenNumber.mockResolvedValue(null);
     repository.updateScreen.mockResolvedValue({ _id: SCREEN_ID, ...screenPayload, capacity: 700 });
 
@@ -171,6 +177,81 @@ describe("screenService", () => {
       screenNumber: 1,
     }));
     expect(screen.capacity).toBe(700);
+  });
+
+  test("allows reducing Screen capacity to exactly the active Seat count", async () => {
+    const { service, repository, seatRepository } = loadService();
+    repository.findById.mockResolvedValue({ _id: SCREEN_ID, ...screenPayload });
+    seatRepository.countActiveByScreen.mockResolvedValue(500);
+    repository.findDuplicateScreenNumber.mockResolvedValue(null);
+    repository.updateScreen.mockResolvedValue({ _id: SCREEN_ID, ...screenPayload, capacity: 500 });
+
+    const screen = await service.updateScreen(req("admin"), SCREEN_ID, { capacity: 500 });
+
+    expect(seatRepository.countActiveByScreen).toHaveBeenCalledWith(SCREEN_ID);
+    expect(repository.updateScreen).toHaveBeenCalledWith(SCREEN_ID, expect.objectContaining({
+      capacity: 500,
+    }));
+    expect(screen.capacity).toBe(500);
+  });
+
+  test("rejects reducing Screen capacity below the active Seat count", async () => {
+    const { service, repository, seatRepository } = loadService();
+    repository.findById.mockResolvedValue({ _id: SCREEN_ID, ...screenPayload });
+    seatRepository.countActiveByScreen.mockResolvedValue(500);
+
+    await expect(service.updateScreen(req("admin"), SCREEN_ID, { capacity: 499 })).rejects.toMatchObject({
+      statusCode: 409,
+      code: "SCREEN_CAPACITY_BELOW_ACTIVE_SEATS",
+    });
+
+    expect(seatRepository.countActiveByScreen).toHaveBeenCalledWith(SCREEN_ID);
+    expect(repository.updateScreen).not.toHaveBeenCalled();
+  });
+
+  test("allows reducing Screen capacity when there are zero active Seats", async () => {
+    const { service, repository, seatRepository } = loadService();
+    repository.findById.mockResolvedValue({ _id: SCREEN_ID, ...screenPayload });
+    seatRepository.countActiveByScreen.mockResolvedValue(0);
+    repository.findDuplicateScreenNumber.mockResolvedValue(null);
+    repository.updateScreen.mockResolvedValue({ _id: SCREEN_ID, ...screenPayload, capacity: 100 });
+
+    const screen = await service.updateScreen(req("admin"), SCREEN_ID, { capacity: 100 });
+
+    expect(repository.updateScreen).toHaveBeenCalledWith(SCREEN_ID, expect.objectContaining({
+      capacity: 100,
+    }));
+    expect(screen.capacity).toBe(100);
+  });
+
+  test("does not query active Seats when capacity is unchanged", async () => {
+    const { service, repository, seatRepository } = loadService();
+    repository.findById.mockResolvedValue({ _id: SCREEN_ID, ...screenPayload });
+    repository.findDuplicateScreenNumber.mockResolvedValue(null);
+    repository.updateScreen.mockResolvedValue({ _id: SCREEN_ID, ...screenPayload });
+
+    await service.updateScreen(req("admin"), SCREEN_ID, { capacity: 650 });
+
+    expect(seatRepository.countActiveByScreen).not.toHaveBeenCalled();
+    expect(repository.updateScreen).toHaveBeenCalledWith(SCREEN_ID, expect.objectContaining({
+      capacity: 650,
+    }));
+  });
+
+  test("does not require Seat count when updating Screen without capacity", async () => {
+    const { service, repository, seatRepository } = loadService();
+    repository.findById.mockResolvedValue({ _id: SCREEN_ID, ...screenPayload });
+    repository.findDuplicateScreenNumber.mockResolvedValue(null);
+    repository.updateScreen.mockResolvedValue({ _id: SCREEN_ID, ...screenPayload, name: "Screen 1 Updated" });
+
+    const screen = await service.updateScreen(req("admin"), SCREEN_ID, { name: "Screen 1 Updated" });
+
+    expect(seatRepository.countActiveByScreen).not.toHaveBeenCalled();
+    expect(repository.updateScreen).toHaveBeenCalledWith(SCREEN_ID, expect.objectContaining({
+      name: "Screen 1 Updated",
+      capacity: 650,
+    }));
+    expect(screen.name).toBe("Screen 1 Updated");
   });
 
   test("hard deletes unreferenced Screen", async () => {

@@ -15,6 +15,7 @@ BookMyShow/
 │   ├── public/
 │   ├── src/
 │   │   ├── api/
+│   │   │   └── seat.js
 │   │   ├── assets/
 │   │   ├── components/
 │   │   │   └── SeatLayout.test.jsx
@@ -38,6 +39,9 @@ BookMyShow/
 │   │   │   │       ├── MovieShows.test.jsx
 │   │   │   │       ├── ScreenManagement.jsx
 │   │   │   │       ├── ScreenManagement.test.jsx
+│   │   │   │       ├── SeatManagement.jsx
+│   │   │   │       ├── SeatManagement.test.jsx
+│   │   │   │       ├── seatManagementUtils.js
 │   │   │   │       ├── TheatreForm.test.jsx
 │   │   │   │       └── TheatreBooking.test.jsx
 │   │   │   └── profile/
@@ -48,8 +52,10 @@ BookMyShow/
 │   │   ├── hooks/
 │   │   ├── redux/
 │   │   │   ├── sagas/
+│   │   │   │   └── seatSaga.js
 │   │   │   ├── slices/
-│   │   │   │   └── bookingSlice.test.js
+│   │   │   │   ├── bookingSlice.test.js
+│   │   │   │   └── seatSlice.js
 │   │   │   └── store.js
 │   │   ├── test/
 │   │   │   ├── setup.js
@@ -65,15 +71,20 @@ BookMyShow/
 ├── Server/
 │   ├── config/
 │   ├── controllers/
+│   │   └── SeatController.js
 │   ├── middlewares/
 │   ├── models/
+│   │   └── seatSchema.js
 │   ├── repositories/
+│   │   └── seatRepository.js
 │   ├── routes/
+│   │   └── seatRoute.js
 │   ├── scripts/
 │   │   ├── backfillTheatreCities.js
 │   │   ├── backfillShowScreens.js
 │   │   └── importCities.js
 │   ├── services/
+│   │   └── seatService.js
 │   ├── tests/
 │   │   ├── helpers/
 │   │   │   └── mockExpress.js
@@ -82,6 +93,7 @@ BookMyShow/
 │   │   │   ├── cacheSecurity.test.js
 │   │   │   ├── cityRoute.test.js
 │   │   │   ├── screenRoute.test.js
+│   │   │   ├── seatRoute.test.js
 │   │   │   └── errorHandling.test.js
 │   │   └── unit/
 │   │       ├── backfillTheatreCities.test.js
@@ -92,6 +104,8 @@ BookMyShow/
 │   │       ├── importCities.test.js
 │   │       ├── screenSchema.test.js
 │   │       ├── screenService.test.js
+│   │       ├── seatSchema.test.js
+│   │       ├── seatService.test.js
 │   │       ├── showScreen.test.js
 │   │       ├── theatreCity.test.js
 │   │       └── utils.test.js
@@ -133,7 +147,7 @@ BookMyShow/
 - `Client/src/test` contains shared Vitest/React Testing Library setup and rendering helpers.
 - `Server/routes` maps HTTP endpoints to controller methods.
 - `Server/controllers` owns validation, business workflows, payment verification, and email/PDF side effects.
-- `Server/services` and `Server/repositories` introduce the incremental City domain service/repository foundation.
+- `Server/services` and `Server/repositories` contain the incremental City, Screen, and Seat domain service/repository foundation.
 - `Server/models` keeps Mongoose schemas independent from controllers.
 - `Server/tests` separates backend unit, integration, and reusable test-helper code.
 - `docs` contains centralized technical documentation for reviewers and maintainers.
@@ -150,17 +164,17 @@ Frontend tests are implemented using **Vitest**, **React Testing Library**,
 the components, pages, and Redux modules they validate, while shared test
 configuration and rendering helpers are maintained under `Client/src/test/`.
 
-The frontend test suite covers key areas including authentication, seat
-selection, checkout and payment flow, booking history, profile management,
-administrative functionality, partner functionality, and Redux state
-transitions.
+The frontend test suite covers key areas including authentication, customer seat
+selection, physical Seat management, checkout and payment flow, booking history,
+profile management, administrative functionality, partner functionality, and
+Redux state transitions.
 
 ### Backend Testing
 
 Backend tests are implemented using **Jest** and **SuperTest** and are
 organized under `Server/tests/`.
 
-- `unit/` contains focused tests for booking controller logic and utilities.
+- `unit/` contains focused tests for domain services, schemas, booking controller logic, and utilities.
 - `integration/` contains tests for authentication and authorization,
   centralized error handling, and cache/security behavior.
 - `helpers/` contains reusable test utilities and Express mocks.

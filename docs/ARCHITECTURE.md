@@ -113,9 +113,43 @@ flowchart TB
 | Client state | `Client/src/redux` | Redux Toolkit slices, persisted root reducer, Redux-Saga side effects |
 | API client | `Client/src/api` | Axios calls grouped by backend domain |
 | HTTP API | `Server/server.js`, `Server/routes` | Middleware and route mounting |
-| Business logic | `Server/controllers`, `Server/services` | Auth, users, movies, theatres, shows, bookings, payments, and incremental City service logic |
-| Data model | `Server/models`, `Server/repositories` | Mongoose schemas and relations; City uses a repository for database operations |
+| Business logic | `Server/controllers`, `Server/services` | Auth, users, movies, theatres, screens, seats, shows, bookings, payments, and incremental service-backed domain logic |
+| Data model | `Server/models`, `Server/repositories` | Mongoose schemas and relations; City, Screen, and Seat use repository-backed domain operations |
 | Integrations | `Server/utils/email.js`, `Server/utils/ticket-pdf.js`, Razorpay SDK | Email, PDF ticket, payment gateway |
+
+## Domain Architecture
+
+```mermaid
+flowchart TD
+    City["City"] --> Theatre["Theatre"]
+    Theatre --> Screen["Screen"]
+    Screen --> Seat["Seat"]
+    Movie["Movie"] --> Show["Show"]
+    Show --> Screen
+    Show --> Booking["Booking"]
+```
+
+Seat represents persistent physical Screen configuration, not per-Show availability. Each Screen owns its own layout, so two Screens may both contain `A1`, but a single Screen cannot contain duplicate `A1` or duplicate row/column positions.
+
+Example:
+
+```text
+Theatre
+├── Screen 1
+│   ├── A1
+│   ├── A2
+│   └── ...
+└── Screen 2
+    ├── A1
+    ├── A2
+    └── ...
+```
+
+`Screen.capacity` remains the physical capacity source of truth. Active Seat count must satisfy `activeSeatCount <= Screen.capacity`; create, bulk-create, re-enable, and Screen capacity update flows enforce that invariant. Reducing capacity from `500` to `499` is rejected when `500` active Seats exist, while increasing capacity or reducing it to exactly the active Seat count is allowed.
+
+Layout completeness is derived, not stored: `INCOMPLETE` means active Seat count is below capacity, and `COMPLETE` means it equals capacity. The invalid state where active Seat count exceeds capacity is prevented.
+
+Phase 3 does not switch customer booking to physical Seat documents. `SeatSelection.jsx` and `SeatLayout.jsx` continue dynamically generating customer seat labels from Screen capacity or legacy `Show.totalSeats`; `Booking.seats` and `Show.bookedSeats` remain string arrays.
 
 ## Backend Request Flow
 
@@ -500,21 +534,21 @@ sequenceDiagram
 
     activate Booking
 
-    Booking->>DB: Read Seat Inventory
+    Booking->>DB: Read show.bookedSeats labels
 
     activate DB
 
-    DB-->>Booking: Seat Status
+    DB-->>Booking: Label availability
 
     deactivate DB
 
     alt Seats Available
 
-        Booking->>DB: Lock Seats
+        Booking->>DB: Atomically reserve selected labels
 
         activate DB
 
-        DB-->>Booking: Seats Locked
+        DB-->>Booking: bookedSeats updated
 
         deactivate DB
 
@@ -596,9 +630,9 @@ sequenceDiagram
 
     else Payment Failed
 
-        API->>Booking: Release Locked Seats
+        API->>Booking: Roll back reserved labels if needed
 
-        Booking->>DB: Unlock Seats
+        Booking->>DB: Pull labels from bookedSeats
 
         API-->>UI: Payment Failed
 
@@ -621,9 +655,9 @@ sequenceDiagram
 | 8 | Route-specific middleware | Auth limiter, JWT validation, role checks, booking limiter, selected shared catalogue cache |
 | 9 | Error handler | Final JSON error response |
 
-## BookMyShow v2 City and Screen Architecture
+## BookMyShow v2 City, Screen, and Seat Architecture
 
-Phase 1 introduces City as the first incremental service/repository-backed domain while preserving the existing controller-driven architecture for established modules. Phase 1.1 enriches City with optional `cityCode`, `tier`, and GeoJSON `location` metadata. Phase 2 introduces Screen as the physical auditorium under Theatre. It does not introduce Seat, ShowSeat, seat locking, dynamic pricing, or payment refactoring.
+Phase 1 introduces City as the first incremental service/repository-backed domain while preserving the existing controller-driven architecture for established modules. Phase 1.1 enriches City with optional `cityCode`, `tier`, and GeoJSON `location` metadata. Phase 2 introduces Screen as the physical auditorium under Theatre. Phase 3 introduces persistent physical Seat configuration under Screen. It does not introduce ShowSeat, seat locking, dynamic pricing, or payment refactoring.
 
 ```mermaid
 flowchart LR
@@ -647,22 +681,33 @@ flowchart LR
     ScreenService --> ScreenRepository["screenRepository"]
     ScreenRepository --> ScreenModel["Screen model"]
     ScreenModel --> MongoDB
+    ScreenModal --> SeatModal["Seat Management"]
+    SeatModal --> SeatRedux["seatSlice + seatSaga"]
+    SeatRedux --> SeatAPI["Client SeatAPI"]
+    SeatAPI --> SeatRoutes["/bms/v1/seats + /bms/v1/screens/:id/seats"]
+    SeatRoutes --> SeatController["SeatController"]
+    SeatController --> SeatService["seatService"]
+    SeatService --> SeatRepository["seatRepository"]
+    SeatRepository --> SeatModel["Seat model"]
+    SeatModel --> MongoDB
     ShowController["ShowController"] --> ScreenService
 ```
 
-Current target relationship:
-
-```text
-City -> Theatre -> Screen -> Show -> Booking
-```
-
-Future Seat relationship, not implemented in Phase 2:
+Current target relationships:
 
 ```text
 City -> Theatre -> Screen -> Seat
+Movie -> Show -> Screen
+Show -> Booking
 ```
 
-Every Theatre conceptually has at least one Screen. A single-screen Theatre is represented as `Theatre -> Screen 1`, while multiplexes create multiple Screen records. `Show.theatre` remains required for booking compatibility and `Show.screen` remains optional for legacy Shows during Phase 2.
+Every Theatre conceptually has at least one Screen. A single-screen Theatre is represented as `Theatre -> Screen 1`, while multiplexes create multiple Screen records. Each Screen has its own Seat layout; Seat labels are unique within a Screen, not globally. `Show.theatre` remains required for booking compatibility and `Show.screen` remains optional for legacy Shows.
+
+Seat Management supports individual Seat create/edit, logical disable/re-enable, manual bulk rows for irregular layouts, and sequential rows for large regular auditoriums. Sequential rows use spreadsheet-style continuation after `Z` (`AA`, `AB`, `AZ`, `BA`) and submit generated row definitions through the same bulk Seat API used by manual mode.
+
+`Screen.capacity` is the physical capacity source of truth. Active Seat count cannot exceed capacity, and Screen capacity cannot be reduced below the active Seat count. A layout is `INCOMPLETE` when active Seat count is below capacity and `COMPLETE` when it equals capacity.
+
+Physical Seat configuration is not yet connected to customer booking. `SeatSelection.jsx` and `SeatLayout.jsx` continue dynamically generating customer seat labels, while `Booking.seats` and `Show.bookedSeats` remain string arrays.
 
 ## Route Groups
 
@@ -673,6 +718,7 @@ Every Theatre conceptually has at least one Screen. A single-screen Theatre is r
 | `/bms/v1/movies` | `movieRoute.js` | JWT; admin role for mutations |
 | `/bms/v1/theatres` | `theatreRoute.js` | JWT; admin/partner role and partner ownership checks |
 | `/bms/v1/screens` | `screenRoute.js` | JWT; admin/partner role and Theatre-derived ownership checks |
+| `/bms/v1/seats` | `seatRoute.js` | JWT; admin/partner role and Screen -> Theatre ownership checks |
 | `/bms/v1/shows` | `showRoute.js` | JWT; admin/partner role for management and partner ownership checks |
 | `/bms/v1/bookings` | `bookingRoute.js` | JWT plus booking rate limiter; admin/partner roles and ownership checks on privileged booking views |
 
@@ -689,6 +735,7 @@ erDiagram
     THEATRES ||--o{ SHOWS : hosts
     THEATRES ||--o{ SCREENS : contains
     SCREENS ||--o{ SHOWS : scheduled_in
+    SCREENS ||--o{ SEATS : contains
 
     SHOWS ||--o{ BOOKINGS : booked_for
 ```

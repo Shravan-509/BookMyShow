@@ -10,6 +10,7 @@ import { bookingSaga } from "./bookingSaga";
 import { userSaga } from "./userSaga";
 import { citySaga } from "./citySaga";
 import { screenSaga } from "./screenSaga";
+import { seatSaga } from "./seatSaga";
 
 // Root Saga that combines all sagas
 export function* rootSaga(){
@@ -25,5 +26,6 @@ export function* rootSaga(){
         fork(userSaga),
         fork(citySaga),
         fork(screenSaga),
+        fork(seatSaga),
     ])
 }

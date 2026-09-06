@@ -38,6 +38,35 @@ flowchart LR
     Controllers --> Integrations["Razorpay / Brevo / PDFKit"]
 ```
 
+## Current Domain Architecture
+
+```mermaid
+flowchart TD
+    City["City"] --> Theatre["Theatre"]
+    Theatre --> Screen["Screen"]
+    Screen --> Seat["Physical Seat"]
+    Movie["Movie"] --> Show["Show"]
+    Show --> Screen
+    Show --> Booking["Booking"]
+```
+
+## Physical Seat Configuration Boundary
+
+```mermaid
+flowchart LR
+    subgraph AdminPartner["Admin / Partner Configuration"]
+        Screen["Screen"] --> Seat["Seat collection"]
+        Seat --> SeatManagement["Seat Management UI"]
+    end
+
+    subgraph CustomerBooking["Current Customer Booking"]
+        ShowCapacity["Screen.capacity / legacy Show.totalSeats"] --> SeatSelection["SeatSelection.jsx"]
+        SeatSelection --> SeatLayout["SeatLayout.jsx dynamic labels"]
+        SeatLayout --> BookingSeats["Booking.seats string labels"]
+        SeatLayout --> ShowBookedSeats["Show.bookedSeats string labels"]
+    end
+```
+
 ## JWT Flow
 
 ```mermaid
@@ -87,4 +116,3 @@ flowchart LR
     Render --> Atlas[("MongoDB Atlas")]
     Render --> External["Razorpay + Brevo"]
 ```
-

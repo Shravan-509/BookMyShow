@@ -5,11 +5,17 @@ const {
     updateScreen,
     deleteScreen,
 } = require("../controllers/ScreenController");
+const {
+    getSeatsByScreen,
+    bulkCreateSeats,
+} = require("../controllers/SeatController");
 const { validateRole } = require("../middlewares/authorization");
 
 const router = require("express").Router();
 
 router.get("/", validateRole(["admin", "partner"]), getScreens);
+router.get("/:screenId/seats", validateRole(["admin", "partner"]), getSeatsByScreen);
+router.post("/:screenId/seats/bulk", validateRole(["admin", "partner"]), bulkCreateSeats);
 router.get("/:id", validateRole(["admin", "partner"]), getScreenById);
 router.post("/", validateRole(["admin", "partner"]), createScreen);
 router.patch("/:id", validateRole(["admin", "partner"]), updateScreen);
