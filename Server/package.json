@@ -47,5 +47,11 @@
   "author": "Shravan Kumar Atti",
   "engines": {
     "node": "^20.19.0 || >=22.13.0"
+  },
+  "allowScripts": {
+    "@parcel/watcher@2.6.0": true,
+    "bcrypt@6.0.0": true,
+    "fsevents@2.3.3": true,
+    "unrs-resolver@1.12.2": true
   }
 }
