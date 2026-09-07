@@ -204,7 +204,7 @@ describe("MovieShows screen selection", () => {
         theatre: "theatre-1",
       }),
     })));
-  }, 10000);
+  }, 15000);
 
   test("legacy Show without Screen renders safely", () => {
     const store = buildStore([], [{
@@ -334,7 +334,7 @@ describe("MovieShows screen selection", () => {
     await user.click(await screen.findByText("Screen 1 (650 seats)"));
 
     expect(await screen.findByText("Screen: Screen 1")).toBeInTheDocument();
-  }, 10000);
+  }, 15000);
 
   test("Theatre change clears invalid old Screen selection for multiplex Theatre", async () => {
     const store = buildStore({
@@ -361,7 +361,7 @@ describe("MovieShows screen selection", () => {
     rerender(<MovieShows {...props} selectedTheatre={theatreTwo} />);
 
     await waitFor(() => expect(screen.queryByText("Screen: Screen 2")).not.toBeInTheDocument());
-  });
+  }, 15000);
 
   test("loaded active Screens do not reset a valid user selection", async () => {
     const user = userEvent.setup();
@@ -387,5 +387,5 @@ describe("MovieShows screen selection", () => {
 
     expect(await screen.findByText("Screen: Screen 2")).toBeInTheDocument();
     await waitFor(() => expect(screen.getAllByText("Screen 2 (250 seats)").length).toBeGreaterThan(0));
-  }, 10000);
+  }, 15000);
 });

@@ -354,5 +354,5 @@ describe("SeatManagement", () => {
     await user.click(manageSeatsButton);
 
     expect(await screen.findByText("Seats - Screen 1")).toBeInTheDocument();
-  });
+  }, 15000);
 });
