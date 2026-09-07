@@ -19,7 +19,7 @@
     "@ant-design/icons": "^6.3.2",
     "@reduxjs/toolkit": "^2.11.2",
     "@tailwindcss/vite": "^4.3.3",
-    "antd": "^6.5.0",
+    "antd": "^6.6.2",
     "axios": "^1.16.0",
     "date-fns": "^4.1.0",
     "js-cookie": "^3.0.7",
