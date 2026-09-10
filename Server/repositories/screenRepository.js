@@ -2,7 +2,7 @@ const Screen = require("../models/screenSchema");
 
 const createScreen = (payload) => Screen.create(payload);
 
-const findById = (id) => Screen.findById(id);
+const findById = (id, options = {}) => Screen.findById(id, null, options);
 
 const findActiveById = (id) => Screen.findOne({ _id: id, isActive: true });
 

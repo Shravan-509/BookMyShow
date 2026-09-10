@@ -14,7 +14,9 @@ const findById = (id) => Seat.findById(id)
         },
     });
 
-const findByScreen = (screenId) => Seat.find({ screen: screenId }).sort({ row: 1, column: 1 });
+const findByScreen = (screenId, options = {}) => (
+    Seat.find({ screen: screenId }, null, options).sort({ row: 1, column: 1 })
+);
 
 const countActiveByScreen = (screenId) => Seat.countDocuments({ screen: screenId, isActive: true });
 
