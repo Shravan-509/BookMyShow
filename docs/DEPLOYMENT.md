@@ -119,3 +119,20 @@ node scripts/backfillShowScreens.js --apply
 ```
 
 The script is dry-run by default, does not create Screens or capacities, does not modify `Show.theatre` or Booking records, and is idempotent.
+
+## ShowSeat Inventory Migration
+
+Phase 4A adds the `showseats` collection as the per-Show inventory snapshot foundation. The historical migration has already completed for the demo dataset:
+
+| Metric | Result |
+| --- | --- |
+| Shows migrated | 382 |
+| ShowSeat documents | 243,728 |
+| BOOKED ShowSeats | 13 |
+| Final `ALREADY_INITIALIZED` Shows | 382 |
+| Final `READY` Shows | 0 |
+| Migration errors/warnings | 0 |
+
+New screen-aware Shows now initialize ShowSeats automatically during Show creation. The selected Screen must have a complete active Seat layout (`activeSeatCount === Screen.capacity`), and Show creation plus ShowSeat insertion runs in one MongoDB transaction. Screen-aware creation therefore requires a transaction-capable MongoDB deployment such as MongoDB Atlas or another replica-set-backed deployment.
+
+Legacy no-screen Show creation remains temporarily compatible and does not create ShowSeats. Customer booking still uses `SeatLayout.jsx`, `Booking.seats`, and `Show.bookedSeats` string labels until the future Phase 4B customer ShowSeat availability transition.

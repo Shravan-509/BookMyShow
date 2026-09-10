@@ -114,7 +114,7 @@ flowchart TB
 | API client | `Client/src/api` | Axios calls grouped by backend domain |
 | HTTP API | `Server/server.js`, `Server/routes` | Middleware and route mounting |
 | Business logic | `Server/controllers`, `Server/services` | Auth, users, movies, theatres, screens, seats, shows, bookings, payments, and incremental service-backed domain logic |
-| Data model | `Server/models`, `Server/repositories` | Mongoose schemas and relations; City, Screen, and Seat use repository-backed domain operations |
+| Data model | `Server/models`, `Server/repositories` | Mongoose schemas and relations; City, Screen, Seat, and ShowSeat use repository-backed domain operations |
 | Integrations | `Server/utils/email.js`, `Server/utils/ticket-pdf.js`, Razorpay SDK | Email, PDF ticket, payment gateway |
 
 ## Domain Architecture
@@ -126,10 +126,12 @@ flowchart TD
     Screen --> Seat["Seat"]
     Movie["Movie"] --> Show["Show"]
     Show --> Screen
+    Show --> ShowSeat["ShowSeat"]
+    ShowSeat --> Seat
     Show --> Booking["Booking"]
 ```
 
-Seat represents persistent physical Screen configuration, not per-Show availability. Each Screen owns its own layout, so two Screens may both contain `A1`, but a single Screen cannot contain duplicate `A1` or duplicate row/column positions.
+Seat represents persistent physical Screen configuration. ShowSeat represents the per-Show inventory snapshot copied from those physical Seats. Each Screen owns its own layout, so two Screens may both contain `A1`, but a single Screen cannot contain duplicate `A1` or duplicate row/column positions.
 
 Example:
 
@@ -149,7 +151,7 @@ Theatre
 
 Layout completeness is derived, not stored: `INCOMPLETE` means active Seat count is below capacity, and `COMPLETE` means it equals capacity. The invalid state where active Seat count exceeds capacity is prevented.
 
-Phase 3 does not switch customer booking to physical Seat documents. `SeatSelection.jsx` and `SeatLayout.jsx` continue dynamically generating customer seat labels from Screen capacity or legacy `Show.totalSeats`; `Booking.seats` and `Show.bookedSeats` remain string arrays.
+Phase 4A does not switch customer booking to ShowSeat documents. `SeatSelection.jsx` and `SeatLayout.jsx` continue dynamically generating customer seat labels from Screen capacity or legacy `Show.totalSeats`; `Booking.seats` and `Show.bookedSeats` remain string arrays.
 
 ## Backend Request Flow
 
@@ -655,9 +657,9 @@ sequenceDiagram
 | 8 | Route-specific middleware | Auth limiter, JWT validation, role checks, booking limiter, selected shared catalogue cache |
 | 9 | Error handler | Final JSON error response |
 
-## BookMyShow v2 City, Screen, and Seat Architecture
+## BookMyShow v2 City, Screen, Seat, and ShowSeat Architecture
 
-Phase 1 introduces City as the first incremental service/repository-backed domain while preserving the existing controller-driven architecture for established modules. Phase 1.1 enriches City with optional `cityCode`, `tier`, and GeoJSON `location` metadata. Phase 2 introduces Screen as the physical auditorium under Theatre. Phase 3 introduces persistent physical Seat configuration under Screen. It does not introduce ShowSeat, seat locking, dynamic pricing, or payment refactoring.
+Phase 1 introduces City as the first incremental service/repository-backed domain while preserving the existing controller-driven architecture for established modules. Phase 1.1 enriches City with optional `cityCode`, `tier`, and GeoJSON `location` metadata. Phase 2 introduces Screen as the physical auditorium under Theatre. Phase 3 introduces persistent physical Seat configuration under Screen. Phase 4A introduces per-Show ShowSeat inventory snapshots initialized from physical Seats. It does not introduce customer-facing ShowSeat selection, seat locking, dynamic pricing, or payment refactoring.
 
 ```mermaid
 flowchart LR
@@ -691,6 +693,10 @@ flowchart LR
     SeatRepository --> SeatModel["Seat model"]
     SeatModel --> MongoDB
     ShowController["ShowController"] --> ScreenService
+    ShowController --> ShowSeatService["showSeatService"]
+    ShowSeatService --> ShowSeatRepository["showSeatRepository"]
+    ShowSeatRepository --> ShowSeatModel["ShowSeat model"]
+    ShowSeatModel --> MongoDB
 ```
 
 Current target relationships:
@@ -698,6 +704,7 @@ Current target relationships:
 ```text
 City -> Theatre -> Screen -> Seat
 Movie -> Show -> Screen
+Show -> ShowSeat -> Seat
 Show -> Booking
 ```
 
@@ -707,7 +714,15 @@ Seat Management supports individual Seat create/edit, logical disable/re-enable,
 
 `Screen.capacity` is the physical capacity source of truth. Active Seat count cannot exceed capacity, and Screen capacity cannot be reduced below the active Seat count. A layout is `INCOMPLETE` when active Seat count is below capacity and `COMPLETE` when it equals capacity.
 
-Physical Seat configuration is not yet connected to customer booking. `SeatSelection.jsx` and `SeatLayout.jsx` continue dynamically generating customer seat labels, while `Booking.seats` and `Show.bookedSeats` remain string arrays.
+ShowSeat inventory is a per-Show snapshot of the active physical Seat layout. Each ShowSeat stores `show`, `seat`, `seatNumber`, `row`, `column`, `seatType`, `status`, optional `bookedAt`, optional `booking`, and timestamps. The current statuses are `AVAILABLE` and `BOOKED`; there is no `LOCKED` status, lock owner, lock expiry, or TTL index yet.
+
+Historical Phase 4A migration initialized 382 Shows into 243,728 ShowSeat documents, including 13 `BOOKED` ShowSeats mapped from legacy booked labels. The final audit state is 382 `ALREADY_INITIALIZED`, 0 `READY`, and 0 errors or warnings.
+
+For new screen-aware Shows, `ShowController` requires a complete physical Seat layout before persistence. `Show` and `ShowSeat` creation run in a single MongoDB transaction, `Show.totalSeats` remains a compatibility snapshot derived from `Screen.capacity`, and all new ShowSeats start as `AVAILABLE`. Screen-aware Show creation requires transaction-capable MongoDB. Legacy no-screen Show creation remains temporarily compatible and does not create ShowSeats.
+
+ShowSeat is a snapshot, so changing `Show.screen` after ShowSeat inventory exists is rejected. The backend does not automatically delete/recreate or re-sync ShowSeats during Show updates. Hard-deleting an initialized Show removes its ShowSeats in the same transaction.
+
+Customer booking is not yet driven by ShowSeat inventory. `SeatSelection.jsx` and `SeatLayout.jsx` continue dynamically generating customer seat labels, while `Booking.seats` and `Show.bookedSeats` remain string arrays until Phase 4B.
 
 ## Route Groups
 
@@ -737,6 +752,8 @@ erDiagram
     SCREENS ||--o{ SHOWS : scheduled_in
     SCREENS ||--o{ SEATS : contains
 
+    SEATS ||--o{ SHOWSEATS : snapshotted_as
+    SHOWS ||--o{ SHOWSEATS : initializes
     SHOWS ||--o{ BOOKINGS : booked_for
 ```
 

@@ -26,6 +26,11 @@ The central Express error middleware normalizes uncaught backend errors into the
 | Expired or invalid JWT | `401` with authentication message |
 | Role mismatch | `403` with insufficient-permissions message |
 | Seats unavailable | `409` with unavailable seat list |
+| Screen layout incomplete for new Show | `409` with `SCREEN_LAYOUT_INCOMPLETE` |
+| Screen has no active Seats for new Show | `409` with `SCREEN_HAS_NO_ACTIVE_SEATS` |
+| ShowSeat initialization failure | `500` with `SHOWSEAT_INITIALIZATION_FAILED` |
+| Screen-aware Show creation on non-transaction MongoDB | `500` with `SHOW_TRANSACTION_REQUIRED` |
+| Show Screen change after ShowSeat initialization | `409` with `SHOW_SCREEN_CHANGE_NOT_ALLOWED_AFTER_INVENTORY` |
 | Invalid Razorpay signature | `400` invalid payment response |
 | Razorpay SDK failure | Sanitized payment gateway message without provider internals |
 | Unknown `/bms/v1` endpoint | JSON `404` with `ROUTE_NOT_FOUND` code |

@@ -144,6 +144,35 @@ Source: `Server/models/showSchema.js`
 | `screen` | `ObjectId` | No | ref `Screen` | Optional for legacy Shows; new UI submits it explicitly |
 | `createdAt`, `updatedAt` | `Date` | Auto | timestamps | Managed by Mongoose |
 
+For screen-aware Shows, the backend derives `totalSeats` from `Screen.capacity`. New screen-aware Show creation requires the physical Seat layout to be complete (`activeSeatCount === Screen.capacity`) and creates the Show plus ShowSeat inventory in one transaction. Legacy no-screen Show creation remains temporarily compatible and does not initialize ShowSeats.
+
+## showseats
+
+Source: `Server/models/showSeatSchema.js`
+
+| Field | Type | Required | Constraints / Default | Notes |
+| --- | --- | --- | --- | --- |
+| `show` | `ObjectId` | Yes | ref `shows` | Parent Show inventory snapshot |
+| `seat` | `ObjectId` | Yes | ref `Seat` | Source physical Seat |
+| `seatNumber` | `String` | Yes | trimmed, uppercase snapshot | Seat label copied from the physical Seat at initialization |
+| `row` | `String` | Yes | trimmed, uppercase snapshot | Row copied from the physical Seat |
+| `column` | `Number` | Yes | positive integer | Column copied from the physical Seat |
+| `seatType` | `String` | Yes | enum `STANDARD`, `PREMIUM`, `RECLINER` | Seat type copied from the physical Seat |
+| `status` | `String` | Yes | enum `AVAILABLE`, `BOOKED`; default `AVAILABLE` | Per-Show inventory status; no `LOCKED` state yet |
+| `bookedAt` | `Date` | No | default `null` | Reserved for booking transition metadata |
+| `booking` | `ObjectId` | No | ref `bookings`; default `null` | Reserved for linked Booking metadata |
+| `createdAt`, `updatedAt` | `Date` | Auto | timestamps | Managed by Mongoose |
+
+Indexes:
+
+| Index | Purpose |
+| --- | --- |
+| Unique `{ show: 1, seat: 1 }` | Prevents duplicate inventory rows for the same physical Seat in one Show |
+| `{ show: 1, status: 1 }` | Supports availability/status queries per Show |
+| `{ show: 1, seatNumber: 1 }` | Supports seat-label lookup and audit reporting per Show |
+
+Phase 4A migration initialized 382 existing Shows into 243,728 ShowSeat documents. The final audit reports 382 `ALREADY_INITIALIZED`, 0 `READY`, 13 `BOOKED` ShowSeats, and 0 migration errors or warnings. There is no lock owner, lock expiry, `LOCKED` status, or TTL index in the current implementation.
+
 ## bookings
 
 Source: `Server/models/bookingSchema.js`
@@ -192,6 +221,7 @@ flowchart TD
     Screen["screens"]
     Seat["seats"]
     Show["shows"]
+    ShowSeat["showseats"]
 
     User -->|owner| Theatre
     City -->|city| Theatre
@@ -202,6 +232,8 @@ flowchart TD
     Screen -->|screen| Seat
     Theatre -->|theatre| Show
     Screen -->|screen| Show
+    Show -->|show| ShowSeat
+    Seat -->|seat| ShowSeat
     Show -->|show| Booking
 ```
 
@@ -214,6 +246,6 @@ Deletion behavior in controllers:
 | Delete theatre | Deletes the theatre document only; related shows/bookings are not cascaded in current code |
 | Delete screen | Hard-deletes screens with no Show references; deactivates screens referenced by Shows |
 | Delete seat | Logically disables the Seat by setting `isActive=false`; physical identity is retained |
-| Delete show | Deletes the show document only; related bookings are not cascaded in current code |
+| Delete show | Hard-deletes the Show; initialized Shows remove their ShowSeat documents in the same transaction, while related bookings are not cascaded |
 
-Physical Seat documents are currently used for Admin/Partner Screen configuration. Customer booking remains compatible with the existing dynamic `SeatLayout.jsx` path: `Booking.seats` and `Show.bookedSeats` continue storing string labels, and customer Seat selection does not yet read the physical Seat collection.
+ShowSeat inventory is available as the backend per-Show snapshot foundation. Customer booking remains compatible with the existing dynamic `SeatLayout.jsx` path: `Booking.seats` and `Show.bookedSeats` continue storing string labels, and customer Seat selection does not yet read ShowSeat inventory until Phase 4B.

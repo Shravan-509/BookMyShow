@@ -22,6 +22,7 @@ The canonical schema reference is [DATABASE_SCHEMA.md](./DATABASE_SCHEMA.md). Th
 | `screens` | `Server/models/screenSchema.js` | Physical auditoriums configured under theatres |
 | `seats` | `Server/models/seatSchema.js` | Persistent physical Seat layout records under Screens |
 | `shows` | `Server/models/showSchema.js` | Scheduled movie shows and booked seats |
+| `showseats` | `Server/models/showSeatSchema.js` | Per-Show inventory snapshots generated from physical Seats |
 | `bookings` | `Server/models/bookingSchema.js` | Confirmed ticket bookings and payment metadata |
 | `verification` | `Server/models/verificationSchema.js` | Email verification, 2FA, reverification, and email-change codes |
 
@@ -33,11 +34,13 @@ erDiagram
     cities ||--o{ theatres : contains
     theatres ||--o{ screens : contains
     screens ||--o{ seats : contains
+    seats ||--o{ showseats : snapshotted_as
     users ||--o{ bookings : creates
     users ||--o{ verification : receives
     movies ||--o{ shows : scheduled_for
     theatres ||--o{ shows : hosts
     screens ||--o{ shows : scheduled_in
+    shows ||--o{ showseats : initializes
     shows ||--o{ bookings : booked_for
 ```
 
@@ -53,8 +56,12 @@ erDiagram
 - Active Seat count must remain less than or equal to `screens.capacity`. Screen capacity cannot be reduced below the number of active Seats, and Seats are not automatically deleted or disabled during capacity changes.
 - Seat layout status is `INCOMPLETE` when active Seat count is below capacity and `COMPLETE` when it exactly matches capacity.
 - `shows.screen` is optional for legacy compatibility while `shows.theatre` remains required for booking flows.
+- `showseats` stores per-Show snapshots of active physical Seats. The indexes are unique `{ show, seat }`, `{ show, status }`, and `{ show, seatNumber }`.
+- New screen-aware Show creation requires a complete physical Seat layout where active Seat count equals `screens.capacity`. Show creation and ShowSeat initialization run in one transaction, and `shows.totalSeats` remains a compatibility snapshot derived from `screens.capacity`.
+- Phase 4A historical migration initialized 382 Shows and 243,728 ShowSeat documents, including 13 `BOOKED` ShowSeats mapped from legacy booked labels. The final audit state is 382 `ALREADY_INITIALIZED`, 0 `READY`, and 0 migration errors or warnings.
+- The ShowSeat model currently supports `AVAILABLE` and `BOOKED`. `LOCKED`, lock owner, lock expiry, and TTL indexes are not implemented until a future locking phase.
 - `bookingId` is unique and indexed for public ticket references.
 - Account deletion cascades verification records, bookings, and theatres owned by the deleted user.
-- Movie, theatre, and show deletion currently do not cascade dependent records; this is a known limitation and future improvement area.
+- Movie and theatre deletion currently do not cascade dependent records; initialized Show deletion removes related ShowSeat inventory, while existing Booking records are not cascaded.
 
-Phase 3 physical Seats are Admin/Partner configuration data. The current customer booking flow still uses generated seat labels from `SeatLayout.jsx`; `Booking.seats` and `Show.bookedSeats` remain string arrays until a future ShowSeat inventory phase.
+Physical Seats and ShowSeats now coexist with the current customer booking flow. Customer Seat selection still uses generated labels from `SeatLayout.jsx`; `Booking.seats` and `Show.bookedSeats` remain string arrays until the planned Phase 4B customer ShowSeat availability transition.

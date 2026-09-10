@@ -47,16 +47,23 @@ flowchart TD
     Screen --> Seat["Physical Seat"]
     Movie["Movie"] --> Show["Show"]
     Show --> Screen
+    Show --> ShowSeat["ShowSeat Inventory"]
+    ShowSeat --> Seat
     Show --> Booking["Booking"]
 ```
 
-## Physical Seat Configuration Boundary
+## Physical Seat And ShowSeat Boundary
 
 ```mermaid
 flowchart LR
     subgraph AdminPartner["Admin / Partner Configuration"]
         Screen["Screen"] --> Seat["Seat collection"]
         Seat --> SeatManagement["Seat Management UI"]
+    end
+
+    subgraph Phase4A["Phase 4A Inventory Foundation"]
+        Show["Screen-aware Show"] --> ShowSeat["ShowSeat collection"]
+        ShowSeat --> SeatSnapshot["Seat label/type snapshots"]
     end
 
     subgraph CustomerBooking["Current Customer Booking"]
@@ -66,6 +73,8 @@ flowchart LR
         SeatLayout --> ShowBookedSeats["Show.bookedSeats string labels"]
     end
 ```
+
+Phase 4A initializes ShowSeat inventory for screen-aware Shows, but customer booking still uses the legacy label-based flow. `LOCKED` inventory state, lock expiry, lock owner, and TTL cleanup are future work.
 
 ## JWT Flow
 

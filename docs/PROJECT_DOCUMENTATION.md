@@ -117,13 +117,14 @@ flowchart LR
 ```
 
 
-BookMyShow v2 Phase 1 introduces the City domain as the first incremental service/repository-backed module. Phase 1.1 adds optional City metadata fields: `cityCode`, `tier`, and GeoJSON `location`. Phase 2 introduces the Screen domain as the physical auditorium inside a Theatre. Phase 3 introduces persistent physical Seat configuration under each Screen.
+BookMyShow v2 Phase 1 introduces the City domain as the first incremental service/repository-backed module. Phase 1.1 adds optional City metadata fields: `cityCode`, `tier`, and GeoJSON `location`. Phase 2 introduces the Screen domain as the physical auditorium inside a Theatre. Phase 3 introduces persistent physical Seat configuration under each Screen. Phase 4A introduces per-Show ShowSeat inventory snapshots initialized from physical Seats.
 
 Implemented v2 domain hierarchy:
 
 ```text
 City -> Theatre -> Screen -> Seat
 Movie -> Show -> Screen
+Show -> ShowSeat -> Seat
 Show -> Booking
 ```
 
@@ -141,7 +142,7 @@ Theatre
     └── ...
 ```
 
-Seat numbers are unique within a Screen, not globally. `Seat` represents persistent physical auditorium configuration and does not yet represent per-Show availability. `Show.theatre` remains required for booking compatibility and `Show.screen` remains optional for legacy Shows.
+Seat numbers are unique within a Screen, not globally. `Seat` represents persistent physical auditorium configuration, while `ShowSeat` represents the per-Show inventory snapshot copied from active physical Seats. `Show.theatre` remains required for booking compatibility and `Show.screen` remains optional for legacy Shows.
 
 Phase status:
 
@@ -150,7 +151,8 @@ Phase status:
 | Phase 1 - City | Complete |
 | Phase 2 - Screen | Complete |
 | Phase 3 - Physical Seat Management | Complete |
-| Phase 4 - ShowSeat Inventory | Planned / Not Started |
+| Phase 4A - ShowSeat Inventory Foundation | Complete |
+| Phase 4B - Customer ShowSeat Availability | Planned / Not Started |
 | Phase 5 - Seat Locking | Planned / Not Started |
 
 Request flow:
@@ -266,9 +268,9 @@ The backend is an Express app mounted under `/bms/v1`.
 | `Server/config/db.js` | Mongoose connection using `MONGODB_CONNECTION_STRING` |
 | `Server/routes/` | Express routers for auth, users, movies, cities, theatres, screens, seats, shows, bookings |
 | `Server/controllers/` | Request validation, business workflows, database operations, external integrations |
-| `Server/services/` | City, Screen, and Seat business rules, Theatre ownership validation, capacity invariants, and reference validation |
-| `Server/repositories/` | City, Screen, and Seat database operations |
-| `Server/models/` | Mongoose schemas for users, movies, cities, theatres, screens, seats, shows, bookings, verification codes |
+| `Server/services/` | City, Screen, Seat, and ShowSeat business rules, Theatre ownership validation, capacity invariants, and reference validation |
+| `Server/repositories/` | City, Screen, Seat, and ShowSeat database operations |
+| `Server/models/` | Mongoose schemas for users, movies, cities, theatres, screens, seats, shows, showseats, bookings, verification codes |
 | `Server/middlewares/authorization.js` | JWT validation and role-check helper |
 | `Server/middlewares/performanceOptimization.js` | Helmet, compression, rate limiting, request timing/logging, cache headers |
 | `Server/middlewares/cache.js` | Route-level in-memory GET response cache via `node-cache` |
@@ -621,6 +623,19 @@ erDiagram
         ObjectId screen
     }
 
+    SHOWSEATS {
+        ObjectId _id
+        ObjectId show
+        ObjectId seat
+        string seatNumber
+        string row
+        number column
+        string seatType
+        string status
+        date bookedAt
+        ObjectId booking
+    }
+
     BOOKINGS {
         ObjectId _id
         ObjectId show
@@ -813,7 +828,25 @@ Admin and Partner users manage physical Seats from Partner Theatre Management th
 
 Sequential row generation uses spreadsheet-style row names: `A ... Z`, then `AA ... AZ`, `BA`, and beyond. Excluded columns represent consistent gaps or aisles and reduce the actual generated Seat count.
 
-The current customer booking flow does not fetch these physical Seat documents. `SeatSelection.jsx` and `SeatLayout.jsx` continue generating seat labels from capacity, and `Booking.seats`/`Show.bookedSeats` remain string arrays until the planned ShowSeat inventory phase.
+### ShowSeat Inventory Foundation
+
+Phase 4A adds per-Show inventory snapshots while preserving the current customer booking flow.
+
+| Aspect | Current implementation |
+| --- | --- |
+| Physical hierarchy | `City -> Theatre -> Screen -> Seat` |
+| Per-Show inventory | `Show -> ShowSeat -> Seat` |
+| Status values | `AVAILABLE`, `BOOKED` |
+| Indexes | Unique `{ show, seat }`, `{ show, status }`, `{ show, seatNumber }` |
+| New Show creation | Screen-aware Shows require a complete active Seat layout and initialize ShowSeats in the same MongoDB transaction as Show creation |
+| Capacity snapshot | `Show.totalSeats` remains a compatibility snapshot derived from `Screen.capacity` |
+| Update invariant | `Show.screen` cannot be changed after ShowSeat inventory exists |
+| Delete behavior | Hard-deleting an initialized Show removes its ShowSeats in the same transaction |
+| Locking | No `LOCKED` status, lock owner, lock expiry, or TTL index exists yet |
+
+Historical migration initialized 382 Shows into 243,728 ShowSeat documents. The final audit state is 382 `ALREADY_INITIALIZED`, 0 `READY`, 13 `BOOKED` ShowSeats, and 0 migration errors or warnings.
+
+The current customer booking flow does not fetch ShowSeat documents. `SeatSelection.jsx` and `SeatLayout.jsx` continue generating seat labels from capacity, and `Booking.seats`/`Show.bookedSeats` remain string arrays until the planned Phase 4B customer ShowSeat availability transition.
 
 ## 10. Payment Integration
 
@@ -1238,8 +1271,8 @@ Implementation-aligned enhancements:
 | Token invalidation | Include and verify `tokenVersion` in JWT payloads after password/email changes |
 | Booking lifecycle | Add cancellation/refund APIs and explicit payment status transitions |
 | Webhooks | Add Razorpay webhook support for asynchronous payment reconciliation |
-| ShowSeat inventory | Add per-Show inventory initialized from physical Seats: `Screen -> Seat -> ShowSeat <- Show` |
-| Seat locking | Add reservation locking and expiry after ShowSeat inventory exists |
+| Customer ShowSeat availability | Move customer SeatLayout and SeatSelection to actual ShowSeat inventory data |
+| Seat locking | Add `LOCKED` status, lock owner, lock expiry, conflict handling, and TTL cleanup |
 | Cache invalidation | Clear route-level caches after movie/theatre/show mutations |
 | Tests | Add controller, saga, and route integration tests around auth, payments, and seat concurrency |
 | Monitoring | Add structured logging, error tracking, and metrics dashboards |

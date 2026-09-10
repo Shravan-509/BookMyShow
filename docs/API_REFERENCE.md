@@ -171,12 +171,12 @@ Seat numbers are normalized and must match `row + column`, for example `A + 1 = 
 
 | Method | Endpoint | Body | Purpose |
 | --- | --- | --- | --- |
-| `POST` | `/shows` | Show document | Adds a show; `screen` is supported for new Screen-aware flows |
+| `POST` | `/shows` | Show document | Adds a show; screen-aware creation initializes ShowSeat inventory transactionally |
 | `GET` | `/shows/:id` | none | Returns show with populated movie, theatre, and screen; cached for 30 seconds |
 | `GET` | `/shows/theatre/:id` | none | Returns shows for a theatre with populated movie and screen; cached for 30 seconds |
 | `POST` | `/shows/theatres/movie` | `{ movie, date }` | Groups shows by theatre for a selected movie/date |
-| `PATCH` | `/shows/:id` | Partial show document | Updates show |
-| `DELETE` | `/shows/:id` | none | Deletes show |
+| `PATCH` | `/shows/:id` | Partial show document | Updates show; changing `screen` is rejected after ShowSeat inventory exists |
+| `DELETE` | `/shows/:id` | none | Hard-deletes show; initialized Shows remove ShowSeats in the same transaction |
 
 Show body fields:
 
@@ -187,14 +187,26 @@ Show body fields:
   "time": "19:30",
   "movie": "MOVIE_OBJECT_ID",
   "ticketPrice": 250,
-  "totalSeats": 150,
-  "bookedSeats": [],
   "theatre": "THEATRE_OBJECT_ID",
   "screen": "SCREEN_OBJECT_ID"
 }
 ```
 
-`Show.theatre` remains required for booking compatibility. `Show.screen` is optional for legacy Shows, but when supplied the backend validates that the Screen exists, is active, and belongs to the selected Theatre.
+`Show.theatre` remains required for booking compatibility. `Show.screen` is optional for legacy no-screen Shows, but when supplied the backend validates that the Screen exists, is active, belongs to the selected Theatre, and has a complete physical Seat layout (`activeSeatCount === Screen.capacity`). For screen-aware Shows, the backend derives `Show.totalSeats` from `Screen.capacity`, creates the Show and ShowSeats in one MongoDB transaction, and all new ShowSeats start as `AVAILABLE`. Transaction support is required for screen-aware creation.
+
+The scheduler-compatible payload omits `totalSeats`; the backend derives it:
+
+```json
+{
+  "name": "Morning Show",
+  "date": "2026-09-10",
+  "time": "10:30",
+  "movie": "MOVIE_OBJECT_ID",
+  "ticketPrice": 175,
+  "theatre": "THEATRE_OBJECT_ID",
+  "screen": "SCREEN_OBJECT_ID"
+}
+```
 
 ## Bookings
 

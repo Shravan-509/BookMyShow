@@ -74,17 +74,21 @@ BookMyShow/
 │   │   └── SeatController.js
 │   ├── middlewares/
 │   ├── models/
-│   │   └── seatSchema.js
+│   │   ├── seatSchema.js
+│   │   └── showSeatSchema.js
 │   ├── repositories/
-│   │   └── seatRepository.js
+│   │   ├── seatRepository.js
+│   │   └── showSeatRepository.js
 │   ├── routes/
 │   │   └── seatRoute.js
 │   ├── scripts/
 │   │   ├── backfillTheatreCities.js
 │   │   ├── backfillShowScreens.js
+│   │   ├── backfillShowSeats.js
 │   │   └── importCities.js
 │   ├── services/
-│   │   └── seatService.js
+│   │   ├── seatService.js
+│   │   └── showSeatService.js
 │   ├── tests/
 │   │   ├── helpers/
 │   │   │   └── mockExpress.js
@@ -98,6 +102,7 @@ BookMyShow/
 │   │   └── unit/
 │   │       ├── backfillTheatreCities.test.js
 │   │       ├── backfillShowScreens.test.js
+│   │       ├── backfillShowSeats.test.js
 │   │       ├── bookingController.test.js
 │   │       ├── citySchema.test.js
 │   │       ├── cityService.test.js
@@ -107,6 +112,9 @@ BookMyShow/
 │   │       ├── seatSchema.test.js
 │   │       ├── seatService.test.js
 │   │       ├── showScreen.test.js
+│   │       ├── showSeatRepository.test.js
+│   │       ├── showSeatSchema.test.js
+│   │       ├── showSeatService.test.js
 │   │       ├── theatreCity.test.js
 │   │       └── utils.test.js
 │   ├── utils/

@@ -228,7 +228,9 @@ Phase 2 introduces the Screen domain as the physical auditorium inside a Theatre
 Current target hierarchy:
 
 ```text
-City -> Theatre -> Screen -> Show -> Booking
+City -> Theatre -> Screen -> Seat
+Show -> ShowSeat -> Seat
+Show -> Booking
 ```
 
 Phase 3 introduces persistent physical Seat configuration under each Screen:
@@ -246,10 +248,13 @@ Current v2 status:
 | Phase 1 - City | Complete |
 | Phase 2 - Screen | Complete |
 | Phase 3 - Physical Seat Management | Complete |
-| Phase 4 - ShowSeat Inventory | Planned / Not Started |
+| Phase 4A - ShowSeat Inventory Foundation | Complete |
+| Phase 4B - Customer ShowSeat Availability | Planned / Not Started |
 | Phase 5 - Seat Locking | Planned / Not Started |
 
-During Phase 3, physical Seat configuration and customer booking temporarily coexist. The customer booking flow still uses `SeatSelection.jsx`, `SeatLayout.jsx`, `Show.totalSeats`, `Show.bookedSeats`, and `Booking.seats` string labels. Customer Seat selection does not yet read from the physical Seat collection.
+Phase 4A adds per-show ShowSeat inventory snapshots initialized from physical Seats. Historical migration initialized 382 Shows with 243,728 ShowSeat documents, including 13 `BOOKED` snapshots from legacy `Show.bookedSeats`; the final audit shows all 382 Shows as `ALREADY_INITIALIZED` with 0 `READY` and 0 errors or warnings.
+
+Customer booking remains temporarily compatible with the legacy path. `SeatSelection.jsx` and `SeatLayout.jsx` still generate seat labels, while `Booking.seats` and `Show.bookedSeats` remain string arrays until the planned Phase 4B customer ShowSeat availability transition.
 
 The safe backfill script defaults to dry-run mode:
 
