@@ -4,7 +4,7 @@ const createScreen = (payload) => Screen.create(payload);
 
 const findById = (id, options = {}) => Screen.findById(id, null, options);
 
-const findActiveById = (id) => Screen.findOne({ _id: id, isActive: true });
+const findActiveById = (id, options = {}) => Screen.findOne({ _id: id, isActive: true }, null, options);
 
 const findScreens = () => Screen.find({})
     .populate("theatre", "name address city owner isActive")

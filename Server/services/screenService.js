@@ -32,10 +32,16 @@ const sanitizeScreenPayload = (payload = {}, existingScreen = {}) => ({
     isActive: payload.isActive ?? existingScreen.isActive ?? true,
 });
 
-const ensureTheatreManageAccess = async (req, theatreId, { requireActive = false } = {}) => {
+const withSession = (query, options = {}) => (
+    options.session && typeof query.session === "function"
+        ? query.session(options.session)
+        : query
+);
+
+const ensureTheatreManageAccess = async (req, theatreId, { requireActive = false, session = null } = {}) => {
     ensureValidObjectId(theatreId, "INVALID_THEATRE_ID");
 
-    const theatre = await Theatre.findById(theatreId).select("owner isActive name");
+    const theatre = await withSession(Theatre.findById(theatreId).select("owner isActive name"), { session });
     if (!theatre) {
         throw new AppError("Theatre not found", 404, "THEATRE_NOT_FOUND");
     }
@@ -198,7 +204,7 @@ const deleteScreen = async (req, id) => {
     return { _id: id, deleted: true };
 };
 
-const ensureActiveScreenForTheatre = async (req, { screenId, theatreId }) => {
+const ensureActiveScreenForTheatre = async (req, { screenId, theatreId }, options = {}) => {
     if (!screenId) {
         return null;
     }
@@ -206,7 +212,7 @@ const ensureActiveScreenForTheatre = async (req, { screenId, theatreId }) => {
     ensureValidObjectId(screenId, "INVALID_SCREEN_ID");
     ensureValidObjectId(theatreId, "INVALID_THEATRE_ID");
 
-    const screen = await screenRepository.findActiveById(screenId);
+    const screen = await screenRepository.findActiveById(screenId, options);
     if (!screen) {
         throw new AppError("Screen must reference an active screen", 400, "INVALID_SCREEN_REFERENCE");
     }
@@ -215,7 +221,7 @@ const ensureActiveScreenForTheatre = async (req, { screenId, theatreId }) => {
         throw new AppError("Screen must belong to the selected theatre", 400, "SCREEN_THEATRE_MISMATCH");
     }
 
-    await ensureTheatreManageAccess(req, theatreId);
+    await ensureTheatreManageAccess(req, theatreId, { session: options.session });
     return screen;
 };
 
