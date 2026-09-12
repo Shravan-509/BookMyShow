@@ -486,4 +486,53 @@ describe("Show screen association", () => {
     expect(Show.lastPayload.totalSeats).toBe(300);
     expect(Show.lastPayload.screen).toBeUndefined();
   });
+
+  test("movie showtime lookup populates Theatre city display data", async () => {
+    const { controller, Show } = loadController();
+    const res = createMockResponse();
+    const city = { _id: "city-1", cityName: "Visakhapatnam" };
+    const theatre = {
+      _id: THEATRE_ID,
+      _doc: {
+        _id: THEATRE_ID,
+        name: "Sangam Theatre",
+        address: "Beach Road, Visakhapatnam, 530003",
+        city,
+      },
+    };
+    const show = {
+      _id: "show-1",
+      theatre,
+      screen: { _id: SCREEN_ID, name: "Screen 1" },
+    };
+    const query = populateQuery([show]);
+    Show.find.mockReturnValue(query);
+
+    await controller.getTheatresWithShowsByMovie(
+      { body: { movie: MOVIE_ID, date: "2026-09-12" } },
+      res,
+      jest.fn()
+    );
+
+    expect(Show.find).toHaveBeenCalledWith({ movie: MOVIE_ID, date: "2026-09-12" });
+    expect(query.populate).toHaveBeenNthCalledWith(1, {
+      path: "theatre",
+      populate: {
+        path: "city",
+        select: "cityName",
+      },
+    });
+    expect(query.populate).toHaveBeenNthCalledWith(2, "screen", "name screenNumber capacity theatre isActive");
+    expect(res.send).toHaveBeenCalledWith({
+      success: true,
+      message: "All shows have been fetched",
+      data: [
+        expect.objectContaining({
+          _id: THEATRE_ID,
+          city,
+          shows: [show],
+        }),
+      ],
+    });
+  });
 });

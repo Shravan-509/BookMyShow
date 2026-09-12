@@ -391,41 +391,252 @@ table th {
   max-width: 300px;
 }
 
-.poster-container{
-  width: 100%;
-  max-width: 240px;
-  margin: 0 auto;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .movie-banner {
-    padding: 40px 0;
-  }
-}
-
-@media (max-width: 576px) {
-  .movie-banner {
-    padding: 30px 0;
-  }
-}
-
-/* Additional styles for the Movie Info component */
-.movie-banner {
-  color: white;
-}
-
 .inner-container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 16px;
 }
 
+.movie-hero {
+  position: relative;
+  min-height: 300px;
+  overflow: hidden;
+  color: white;
+  background:
+    linear-gradient(90deg, rgba(11, 18, 32, 0.96) 0%, rgba(11, 18, 32, 0.88) 42%, rgba(11, 18, 32, 0.38) 100%),
+    var(--movie-poster-url) center / cover;
+}
+
+.movie-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--movie-poster-url) center 18% / cover;
+  filter: blur(8px) saturate(1.05);
+  transform: scale(1.04);
+  opacity: 0.32;
+}
+
+.movie-hero::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 80px;
+  background: linear-gradient(180deg, rgba(255,255,255,0), #f7f8fb);
+}
+
+.movie-hero .inner-container {
+  position: relative;
+  z-index: 1;
+}
+
+.movie-hero-content {
+  display: grid;
+  grid-template-columns: 168px minmax(0, 1fr);
+  gap: 28px;
+  align-items: center;
+  min-height: 300px;
+  padding: 34px 0 42px;
+}
+
+.poster-container.movie-hero-poster {
+  width: 168px;
+  max-width: 168px;
+  margin: 0;
+}
+
+.movie-hero-poster img {
+  display: block;
+  width: 168px;
+  height: 236px;
+  object-fit: cover;
+  border-radius: 8px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.38);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.movie-hero-copy {
+  max-width: 760px;
+}
+
+.movie-status-tag.ant-tag {
+  margin-bottom: 10px;
+  border: 0;
+  color: white;
+  font-weight: 700;
+  text-transform: uppercase;
+  background: #f84464;
+  border-radius: 5px;
+}
+
+.movie-hero-title.ant-typography {
+  margin: 0 0 12px;
+  color: white;
+  font-size: clamp(30px, 4vw, 44px);
+  line-height: 1.05;
+  letter-spacing: 0;
+}
+
+.movie-meta-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  align-items: center;
+  margin-bottom: 16px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.movie-meta-line span {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.movie-meta-line .anticon {
+  color: #f84464;
+}
+
+.movie-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.movie-chip-row .ant-tag {
+  margin: 0;
+  border-color: rgba(255, 255, 255, 0.26);
+  color: white;
+  background: rgba(255, 255, 255, 0.13);
+  backdrop-filter: blur(4px);
+}
+
+.movie-trailer-button.ant-btn {
+  height: 44px;
+  margin-top: 8px;
+  border-color: rgba(255, 255, 255, 0.5);
+  color: white;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.movie-trailer-button.ant-btn:hover {
+  border-color: white;
+  color: white;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.movie-booking-container {
+  padding-top: 18px;
+  padding-bottom: 32px;
+}
+
+.movie-details-tabs .ant-tabs-nav {
+  margin-bottom: 0;
+}
+
+.movie-details-tabs .ant-tabs-tab {
+  padding: 14px 8px;
+  font-weight: 600;
+}
+
+.movie-details-tabs .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: #f84464;
+}
+
+.movie-details-tabs .ant-tabs-ink-bar {
+  background: #f84464;
+}
+
+.movie-tab-label {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.movie-content-card.ant-card {
+  margin: 16px 0;
+  border-radius: 8px;
+}
+
+.booking-progress {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  align-items: center;
+  padding: 12px 0 4px;
+}
+
+.booking-progress-step {
+  position: relative;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+}
+
+.booking-progress-step:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  right: 4px;
+  left: 42px;
+  bottom: -5px;
+  height: 2px;
+  background: #e2e8f0;
+}
+
+.booking-progress-step.active:not(:last-child)::after,
+.booking-progress-step.complete:not(:last-child)::after {
+  background: #f84464;
+}
+
+.booking-progress-marker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  color: #64748b;
+  font-weight: 800;
+  background: #e2e8f0;
+}
+
+.booking-progress-step.active .booking-progress-marker,
+.booking-progress-step.complete .booking-progress-marker {
+  color: white;
+  background: #f84464;
+}
+
+.booking-progress-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.booking-progress-title {
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.booking-progress-subtitle {
+  color: #64748b;
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* BookMyShow style date selection */
 .date-selection-container {
   display: flex;
   align-items: center;
-  margin-bottom: 24px;
+  margin: 18px 0 20px;
   position: relative;
 }
 
@@ -443,18 +654,18 @@ table th {
 }
 
 .date-tab {
-  min-width: 80px;
-  height: 80px;
+  min-width: 86px;
+  height: 78px;
   border-radius: 8px;
-  margin-right: 12px;
+  margin-right: 10px;
   padding: 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  border: 1px solid #e8e8e8;
-  transition: all 0.3s;
+  border: 1px solid #dfe5ec;
+  transition: all 0.2s ease;
   background-color: white;
 }
 
@@ -489,7 +700,7 @@ table th {
   position: sticky;
   z-index: 1;
   background-color: white;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -577,11 +788,6 @@ table th {
     box-shadow: 0 4px 12px rgba(248, 68, 100, 0.3);
   }
 
-  /* Smooth transitions */
-  .date-tab {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
   /* Improved scroll buttons */
   .date-scroll-button {
     transition: all 0.3s ease;
@@ -623,55 +829,137 @@ table th {
     }
   }
 
+.showtime-panel {
+  padding: 18px 0 0;
+}
+
+.showtime-panel-header {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.showtime-heading.ant-typography {
+  margin: 0 0 4px;
+  color: #0f172a;
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+.showtime-city-pill {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1px solid #dfe5ec;
+  border-radius: 8px;
+  color: #0f172a;
+  font-weight: 700;
+  background: #fff;
+}
+
+.showtime-loading-copy {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 16px;
+  color: #64748b;
+}
+
 /* Theater and showtimes styling - Horizontal Layout */
 .theatre-section {
-    background-color: #fafafa;
-    border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 16px;
-    transition: all 0.3s ease;
+    display: grid;
+    grid-template-columns: minmax(240px, 1fr) minmax(320px, 1.25fr);
+    gap: 18px;
+    align-items: center;
+    padding: 22px 26px;
+    border: 1px solid #e5eaf0;
+    border-radius: 8px;
+    margin-bottom: 0;
+    background-color: #fff;
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.045);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
   }
 
 .theatre-section:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 14px 28px rgba(15, 23, 42, 0.08);
     transform: translateY(-1px);
   }
 
 .theaters-container {
   display: flex;
   flex-direction: column;
+  gap: 12px;
 }
 
 .theater-info {
-    margin-bottom: 12px;
-  }
-
-.theater-features {
   display: flex;
-  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.theatre-name.ant-typography {
+  margin: 0 0 4px;
+  color: #0f172a;
+  font-size: 18px;
+  line-height: 1.25;
+}
+
+.theatre-address {
+  display: block;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.map-link.ant-btn {
+  height: auto;
+  padding: 0;
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.theater-features,
+.showtime-popover {
+  display: flex;
+  flex-direction: column;
   gap: 4px;
 }
 
 .showtime-buttons-horizontal {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 10px;
   justify-content: flex-start;
 }
 
-.showtime-button-container {
-   display: inline-block;
+.showtime-button {
+  min-width: 112px;
+    min-height: 48px;
+    height: auto;
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    color: #0f172a;
+    background-color: #fff;
+    font-weight: 800;
+    transition: all 0.2s ease;
+    white-space: normal;
 }
 
-.showtime-button {
-  min-width: 80px;
-    height: 40px;
-    border-radius: 8px;
-    border: 1px solid #f84464;
-    color: #f84464;
-    background-color: #fff;
-    font-weight: 600;
-    transition: all 0.3s ease;
+.showtime-button span,
+.showtime-button small {
+  display: block;
+  line-height: 1.2;
+}
+
+.showtime-button small {
+  margin-top: 2px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 600;
 }
 
 .showtime-button:hover {
@@ -683,19 +971,70 @@ table th {
 
   /* Mobile theater section */
   @media (max-width: 640px) {
+    .movie-hero-content {
+      grid-template-columns: 96px minmax(0, 1fr);
+      gap: 16px;
+      min-height: 220px;
+      padding: 24px 0 34px;
+    }
+
+    .poster-container.movie-hero-poster,
+    .movie-hero-poster img {
+      width: 96px;
+      max-width: 96px;
+    }
+
+    .movie-hero-poster img {
+      height: 142px;
+    }
+
+    .movie-hero-title.ant-typography {
+      font-size: 26px;
+    }
+
+    .movie-meta-line {
+      gap: 8px;
+      font-size: 13px;
+    }
+
+    .booking-progress {
+      grid-template-columns: repeat(4, max-content);
+      gap: 18px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+    }
+
+    .booking-progress-subtitle {
+      display: none;
+    }
+
+    .movie-tab-label .anticon {
+      display: none;
+    }
+
+    .showtime-panel-header {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
     .theatre-section {
+      grid-template-columns: 1fr;
       padding: 16px;
-      margin-bottom: 12px;
+    }
+
+    .theater-info {
+      flex-direction: column;
+      gap: 8px;
     }
 
     .showtime-buttons-horizontal {
       gap: 8px;
-      justify-content: center;
+      justify-content: flex-start;
     }
 
     .showtime-button {
-      min-width: 60px;
-      height: 36px;
+      min-width: 94px;
+      min-height: 42px;
       font-size: 12px;
     }
   }
@@ -703,12 +1042,14 @@ table th {
   /* Tablet theater section */
   @media (min-width: 641px) and (max-width: 1024px) {
     .theatre-section {
+      grid-template-columns: 1fr;
       padding: 18px;
     }
 
     .showtime-button {
       min-width: 70px;
-      height: 38px;
+      min-height: 44px;
+      height: auto;
     }
   }
 
@@ -724,33 +1065,10 @@ table th {
     }
   }
 
-.price-label {
-  font-size: 12px;
-  color: #52c41a;
-  margin-top: 4px;
-}
-
 .no-shows-message {
   padding: 16px;
   text-align: center;
   width: 100%;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .movie-banner {
-    padding: 40px 0;
-  }
-
-  .theater-info {
-    margin-bottom: 16px;
-  }
-}
-
-@media (max-width: 576px) {
-  .movie-banner {
-    padding: 30px 0;
-  }
 }
 
 .custom-collapse .ant-collapse-header {

@@ -1,7 +1,7 @@
 import React, { useEffect, memo, useState, useMemo, useCallback } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom'
-import { Button, Card, Col, Rate, Row, Space, Spin, Tabs, Tag, Typography, Alert, Skeleton, Divider } from 'antd';
+import { Button, Card, Spin, Tabs, Tag, Typography, Alert, Skeleton } from 'antd';
 import { 
     CalendarOutlined, 
     ClockCircleOutlined, 
@@ -9,12 +9,12 @@ import {
     PlayCircleOutlined, 
     TeamOutlined,
     StarOutlined,
-    GlobalOutlined,
-    EyeOutlined
+    CommentOutlined
 } from '@ant-design/icons';
-const { Title, Paragraph, Text } = Typography;
+const { Title, Text } = Typography;
 import { format, parseISO } from 'date-fns';
 import { formatDuration } from '../../../utils/format-duration';
+import BookingProgress from '../../../components/booking/BookingProgress';
 
 const ShowTime = React.lazy(() => import("./ShowTime"));
 const MovieSynopsis = React.lazy(() => import ("./MovieSynopsis"));
@@ -60,6 +60,14 @@ const MovieInfo = memo(() => {
         return movie?.duration ? formatDuration(movie.duration) : ""
     }, [movie?.duration])
 
+    const movieTitle = useMemo(() => (
+        movie?.movieName || movie?.title || "Movie"
+    ), [movie?.movieName, movie?.title])
+
+    const trailerUrl = useMemo(() => (
+        movie?.trailerUrl || movie?.trailer
+    ), [movie?.trailerUrl, movie?.trailer])
+
     const formattedReleaseDate = useMemo(() => {
         if (!movie?.releaseDate) return "";
         const d =
@@ -104,21 +112,21 @@ const MovieInfo = memo(() => {
         e.target.style.opacity = '1'
     }, [])
 
+    const openTrailer = useCallback(() => {
+        if (trailerUrl) {
+            window.open(trailerUrl, "_blank", "noopener,noreferrer")
+        }
+    }, [trailerUrl])
+
     // Define tab items with responsive design
     const tabItems = useMemo(
         () => [
             {
                 key: "showTimes",
                 label: (
-                    <span 
-                        className="flex items-center gap-2"
-                        style={{ 
-                            fontSize: isMobile ? "14px" : "16px",
-                            fontWeight: 500
-                        }}
-                    >
-                        <CalendarOutlined style={{ fontSize: isMobile ? "16px" : "18px" }} />
-                        {isMobile ? "Times" : "Show Times"}
+                    <span className="movie-tab-label">
+                        <CalendarOutlined />
+                        Showtimes
                     </span>
                 ),
                 children: (
@@ -139,14 +147,8 @@ const MovieInfo = memo(() => {
             {
                 key: "about",
                 label: (
-                    <span 
-                        className="flex items-center gap-2"
-                        style={{ 
-                            fontSize: isMobile ? "14px" : "16px",
-                            fontWeight: 500
-                        }}
-                    >
-                        <InfoCircleOutlined style={{ fontSize: isMobile ? "16px" : "18px" }} />
+                    <span className="movie-tab-label">
+                        <InfoCircleOutlined />
                         About
                     </span>
                 ),
@@ -168,15 +170,9 @@ const MovieInfo = memo(() => {
             {
                 key: "cast",
                 label: (
-                    <span 
-                        className="flex items-center gap-2"
-                        style={{ 
-                            fontSize: isMobile ? "14px" : "16px",
-                            fontWeight: 500
-                        }}
-                    >
-                        <TeamOutlined style={{ fontSize: isMobile ? "16px" : "18px" }} />
-                        {isMobile ? "Cast" : "Cast & Crew"}
+                    <span className="movie-tab-label">
+                        <TeamOutlined />
+                        Cast & Crew
                     </span>
                 ),
                 children: (
@@ -199,6 +195,27 @@ const MovieInfo = memo(() => {
                         <div style={{ textAlign: "center", padding: isMobile ? "20px" : "40px" }}>
                             <Text type="secondary">
                                 Cast information will be available soon.
+                            </Text>
+                        </div>
+                    </Card>
+                )
+            },
+            {
+                key: "reviews",
+                label: (
+                    <span className="movie-tab-label">
+                        <CommentOutlined />
+                        Reviews
+                    </span>
+                ),
+                children: (
+                    <Card className="movie-content-card">
+                        <Title level={4} style={{ marginTop: 0 }}>
+                            Reviews
+                        </Title>
+                        <div style={{ textAlign: "center", padding: isMobile ? "20px" : "40px" }}>
+                            <Text type="secondary">
+                                Reviews are not available for this movie yet.
                             </Text>
                         </div>
                     </Card>
@@ -272,168 +289,75 @@ const MovieInfo = memo(() => {
   return (
     <>
         <div
-            className="movie-banner"
+            className="movie-hero"
             role="banner"
-            aria-label={`${movie.title} movie details`}
+            aria-label={`${movieTitle} movie details`}
             style={{
-                backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.8)), url(${movie.poster})`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-                backgroundAttachment: isMobile ? "scroll" : "fixed",
-                padding: isMobile ? "40px 0" : "80px 0",
-                color: "white",
-                minHeight: isMobile ? "auto" : "500px",
-                position: "relative",
+                "--movie-poster-url": `url(${movie.poster || "/placeholder.svg"})`,
             }}
         >
             <div className="inner-container">
-                <Row gutter={[isMobile ? 16 : 24, isMobile ? 16 : 24]} align="middle">
-                    <Col xs={24} sm={isMobile ? 24 : 8} md={6} lg={5}>
-                        <div 
-                            className="poster-container"
-                            style={{
-                                display: "flex",
-                                justifyContent: isMobile ? "center" : "flex-start",
-                                marginBottom: isMobile ? "20px" : "0"
-                            }}
-                        >
-                            <img
-                                alt={`${movie.title} movie poster`}
-                                src={movie.poster || "/placeholder.svg"}
-                                style={{
-                                    width: isMobile ? "200px" : "100%",
-                                    height: isMobile ? 280 : 320,
-                                    objectFit: "cover",
-                                    borderRadius: 12,
-                                    boxShadow: "0 8px 24px rgba(0, 0, 0, 0.3)",
-                                    transition: "transform 0.3s ease",
-                                    opacity: 0,
-                                }}
-                                onLoad={handleImageLoad}
-                                onError={handleImageError}
-                                onMouseEnter={(e) => {
-                                    if (!isMobile) {
-                                        e.target.style.transform = "scale(1.05)"
-                                    }
-                                }}
-                                onMouseLeave={(e) => {
-                                    if (!isMobile) {
-                                        e.target.style.transform = "scale(1)"
-                                    }
-                                }}
-                                loading="lazy"
-                                decoding="async"
-                            />
+                <div className="movie-hero-content">
+                    <div className="poster-container movie-hero-poster">
+                        <img
+                            alt={`${movieTitle} movie poster`}
+                            src={movie.poster || "/placeholder.svg"}
+                            onLoad={handleImageLoad}
+                            onError={handleImageError}
+                            loading="lazy"
+                            decoding="async"
+                        />
+                    </div>
+
+                    <div className="movie-hero-copy">
+                        <Tag className="movie-status-tag">In Cinemas</Tag>
+                        <Title level={1} className="movie-hero-title">
+                            {movieTitle}
+                        </Title>
+
+                        <div className="movie-meta-line">
+                            {movie.certification && <span>{movie.certification}</span>}
+                            {formattedDuration && (
+                                <span>
+                                    <ClockCircleOutlined aria-hidden="true" />
+                                    {formattedDuration}
+                                </span>
+                            )}
+                            {movie.rating && (
+                                <span>
+                                    <StarOutlined aria-hidden="true" />
+                                    {movie.rating}
+                                </span>
+                            )}
+                            {formattedReleaseDate && (
+                                <span>
+                                    <CalendarOutlined aria-hidden="true" />
+                                    {formattedReleaseDate}
+                                </span>
+                            )}
                         </div>
-                    </Col>
-                    <Col xs={24} sm={isMobile ? 24 : 16} md={18} lg={19}>
-                        <div style={{ textAlign: isMobile ? "center" : "left" }}>
-                            <Title 
-                                level={isMobile ? 2 : 1} 
-                                style={{ 
-                                    color: "white", 
-                                    marginTop: 0, 
-                                    marginBottom: 16,
-                                    fontSize: isMobile ? "24px" : "32px",
-                                    lineHeight: 1.2
-                                }}
+
+                        <div className="movie-chip-row">{genreTags}</div>
+                        <div className="movie-chip-row">{languageTags}</div>
+
+                        {trailerUrl && (
+                            <Button
+                                size="large"
+                                icon={<PlayCircleOutlined />}
+                                className="movie-trailer-button"
+                                onClick={openTrailer}
                             >
-                                {movie.title}
-                            </Title>
-
-                            <Space 
-                                size={isMobile ? 12 : 16} 
-                                className="mb-4!"
-                                orientation={isMobile ? "vertical" : "horizontal"}
-                                style={{ width: isMobile ? "100%" : "auto" }}
-                            >
-                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                    <Rate 
-                                        disabled 
-                                        defaultValue={4.5} 
-                                        allowHalf 
-                                        style={{ fontSize: isMobile ? 14 : 16 }} 
-                                    />
-                                    <Text style={{ color: "white", fontSize: isMobile ? "14px" : "16px" }}>
-                                        4.5/5
-                                    </Text>
-                                </div>
-
-                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                    <ClockCircleOutlined style={{ color: "#f84464" }} />
-                                    <Text style={{ color: "white", fontSize: isMobile ? "14px" : "16px" }}>
-                                        {formattedDuration}
-                                    </Text>
-                                </div>
-                            </Space>
-
-                            <div 
-                                className="mb-4" 
-                                style={{ 
-                                    display: "flex", 
-                                    flexWrap: "wrap", 
-                                    justifyContent: isMobile ? "center" : "flex-start",
-                                    gap: "8px"
-                                }}
-                            >
-                                {genreTags}
-                            </div>
-
-                            <div 
-                                className="mb-4" 
-                                style={{ 
-                                    display: "flex", 
-                                    flexWrap: "wrap", 
-                                    justifyContent: isMobile ? "center" : "flex-start",
-                                    gap: "8px"
-                                }}
-                            >
-                                {languageTags}
-                            </div>
-
-                            <Paragraph 
-                                style={{ 
-                                    color: "#e6e6e6", 
-                                    marginBottom: 20,
-                                    textAlign: isMobile ? "center" : "left",
-                                    fontSize: isMobile ? "14px" : "16px"
-                                }}
-                            >
-                                <CalendarOutlined style={{ marginRight: 8, color: "#f84464" }} />
-                                Release: {formattedReleaseDate}
-                            </Paragraph>
-
-                            <div style={{ textAlign: isMobile ? "center" : "left" }}>
-                                <Button 
-                                    type="primary" 
-                                    size={isMobile ? "middle" : "large"}
-                                    icon={<PlayCircleOutlined />} 
-                                    className='bg-[#f84464]! hover:bg-[#dc3558]!'
-                                    style={{
-                                        width: isMobile ? "100%" : "auto",
-                                        height: isMobile ? "44px" : "48px",
-                                        fontSize: isMobile ? "16px" : "18x",
-                                        fontWeight: 600
-                                    }}
-                                >
-                                    Watch Trailer
-                                </Button>
-                            </div>
-                        </div>
-                    </Col>
-                </Row>
+                                Watch Trailer
+                            </Button>
+                        )}
+                    </div>
+                </div>
             </div>
         </div>
 
         {/* Main Content Section */}
-        <div 
-            className='inner-container' 
-            style={{
-                paddingTop: isMobile ? "20px" : "40px",
-                paddingBottom: isMobile ? "20px" : "40px",
-                minHeight: "300px"
-            }}
-        >
+        <div className='inner-container movie-booking-container'>
+            <BookingProgress current="showtime" />
             <Tabs  
                 activeKey={activeTab}
                 onChange={handleTabChange}
@@ -445,8 +369,8 @@ const MovieInfo = memo(() => {
                 }}
                 tabPosition={isMobile ? 'top' : 'top'}
                 centered={isMobile}
-                type={isMobile ? 'card' : 'line'}
-                className={isMobile ? 'mobile-tabs' : 'desktop-tabs'}
+                type='line'
+                className="movie-details-tabs"
                 aria-label="Movie information tabs"
                 role="tablist"
             />  

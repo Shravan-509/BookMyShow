@@ -390,7 +390,13 @@ const getTheatresWithShowsByMovie = async (req, res, next) => {
     const { movie, date } = req.body;
 
     const shows = await Show.find({ movie, date })
-      .populate("theatre")
+      .populate({
+        path: "theatre",
+        populate: {
+          path: "city",
+          select: "cityName",
+        },
+      })
       .populate("screen", "name screenNumber capacity theatre isActive");
 
     if (!shows.length) {

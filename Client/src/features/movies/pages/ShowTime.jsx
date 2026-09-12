@@ -1,19 +1,60 @@
-import { EnvironmentOutlined, LeftOutlined, RightOutlined, ClockCircleOutlined, InfoCircleOutlined } from '@ant-design/icons'
-import { Button, Card, Col, Divider, Empty, Popover, Row, Spin, Typography, Alert, Skeleton, Tag } from 'antd'
+import { EnvironmentOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons'
+import { Button, Empty, Popover, Spin, Typography, Alert, Skeleton } from 'antd'
 const { Title, Text } = Typography;
-import { addDays, compareAsc, format, isSameDay, isToday, isTomorrow, parse, parseISO } from 'date-fns';
+import { addDays, compareAsc, format, isSameDay, isToday, isTomorrow, isValid, parse, parseISO } from 'date-fns';
 import React, { useEffect, useRef, useState, useMemo, useCallback, memo } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom'
 import { formatParsedTime } from "../../../utils/dateFormatter"
 import { getTheatresWithShowsByMovieRequest, selectShow, selectShowError, selectShowLoading } from '../../../redux/slices/showSlice';
 
+const getSelectedDateFromRoute = (dateParam) => {
+    if (!dateParam) {
+        return format(new Date(), "yyyy-MM-dd")
+    }
+
+    const parsedRouteDate = parse(dateParam, "yyyyMMdd", new Date())
+
+    return isValid(parsedRouteDate)
+        ? format(parsedRouteDate, "yyyy-MM-dd")
+        : format(new Date(), "yyyy-MM-dd")
+}
+
+const getScreenLabel = (show) => {
+    const screen = show?.screen
+
+    if (!screen) {
+        return ""
+    }
+
+    return screen.name || (screen.screenNumber ? `Screen ${screen.screenNumber}` : "")
+}
+
+const getShowPriceLabel = (show) => {
+    const pricingValues = Object.values(show?.ticketPricing || {})
+        .map((price) => Number(price))
+        .filter((price) => Number.isFinite(price) && price > 0)
+
+    const lowestPrice = pricingValues.length
+        ? Math.min(...pricingValues)
+        : Number(show?.ticketPrice)
+
+    return Number.isFinite(lowestPrice) && lowestPrice > 0
+        ? `₹${lowestPrice}`
+        : "Price unavailable"
+}
+
+const getLocality = (address = "") => {
+    const [locality] = address.split(",").map((part) => part.trim()).filter(Boolean)
+    return locality || address
+}
+
 const ShowTime = memo(() => {
     const params = useParams();
     const dispatch = useDispatch();
     const dateScrollRef = useRef(null);
     const navigate = useNavigate();
-    const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
+    const [selectedDate, setSelectedDate] = useState(() => getSelectedDateFromRoute(params.date));
     const [deviceType, setDeviceType] = useState('desktop')
     const showLoading = useSelector(selectShowLoading);
     const showError = useSelector(selectShowError)
@@ -41,6 +82,11 @@ const ShowTime = memo(() => {
     const isMobile = deviceType === 'mobile'
 
     useEffect(() => {
+        const routeDate = getSelectedDateFromRoute(params.date)
+        setSelectedDate((currentDate) => currentDate === routeDate ? currentDate : routeDate)
+    }, [params.date])
+
+    useEffect(() => {
         dispatch(getTheatresWithShowsByMovieRequest({movie: params.id, date: selectedDate}))
     }, [selectedDate, dispatch, params.id])
 
@@ -62,6 +108,17 @@ const ShowTime = memo(() => {
         if(isTomorrow(date)) return "Tomorrow";
         return format(date, "EEE")
     }, [])
+
+    const selectedDateObject = useMemo(() => parseISO(selectedDate), [selectedDate])
+
+    const cityLabel = useMemo(() => {
+        if (!Array.isArray(theatres) || theatres.length === 0) {
+            return ""
+        }
+
+        const city = theatres.find((theatre) => theatre?.city?.cityName)?.city?.cityName
+        return city || ""
+    }, [theatres])
     
     const handleDateSelect = useCallback((date) => {
         setSelectedDate(format(date, "yyyy-MM-dd"));
@@ -71,21 +128,20 @@ const ShowTime = memo(() => {
     // Enhanced loading state
     if (showLoading) {
         return (
-            <Card style={{ padding: isMobile ? "16px" : "24px" }}>
-                <div style={{ textAlign: "center", padding: isMobile ? "20px" : "40px" }}>
-                    <Spin size="large" />
-                    <div style={{ marginTop: 16, color: "#666", fontSize: isMobile ? "14px" : "16px" }}>
-                        Loading show times...
-                    </div>
+            <section className="showtime-panel" aria-label="Loading show times">
+                <Skeleton active paragraph={{ rows: 5 }} title={{ width: "40%" }} />
+                <div className="showtime-loading-copy">
+                    <Spin size="small" />
+                    <span>Loading showtimes...</span>
                 </div>
-            </Card>
+            </section>
         )
     }
 
     // Enhanced error state
     if (showError) {
         return (
-            <Card style={{ padding: isMobile ? "16px" : "24px" }}>
+            <section className="showtime-panel">
                 <Alert
                     title="Unable to Load Show Times"
                     description="Sorry, we couldn't load the show times for this date. Please try again later."
@@ -101,19 +157,29 @@ const ShowTime = memo(() => {
                         </Button>
                     }
                 />
-            </Card>
+            </section>
         )
     }
 
   return (
-    <Card 
-        style={{ 
-            padding: isMobile ? "16px" : "24px",
-            borderRadius: isMobile ? "8px" : "12px"
-        }}
+    <section
+        className="showtime-panel"
         role="main"
         aria-label="Show times and theater information"
     >
+        <div className="showtime-panel-header">
+            <div>
+                <Title level={3} className="showtime-heading">Choose Show</Title>
+                <Text type="secondary">Select your preferred theatre and showtime</Text>
+            </div>
+            {cityLabel && (
+                <div className="showtime-city-pill" aria-label={`Current city ${cityLabel}`}>
+                    <EnvironmentOutlined aria-hidden="true" />
+                    <span>{cityLabel}</span>
+                </div>
+            )}
+        </div>
+
         <div className='date-selection-container'>
             <Button
                 type='text'
@@ -130,7 +196,7 @@ const ShowTime = memo(() => {
                 {dates.map((date, index) => (
                     <div
                         key={index}
-                        className={`date-tab ${isSameDay(parseISO(selectedDate), date) ? "selected" : ""}`}
+                        className={`date-tab ${isSameDay(selectedDateObject, date) ? "selected" : ""}`}
                         onClick={() => handleDateSelect(date)}
                         role="button"
                         tabIndex={0}
@@ -164,110 +230,80 @@ const ShowTime = memo(() => {
             />
         </div>
 
-        <Divider style={{ margin: isMobile ? "16px 0" : "24px 0" }} />
-
-        {/* <Title level={4}>Available Show Timings</Title> */}
-
-        {/* Theater and Showtimes Section - Responsive Layout */}
         {
             theatres && theatres.length > 0 ? (
                 <div className="theaters-container">
                     {theatres.map((theatre, index) => (
-                        <div key={index}>
-                            <div className='theatre-section'>
-                                <Row gutter={[isMobile ? 12 : 16, isMobile ? 12 : 16]} align="middle">
-                                    {/* Theater Info - Left Side */}
-                                    <Col xs={24} sm={isMobile ? 24 : 8} md={12}>
-                                        <div className="theater-info">
-                                            <Text 
-                                                strong 
-                                                style={{ 
-                                                    margin: 0,
-                                                    fontSize: isMobile ? "16px" : "18px",
-                                                    display: "block",
-                                                    marginBottom: "8px"
-                                                }}
-                                            >
-                                                {theatre.name}
-                                            </Text>
-                                            <Popover 
+                        <article className='theatre-section' key={theatre._id || index}>
+                            <div className="theater-info">
+                                <div>
+                                    <Title level={4} className="theatre-name">
+                                        {theatre.name}
+                                    </Title>
+                                    {theatre.address && (
+                                        <Text className="theatre-address">
+                                            {getLocality(theatre.address)}
+                                        </Text>
+                                    )}
+                                </div>
+                                {theatre.address && (
+                                    <Popover
+                                        content={
+                                            <div style={{ maxWidth: 280 }}>
+                                                <Text strong style={{ display: "block", marginBottom: "4px" }}>
+                                                    Address
+                                                </Text>
+                                                <Text>{theatre.address}</Text>
+                                            </div>
+                                        }
+                                        title="Theatre information"
+                                    >
+                                        <Button
+                                            type="link"
+                                            className="map-link"
+                                            icon={<EnvironmentOutlined />}
+                                        >
+                                            View location
+                                        </Button>
+                                    </Popover>
+                                )}
+                            </div>
+
+                            <div className="showtime-buttons-horizontal">
+                                {[...(theatre.shows || [])]
+                                    .sort((a, b) => compareAsc(
+                                        parse(a.time, "HH:mm", new Date()),
+                                        parse(b.time, "HH:mm", new Date())
+                                    ))
+                                    .map((singleShow) => {
+                                        const screenLabel = getScreenLabel(singleShow)
+
+                                        return (
+                                            <Popover
+                                                key={singleShow._id}
                                                 content={
-                                                    <div style={{ padding: "8px" }}>
-                                                        <Text strong style={{ display: "block", marginBottom: "4px" }}>
-                                                            Address:
-                                                        </Text>
-                                                        <Text>{theatre.address}</Text>
+                                                    <div className="showtime-popover">
+                                                        <Text strong>{getShowPriceLabel(singleShow)}</Text>
+                                                        <Text type="secondary">Available</Text>
+                                                        {screenLabel && <Text type="secondary">{screenLabel}</Text>}
                                                     </div>
                                                 }
-                                                title="Theater Information"
-                                            >  
-                                                <Button 
-                                                    type="link" 
+                                            >
+                                                <Button
+                                                    className="showtime-button"
+                                                    onClick={() => navigate(`/booking/${singleShow._id}`)}
                                                     size={isMobile ? "small" : "middle"}
-                                                    style={{ 
-                                                        padding: 0,
-                                                        height: "auto",
-                                                        fontSize: isMobile ? "12px" : "14px"
-                                                    }}
-                                                    icon={<EnvironmentOutlined />}
+                                                    aria-label={`Book ${formatParsedTime(singleShow.time)} at ${theatre.name}`}
                                                 >
-                                                    View Location
+                                                    <span>{formatParsedTime(singleShow.time)}</span>
+                                                    {screenLabel && <small>{screenLabel}</small>}
                                                 </Button>
-                                            </Popover>  
-                                        </div>
-                                    </Col>
-
-                                    {/* Showtimes - Right Side */}
-                                    <Col xs={24} sm={isMobile ? 24 : 16} md={12}>
-                                        <div className="showtime-buttons-horizontal">
-                                            {[...theatre.shows]
-                                                .sort((a, b) => compareAsc(
-                                                    parse(a.time, "HH:mm", new Date()),  
-                                                    parse(b.time, "HH:mm", new Date())
-                                                ))
-                                                .map((singleShow, showIndex) => (
-                                                    <div key={showIndex} className="showtime-button-container">
-                                                        <Popover 
-                                                            content={
-                                                                <div style={{ 
-                                                                    display: 'flex', 
-                                                                    flexDirection: 'column'
-                                                                }}>
-                                                                        
-                                                                        <Text className="price-label">
-                                                                            ₹ {singleShow.ticketPrice}.00
-                                                                        </Text>
-                                                                    <Text className="price-label">
-                                                                        Available
-                                                                    </Text>
-                                                                </div>
-                                                            }
-                                                        >
-                                                            <Button 
-                                                                className="showtime-button" 
-                                                                onClick={() => navigate(`/booking/${singleShow._id}`)}
-                                                                size={isMobile ? "small" : "middle"}
-                                                            >
-                                                                {formatParsedTime(singleShow.time)}
-                                                            </Button>
-                                                        </Popover>
-                                                    </div>
-                                                ))
-                                            }
-                                        </div>
-                                    </Col>
-                                </Row>
+                                            </Popover>
+                                        )
+                                    })
+                                }
                             </div>
-                            {/* Add divider only if it's not the last theater */}
-                            {index < theatres.length - 1 && (
-                                <Divider 
-                                    style={{ 
-                                        margin: isMobile ? "12px 0" : "16px 0",
-                                        borderColor: "#e8e8e8"
-                                    }} 
-                                />
-                            )}
-                        </div>
+                        </article>
                     ))}
                 </div>                                     
             ) : (
@@ -294,7 +330,7 @@ const ShowTime = memo(() => {
                 </div>
             )
         }
-    </Card>
+    </section>
   )
 })
 

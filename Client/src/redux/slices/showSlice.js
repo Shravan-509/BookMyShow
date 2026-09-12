@@ -135,7 +135,7 @@ const selectShowState = (state) => state.show;
 
 // Memoized selectors using reselect
 export const selectShowLoading = createSelector([selectShowState], (show) => show.loading);
-export const selectShowError = createSelector([selectShowState], (show) => show.resetLoading);
+export const selectShowError = createSelector([selectShowState], (show) => show.error);
 export const selectShow = createSelector([selectShowState], (show) => show.show);
 export const selectSelectedShow = createSelector([selectShowState], (show) => show.selectedShow);
 

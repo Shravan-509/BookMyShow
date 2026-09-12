@@ -10,7 +10,7 @@ const MovieSynopsis = ({movie}) => {
         </Title>
         <Paragraph>
             {movie.description ||
-            "A thrilling cinematic experience that takes viewers on an unforgettable journey. This movie combines stunning visuals with a compelling storyline that will keep you on the edge of your seat from start to finish."}
+            "Synopsis is not available for this movie yet."}
         </Paragraph>
     </Card>
   )
