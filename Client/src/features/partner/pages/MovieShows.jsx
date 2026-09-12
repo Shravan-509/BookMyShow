@@ -9,10 +9,25 @@ import { fetchScreensByTheatreRequest, selectActiveScreensByTheatre } from "../.
 import { notify } from "../../../utils/notificationUtils";
 import { formatDate, formatParsedTime } from "../../../utils/dateFormatter";
 import { getAvailableSeats, getResolvedTotalSeats } from "./showCapacityUtils";
+import { SEAT_TYPES } from "../../../utils/ticketPricing";
 
 const normalizeScreenId = (screen) => {
     const value = screen?._id || screen;
     return value ? String(value) : undefined;
+};
+
+const buildTicketPricingPayload = (ticketPricing = {}) => {
+    const payload = {};
+
+    Object.values(SEAT_TYPES).forEach((seatType) => {
+        const value = Number(ticketPricing?.[seatType]);
+
+        if (Number.isFinite(value) && value > 0) {
+            payload[seatType] = value;
+        }
+    });
+
+    return Object.keys(payload).length > 0 ? payload : undefined;
 };
 
 const MovieShows = ({
@@ -95,11 +110,19 @@ const MovieShows = ({
     };
 
     const onFinish =  (values) => {
+        const ticketPricing = buildTicketPricingPayload(values.ticketPricing);
         const show = {
             ...values,
             screen: normalizeScreenId(values.screen),
             theatre: selectedTheatre._id
         };
+
+        if (ticketPricing) {
+            show.ticketPricing = ticketPricing;
+        } else {
+            delete show.ticketPricing;
+        }
+
         if(view === "add")
         {
             dispatch(addShowRequest(show))
@@ -372,13 +395,48 @@ const MovieShows = ({
                         </Col>
                         <Col span={8}>
                             <Form.Item
-                                label="Ticket Price"
+                                label="Base Ticket Price"
                                 name="ticketPrice"
                                 htmlFor="ticketPrice"
                                 className="block"
                                 rules={[{required: true, message: "Ticket Price is required"}]}
                             >
                                 <InputNumber min={20} style={{ width: '100%' }}  suffix="Rs" id="ticketPrice" size="large" placeholder="Ticket Price"/>
+                            </Form.Item>
+                        </Col>
+                    </Row>
+                    <Title level={5} className="mt-2! mb-3!">
+                        Seat Type Pricing
+                    </Title>
+                    <Row gutter={{xs: 6, sm: 10, md: 12, lg: 16}}>
+                        <Col xs={24} md={8}>
+                            <Form.Item
+                                label="Standard Price"
+                                name={["ticketPricing", SEAT_TYPES.STANDARD]}
+                                htmlFor="standardPrice"
+                                className="block"
+                            >
+                                <InputNumber min={20} style={{ width: '100%' }} suffix="Rs" id="standardPrice" size="large" placeholder="Uses base price if empty" />
+                            </Form.Item>
+                        </Col>
+                        <Col xs={24} md={8}>
+                            <Form.Item
+                                label="Premium Price"
+                                name={["ticketPricing", SEAT_TYPES.PREMIUM]}
+                                htmlFor="premiumPrice"
+                                className="block"
+                            >
+                                <InputNumber min={20} style={{ width: '100%' }} suffix="Rs" id="premiumPrice" size="large" placeholder="Uses base price if empty" />
+                            </Form.Item>
+                        </Col>
+                        <Col xs={24} md={8}>
+                            <Form.Item
+                                label="Recliner Price"
+                                name={["ticketPricing", SEAT_TYPES.RECLINER]}
+                                htmlFor="reclinerPrice"
+                                className="block"
+                            >
+                                <InputNumber min={20} style={{ width: '100%' }} suffix="Rs" id="reclinerPrice" size="large" placeholder="Uses base price if empty" />
                             </Form.Item>
                         </Col>
                     </Row>

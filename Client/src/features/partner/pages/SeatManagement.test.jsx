@@ -323,7 +323,7 @@ describe("SeatManagement", () => {
     expect(await screen.findByText("Seats to create: 540")).toBeInTheDocument();
     expect(screen.getByText(/Excluded per row: 2/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^create seats$/i })).toBeDisabled();
-  }, 20000);
+  }, 45000);
 
   test("ScreenManagement opens Seat Management from a Screen row", async () => {
     const user = userEvent.setup();

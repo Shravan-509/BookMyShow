@@ -20,6 +20,7 @@ import {
   Row,
   Skeleton,
   Space,
+  Spin,
   Steps,
   Tag,
   Typography,
@@ -27,6 +28,7 @@ import {
 } from "antd"
 import { useDispatch, useSelector } from "react-redux"
 import { SeatLayout } from "../../../components/SeatLayout"
+import { SHOWSEAT_LAYOUT_STATUS, SHOWSEAT_STATUS } from "../../../components/seatLayoutUtils"
 import { useAuth } from "../../../hooks/useAuth"
 import PaymentSummary from "./Checkout"
 import {
@@ -35,9 +37,23 @@ import {
   selectShowError,
   selectShowLoading,
 } from "../../../redux/slices/showSlice"
+import {
+  clearShowSeats,
+  fetchShowSeatsRequest,
+  selectShowSeatError,
+  selectShowSeatInventory,
+  selectShowSeatLoading,
+} from "../../../redux/slices/showSeatSlice"
 import { notify } from "../../../utils/notificationUtils"
 import SeatRecommendation from "../../../components/SeatRecommendation"
 import { formatDate, formatParsedTime } from "../../../utils/dateFormatter";
+import { getScreenDisplayName } from "../../../utils/screenDisplay";
+import {
+  buildSelectedSeatPricing,
+  formatCurrency,
+  groupSeatPricing,
+  resolveSeatTypePrice,
+} from "../../../utils/ticketPricing";
 const { Title, Text } = Typography
 const { Step } = Steps
 
@@ -98,7 +114,40 @@ const Booking = () => {
   const loading = useSelector(selectShowLoading)
   const showError = useSelector(selectShowError)
   const show = useSelector(selectSelectedShow)
+  const showSeatInventory = useSelector(selectShowSeatInventory)
+  const showSeatLoading = useSelector(selectShowSeatLoading)
+  const showSeatError = useSelector(selectShowSeatError)
   const resolvedTotalSeats = show?.screen?.capacity ?? show?.totalSeats ?? 0
+  const hasInitializedInventory = showSeatInventory?.layoutStatus === SHOWSEAT_LAYOUT_STATUS.INITIALIZED
+  const isScreenAwareShow = Boolean(show?.screen)
+  const loadedShowId = show?._id?.toString?.() || show?._id || show?.id
+  const inventoryShowId = showSeatInventory?.showId?.toString?.() || showSeatInventory?.showId
+  const showSeatInventoryBelongsToShow = inventoryShowId === loadedShowId
+  const canRenderPhysicalLayout = isScreenAwareShow && hasInitializedInventory && showSeatInventoryBelongsToShow
+  const canRenderLegacyLayout = !isScreenAwareShow || showSeatInventory?.layoutStatus === SHOWSEAT_LAYOUT_STATUS.LEGACY
+  const shouldShowSeatInventoryLoading = isScreenAwareShow && (showSeatLoading || !showSeatInventoryBelongsToShow) && !showSeatError
+  const shouldShowSeatInventoryError = isScreenAwareShow && Boolean(showSeatError)
+  const screenDisplayName = getScreenDisplayName(show?.screen)
+  const selectedSeatPricing = useMemo(() => (
+    buildSelectedSeatPricing(
+      show,
+      canRenderPhysicalLayout ? showSeatInventory.seats : [],
+      selectedSeats,
+    )
+  ), [canRenderPhysicalLayout, selectedSeats, show, showSeatInventory])
+  const selectedSeatGroups = useMemo(
+    () => groupSeatPricing(selectedSeatPricing.seatPricing),
+    [selectedSeatPricing.seatPricing],
+  )
+  const getSeatPrice = useCallback(
+    (seatType) => resolveSeatTypePrice(show, seatType),
+    [show],
+  )
+  const physicalAvailableSeats = useMemo(() => (
+    canRenderPhysicalLayout
+      ? showSeatInventory.seats.filter((seat) => seat.status === SHOWSEAT_STATUS.AVAILABLE)
+      : []
+  ), [canRenderPhysicalLayout, showSeatInventory])
 
   useEffect(() => {
     const checkMobile = () => {
@@ -110,8 +159,25 @@ const Booking = () => {
   }, [])
 
   useEffect(() => {
+    dispatch(clearShowSeats())
     dispatch(getShowByIdRequest(params.id))
+    return () => {
+      dispatch(clearShowSeats())
+    }
   }, [dispatch, params.id])
+
+  useEffect(() => {
+    if (!params.id || !loadedShowId || loadedShowId !== params.id) {
+      return
+    }
+
+    if (!show?.screen) {
+      dispatch(clearShowSeats())
+      return
+    }
+
+    dispatch(fetchShowSeatsRequest({ showId: loadedShowId }))
+  }, [dispatch, loadedShowId, params.id, show?.screen])
 
   const handleTicketCount = useCallback((value) => {
     if (value) {
@@ -191,6 +257,9 @@ const Booking = () => {
           {show?.movie.movieName}
         </Text>
         <div className="text-sm text-gray-600 mt-1">{show?.theatre.name}</div>
+        {screenDisplayName && (
+          <div className="text-sm text-gray-600">{screenDisplayName}</div>
+        )}
         <div className="text-sm text-gray-600">
           {formatDate(show?.date, "EEE, dd MMM, yyyy")} | {" "}
           {formatParsedTime(show?.time)}
@@ -202,11 +271,21 @@ const Booking = () => {
       <div className="mb-4">
         <div className="flex justify-between items-center mb-2">
           <Text>Tickets: {ticketCount}</Text>
-          <Text strong>₹{show?.ticketPrice * ticketCount || 0}</Text>
+          <Text strong>{formatCurrency(selectedSeatPricing.ticketAmount)}</Text>
         </div>
         <div className="text-sm text-gray-600">
           Selected: {selectedSeats.length > 0 ? selectedSeats.join(", ") : "None"}
         </div>
+        {selectedSeatGroups.length > 0 && (
+          <div className="mt-2 space-y-1">
+            {selectedSeatGroups.map((group) => (
+              <div key={`${group.seatType}-${group.price}`} className="flex justify-between text-xs text-gray-600">
+                <span>{group.seatTypeLabel} × {group.count}</span>
+                <span>{formatCurrency(group.total)}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="flex justify-center gap-2 mt-4">
@@ -266,6 +345,11 @@ const Booking = () => {
                 <Space orientation="vertical" size={4} className="mb-2!">
                   <Space size="middle" wrap>
                     <Text className="text-sm md:text-base">{show?.theatre.name}</Text>
+                    {screenDisplayName && (
+                      <Tag color="geekblue" className="text-xs! md:text-sm!">
+                        {screenDisplayName}
+                      </Tag>
+                    )}
                     <Tag color="blue" className="flex! gap-1! text-xs! md:text-sm!">
                       <CalendarOutlined />
                       {formatDate(show?.date, "EEE, dd MMM, yyyy")}
@@ -326,6 +410,7 @@ const Booking = () => {
                       <SeatRecommendation
                         totalSeats={resolvedTotalSeats}
                         bookedSeats={show?.bookedSeats}
+                        availableSeats={physicalAvailableSeats}
                         selectedSeats={selectedSeats}
                         onSeatSelect={handleRecommendedSeatSelection}
                         groupSize={ticketCount}
@@ -335,12 +420,31 @@ const Booking = () => {
                       <Divider />
                       <div className="mb-6">
                         <div className="seat-selection-area">
-                          <SeatLayout
-                            totalSeats={resolvedTotalSeats}
-                            bookedSeats={show?.bookedSeats}
-                            selectedSeats={selectedSeats}
-                            onSeatSelect={handleSeatSelection}
-                          />
+                          {shouldShowSeatInventoryLoading && (
+                            <Card className="text-center py-12 bg-gray-50! border-gray-200!">
+                              <Spin />
+                              <div className="mt-3 text-sm text-gray-600">Loading seat layout...</div>
+                            </Card>
+                          )}
+
+                          {shouldShowSeatInventoryError && (
+                            <Card className="text-center py-10 bg-red-50! border-red-100!">
+                              <Title level={5} className="mb-2!">Seat layout unavailable</Title>
+                              <Text type="secondary">{showSeatError}</Text>
+                            </Card>
+                          )}
+
+                          {!shouldShowSeatInventoryLoading && !shouldShowSeatInventoryError && (canRenderPhysicalLayout || canRenderLegacyLayout) && (
+                            <SeatLayout
+                              totalSeats={resolvedTotalSeats}
+                              bookedSeats={show?.bookedSeats}
+                              selectedSeats={selectedSeats}
+                              onSeatSelect={handleSeatSelection}
+                              layoutStatus={canRenderPhysicalLayout ? SHOWSEAT_LAYOUT_STATUS.INITIALIZED : SHOWSEAT_LAYOUT_STATUS.LEGACY}
+                              showSeats={canRenderPhysicalLayout ? showSeatInventory.seats : []}
+                              getSeatPrice={getSeatPrice}
+                            />
+                          )}
 
                           <ScreenDisplay />
 
@@ -378,6 +482,18 @@ const Booking = () => {
                           <Text strong className="text-sm md:text-base">
                             {selectedSeats.length > 0 ? selectedSeats.join(", ") : "None"}
                           </Text>
+                          {selectedSeatGroups.length > 0 && (
+                            <div className="mt-2 space-y-1">
+                              {selectedSeatGroups.map((group) => (
+                                <Text key={`${group.seatType}-${group.price}`} type="secondary" className="block text-xs">
+                                  {group.seatTypeLabel} × {group.count}: {formatCurrency(group.total)}
+                                </Text>
+                              ))}
+                              <Text strong className="block text-sm">
+                                Subtotal: {formatCurrency(selectedSeatPricing.ticketAmount)}
+                              </Text>
+                            </div>
+                          )}
                         </div>
                         <Button
                           type="primary"
@@ -454,7 +570,12 @@ const Booking = () => {
               )}
 
               {currentStep === 2 && (
-                <PaymentSummary show={show} seats={selectedSeats} handlePreviousStep={handlePreviousStep} />
+                <PaymentSummary
+                  show={show}
+                  seats={selectedSeats}
+                  showSeats={canRenderPhysicalLayout ? showSeatInventory.seats : []}
+                  handlePreviousStep={handlePreviousStep}
+                />
               )}
             </Card>
           </div>
@@ -466,7 +587,7 @@ const Booking = () => {
                   <div className="font-medium">
                     {selectedSeats.length} of {ticketCount} seats selected
                   </div>
-                  <div className="text-gray-600">₹{show?.ticketPrice * selectedSeats.length || 0}</div>
+                  <div className="text-gray-600">{formatCurrency(selectedSeatPricing.ticketAmount)}</div>
                 </div>
                 <Button
                   type="primary"

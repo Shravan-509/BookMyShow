@@ -18,11 +18,19 @@ vi.mock("../../../hooks/useBooking", () => ({
       {
         movieTitle: "Dune",
         theatreName: "PVR Forum",
+        screenName: "Screen 2",
+        screenNumber: 2,
         poster: "poster.jpg",
         showDate: "2026-08-17",
         showTime: "18:00",
         seats: ["A1", "A2"],
         ticketPrice: 200,
+        ticketAmount: 500,
+        amount: 535.4,
+        seatPricing: [
+          { seatNumber: "A1", seatType: "STANDARD", price: 200 },
+          { seatNumber: "A2", seatType: "PREMIUM", price: 300 },
+        ],
         convenienceFee: 35.4,
         gstPercent: 18,
         ticketStatus: "Confirmed",
@@ -62,6 +70,10 @@ describe("OrderHistory", () => {
 
     expect(getUserBookingsMock).toHaveBeenCalledTimes(1);
     expect(screen.getByText(/Dune/)).toBeInTheDocument();
+    expect(screen.getAllByText("Screen 2").length).toBeGreaterThan(0);
+    expect(screen.getByText("A1 Standard (₹200), A2 Premium (₹300)")).toBeInTheDocument();
+    expect(screen.getByText("Ticket Amount")).toBeInTheDocument();
+    expect(screen.getByText("₹500")).toBeInTheDocument();
     expect(screen.getByText("BMS1234")).toBeInTheDocument();
   });
 
@@ -73,5 +85,8 @@ describe("OrderHistory", () => {
 
     expect(await screen.findByText("Booking Details")).toBeInTheDocument();
     expect(screen.getAllByText("BMS1234").length).toBeGreaterThan(1);
+    expect(screen.getAllByText("Screen 2").length).toBeGreaterThan(1);
+    expect(screen.getAllByText("A1 Standard (₹200), A2 Premium (₹300)").length).toBeGreaterThan(1);
+    expect(screen.getAllByText("₹535.4").length).toBeGreaterThan(1);
   });
 });

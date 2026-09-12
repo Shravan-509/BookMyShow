@@ -23,11 +23,17 @@ import { useNavigate } from 'react-router-dom';
 import { notify } from '../../../utils/notificationUtils';
 import { useDispatch, useSelector } from 'react-redux';
 import { formatDate, formatParsedTime } from '../../../utils/dateFormatter';
+import { getScreenDisplayName } from '../../../utils/screenDisplay';
+import {
+    buildSelectedSeatPricing,
+    formatCurrency,
+    groupSeatPricing,
+} from '../../../utils/ticketPricing';
 const { Title ,Text, Paragraph } = Typography;
 
 const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID;
 
-const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
+const PaymentSummary = React.memo(({show, seats, showSeats = [], handlePreviousStep}) => {
     const { user } = useAuth(); 
     const navigate = useNavigate();
     const dispatch = useDispatch();
@@ -84,10 +90,17 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
         () => Math.floor(Math.random() * (20 - 15 + 1)) + 15
     ) 
 
-    const ticketAmount = useMemo(
-        () => show.ticketPrice * seats.length, 
-        [show.ticketPrice, seats.length]
+    const selectedSeatPricing = useMemo(
+        () => buildSelectedSeatPricing(show, showSeats, seats),
+        [show, showSeats, seats]
     )
+
+    const seatPricingGroups = useMemo(
+        () => groupSeatPricing(selectedSeatPricing.seatPricing),
+        [selectedSeatPricing.seatPricing]
+    )
+
+    const ticketAmount = selectedSeatPricing.ticketAmount
 
     const baseAmount = useMemo(
         () => feePerTicket * seats.length, 
@@ -149,6 +162,7 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
     const isTablet = deviceType === 'tablet'
 
     const paymentInProgress = paymentStatus === "processing" || isPaymentProcessing
+    const screenDisplayName = getScreenDisplayName(show?.screen)
 
     /*
     * ============================================================
@@ -713,6 +727,11 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
                         <Text type="secondary" className="text-sm! md:text-base!">
                             {show.theatre.name}
                         </Text>
+                        {screenDisplayName && (
+                            <Text type="secondary" className="text-sm! md:text-base!">
+                                {screenDisplayName}
+                            </Text>
+                        )}
                         <Text type="secondary" className="text-sm! md:text-base!">
                             Seats - {seats.join(', ')} ({seats.length} Tickets)
                         </Text>
@@ -728,12 +747,26 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
                 <div className="space-y-3 mb-4">
                     <div className="flex justify-between items-center">
                         <Text className="text-sm! md:text-base! text-gray-800!">
-                            Ticket Price ({seats.length} × ₹{show.ticketPrice})
+                            Ticket Amount
                         </Text>
                         <Text className="text-sm! md:text-base! font-medium! text-gray-900!">
-                            ₹{ticketAmount.toFixed(2)}
+                            {formatCurrency(ticketAmount)}
                         </Text>
                     </div>
+                    {seatPricingGroups.length > 0 && (
+                        <div className="space-y-1">
+                            {seatPricingGroups.map((group) => (
+                                <div key={`${group.seatType}-${group.price}`} className="flex justify-between items-center text-sm">
+                                    <Text type="secondary" className="text-xs! md:text-sm!">
+                                        {group.seatTypeLabel} ({group.count} × {formatCurrency(group.price)})
+                                    </Text>
+                                    <Text type="secondary" className="text-xs! md:text-sm!">
+                                        {formatCurrency(group.total)}
+                                    </Text>
+                                </div>
+                            ))}
+                        </div>
+                    )}
 
                     <Collapse
                         bordered={false}
@@ -756,7 +789,7 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
                                 </Text>
 
                                 <Text className="text-sm! md:text-base! font-medium! text-gray-900!">
-                                    ₹{convenienceFee.toFixed(2)}
+                                    {formatCurrency(convenienceFee)}
                                 </Text>
                                 </div>
                             ),
@@ -774,7 +807,7 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
                                     type="secondary"
                                     className="text-xs! md:text-sm!"
                                     >
-                                    ₹{baseAmount.toFixed(2)}
+                                    {formatCurrency(baseAmount)}
                                     </Text>
                                 </div>
 
@@ -790,7 +823,7 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
                                     type="secondary"
                                     className="text-xs! md:text-sm!"
                                     >
-                                    ₹{gst.toFixed(2)}
+                                    {formatCurrency(gst)}
                                     </Text>
                                 </div>
                                 </div>
@@ -809,7 +842,7 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
                         Amount Payable
                     </Title>
                     <Title level={5} className="mb-0! text-lg! md:text-xl! text-[#f84464]!">
-                        ₹{totalAmount.toFixed(2)}
+                        {formatCurrency(totalAmount)}
                     </Title>
                 </div>
             </Card>
@@ -921,9 +954,9 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
                     className={`bg-[#f84464]! hover:bg-[#dc3558]! ${isMobile ? "order-1" : ""} min-h-12! ${
                         isMobile ? "text-base! font-semibold! w-full!" : "w-auto!"
                     }`}
-                    aria-label={`Pay ₹${totalAmount.toFixed(2)} using ${paymentMethod}`}
+                    aria-label={`Pay ${formatCurrency(totalAmount)} using ${paymentMethod}`}
                 >
-                    {paymentInProgress ? "Processing..." : `Pay ₹${totalAmount.toFixed(2)}`}
+                    {paymentInProgress ? "Processing..." : `Pay ${formatCurrency(totalAmount)}`}
                 </Button>
             </div>
 
@@ -938,7 +971,7 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
                         <div className="flex justify-between items-center mb-3">
                             <div>
                                 <div className="text-sm font-medium">Total Amount</div>
-                                <div className="text-lg font-bold text-[#f84464]">₹{totalAmount.toFixed(2)}</div>
+                                <div className="text-lg font-bold text-[#f84464]">{formatCurrency(totalAmount)}</div>
                             </div>
                             <div className="text-right">
                                 <div className="text-xs text-gray-600">{seats.length} tickets</div>
@@ -954,9 +987,9 @@ const PaymentSummary = React.memo(({show, seats, handlePreviousStep}) => {
                             disabled={paymentInProgress}
                             onClick={handleRazorPay}
                             className="bg-[#f84464]! hover:bg-[#dc3558]! w-full min-h-12! text-base! font-semibold!"
-                            aria-label={`Pay ₹${totalAmount.toFixed(2)} using ${paymentMethod}`}
+                            aria-label={`Pay ${formatCurrency(totalAmount)} using ${paymentMethod}`}
                         >
-                            {paymentInProgress ? "Processing..." : `Pay Now ₹${totalAmount.toFixed(2)}`}
+                            {paymentInProgress ? "Processing..." : `Pay Now ${formatCurrency(totalAmount)}`}
                         </Button>
                     </div>
                 </div>

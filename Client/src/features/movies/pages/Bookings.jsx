@@ -17,6 +17,13 @@ import { notify } from "../../../utils/notificationUtils"
 import { useBooking } from "../../../hooks/useBooking"
 import {formatDate, formatParsedTime, formatTime} from "../../../utils/dateFormatter"
 import { isAfter, parse } from "date-fns"
+import { getBookingScreenDisplayName } from "../../../utils/screenDisplay"
+import {
+  getBookingPaidTotal,
+  getBookingSeatPricing,
+  getBookingTicketAmount,
+  groupSeatPricing,
+} from "../../../utils/ticketPricing"
 
 
 // Color mapping for ticket status
@@ -31,9 +38,15 @@ const getStatusColor = (status) => {
 // Memoized Booking Card to prevent unnecessary re-renders per item
 const BookingCard = React.memo(function BookingCard({ booking, isMobile, onViewBookingInfo, formatCurrency }) {
   const seatCount = useMemo(() => booking.seats.length, [booking.seats])
-  const baseTotal = useMemo(() => booking.ticketPrice * seatCount, [booking.ticketPrice, seatCount])
+  const seatPricing = useMemo(() => getBookingSeatPricing(booking), [booking])
+  const seatPricingGroups = useMemo(() => groupSeatPricing(seatPricing), [seatPricing])
+  const seatSummary = useMemo(() => (
+    seatPricing.map((seat) => `${seat.seatNumber} ${seat.seatTypeLabel} (${formatCurrency(seat.price)})`).join(", ")
+  ), [formatCurrency, seatPricing])
+  const baseTotal = useMemo(() => getBookingTicketAmount(booking), [booking])
   const convenienceFee = booking.convenienceFee
-  const grandTotal = useMemo(() => Math.round((baseTotal + convenienceFee) * 100) / 100, [baseTotal, convenienceFee])
+  const grandTotal = useMemo(() => getBookingPaidTotal(booking), [booking])
+  const screenDisplayName = getBookingScreenDisplayName(booking)
 
   return (
     <div className="mb-6">
@@ -86,19 +99,32 @@ const BookingCard = React.memo(function BookingCard({ booking, isMobile, onViewB
                   {formatParsedTime(booking.showTime)}
                 </Text>
                 <Text type="secondary">{booking.theatreName}</Text>
+                {screenDisplayName && (
+                  <Text type="secondary">{screenDisplayName}</Text>
+                )}
                 <Text type="secondary">Quantity : {seatCount}</Text>
                 <Text strong>
                   <div className="flex items-center gap-2">
                     <img src={armChairUrl || "/placeholder.svg"} alt="Seat Icon" />
                     <span>
-                      {booking.seatType?.toUpperCase()} - {booking.seats.join(", ")}
+                      {seatSummary || booking.seats.join(", ")}
                     </span>
                   </div>
                 </Text>
+                {seatPricingGroups.length > 1 && seatPricingGroups.map((group) => (
+                  <Row key={`${group.seatType}-${group.price}`} justify="space-between">
+                    <Col>
+                      <Text type="secondary">{group.seatTypeLabel} ({group.count} × {formatCurrency(group.price)})</Text>
+                    </Col>
+                    <Col>
+                      <Text type="secondary">{formatCurrency(group.total)}</Text>
+                    </Col>
+                  </Row>
+                ))}
 
                 <Row justify="space-between">
                   <Col>
-                    <Text>Ticket Price</Text>
+                    <Text>Ticket Amount</Text>
                   </Col>
                   <Col>{formatCurrency(baseTotal)}</Col>
                 </Row>
@@ -160,6 +186,11 @@ const BookingCard = React.memo(function BookingCard({ booking, isMobile, onViewB
                   <EnvironmentOutlined className="text-gray-500" />
                   <Text type="secondary">{booking.theatreName}</Text>
                 </div>
+                {screenDisplayName && (
+                  <div className="flex items-center gap-1 justify-center">
+                    <Text type="secondary">{screenDisplayName}</Text>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -167,7 +198,7 @@ const BookingCard = React.memo(function BookingCard({ booking, isMobile, onViewB
               <div className="flex items-center gap-2 justify-center mb-2">
                 <img src={armChairUrl || "/placeholder.svg"} alt="Seat Icon" className="w-4 h-4" />
                 <Text strong className="text-sm">
-                  {booking.seatType?.toUpperCase()} - {booking.seats.join(", ")}
+                  {seatSummary || booking.seats.join(", ")}
                 </Text>
               </div>
               <Text type="secondary" className="text-sm">
@@ -206,11 +237,21 @@ const BookingCard = React.memo(function BookingCard({ booking, isMobile, onViewB
                   children: (
                     <div className="space-y-2 pt-2">
                       <div className="flex justify-between">
-                        <Text className="text-sm">Ticket Price</Text>
+                        <Text className="text-sm">Ticket Amount</Text>
                         <Text className="text-sm">
                           {formatCurrency(baseTotal)}
                         </Text>
                       </div>
+                      {seatPricingGroups.length > 1 && seatPricingGroups.map((group) => (
+                        <div key={`${group.seatType}-${group.price}`} className="flex justify-between">
+                          <Text type="secondary" className="text-xs">
+                            {group.seatTypeLabel} ({group.count} × {formatCurrency(group.price)})
+                          </Text>
+                          <Text type="secondary" className="text-xs">
+                            {formatCurrency(group.total)}
+                          </Text>
+                        </div>
+                      ))}
 
                       <div className="flex justify-between">
                         <div>
@@ -353,6 +394,16 @@ const OrderHistory = () => {
     setShowQRModal(true)
   }, [])
 
+  const selectedBookingSeatPricing = useMemo(
+    () => getBookingSeatPricing(selectedBooking),
+    [selectedBooking],
+  )
+  const selectedBookingSeatSummary = useMemo(() => (
+    selectedBookingSeatPricing
+      .map((seat) => `${seat.seatNumber} ${seat.seatTypeLabel} (${formatCurrency(seat.price)})`)
+      .join(", ")
+  ), [formatCurrency, selectedBookingSeatPricing])
+
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto mt-6 px-4">
@@ -398,6 +449,11 @@ const OrderHistory = () => {
               <Text type="secondary" className="block">
                 {selectedBooking.theatreName}
               </Text>
+              {getBookingScreenDisplayName(selectedBooking) && (
+                <Text type="secondary" className="block">
+                  {getBookingScreenDisplayName(selectedBooking)}
+                </Text>
+              )}
               <Text type="secondary" className="block">
                 {formatDate(selectedBooking.showDate, "EEE, dd MMM, yyyy")} | {" "}
                 {formatParsedTime(selectedBooking.showTime)}
@@ -415,12 +471,14 @@ const OrderHistory = () => {
 
             <div className="bg-gray-50 p-3 rounded-lg">
               <Text className="text-xs text-gray-500 block">SEATS</Text>
-              <Text className="text-sm font-medium">{selectedBooking.seatType?.toUpperCase()} - {selectedBooking.seats?.join(", ")}</Text>
+              <Text className="text-sm font-medium">
+                {selectedBookingSeatSummary || selectedBooking.seats?.join(", ")}
+              </Text>
             </div>
 
             <div className="bg-gray-50 p-3 rounded-lg">
               <Text className="text-xs text-gray-500 block">AMOUNT PAID</Text>
-              <Text className="text-sm font-medium">{`₹${Number((selectedBooking.ticketPrice * (selectedBooking.seats?.length || 0)) + (selectedBooking.convenienceFee || 0)).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`}</Text>
+              <Text className="text-sm font-medium">{formatCurrency(getBookingPaidTotal(selectedBooking))}</Text>
             </div>
 
             <Text type="secondary" className="text-xs block">
@@ -434,5 +492,3 @@ const OrderHistory = () => {
 }
 
 export default OrderHistory
-
-

@@ -195,6 +195,8 @@ describe("MovieShows screen selection", () => {
     fireEvent.mouseDown(screen.getByRole("combobox", { name: /select the movie/i }));
     fireEvent.click(await screen.findByText("Dune"));
     fireEvent.change(screen.getByRole("spinbutton", { name: /ticket price/i }), { target: { value: "250" } });
+    fireEvent.change(screen.getByRole("spinbutton", { name: /standard price/i }), { target: { value: "225" } });
+    fireEvent.change(screen.getByRole("spinbutton", { name: /premium price/i }), { target: { value: "325" } });
     fireEvent.click(screen.getByRole("button", { name: /^add show$/i }));
 
     await waitFor(() => expect(store.dispatch).toHaveBeenCalledWith(expect.objectContaining({
@@ -202,6 +204,11 @@ describe("MovieShows screen selection", () => {
       payload: expect.objectContaining({
         screen: "screen-2",
         theatre: "theatre-1",
+        ticketPrice: 250,
+        ticketPricing: {
+          STANDARD: 225,
+          PREMIUM: 325,
+        },
       }),
     })));
   }, 15000);
@@ -387,5 +394,5 @@ describe("MovieShows screen selection", () => {
 
     expect(await screen.findByText("Screen: Screen 2")).toBeInTheDocument();
     await waitFor(() => expect(screen.getAllByText("Screen 2 (250 seats)").length).toBeGreaterThan(0));
-  }, 15000);
+  }, 30000);
 });

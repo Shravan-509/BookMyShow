@@ -26,11 +26,21 @@ vi.mock("../../../utils/notificationUtils", () => ({
 const show = {
   _id: "show-1",
   ticketPrice: 200,
+  ticketPricing: {
+    STANDARD: 200,
+    PREMIUM: 300,
+  },
   movie: { _id: "movie-1", movieName: "Dune" },
   theatre: { name: "PVR Forum" },
+  screen: { name: "Screen 2", screenNumber: 2 },
   date: "2026-08-17",
   time: "18:00",
 };
+
+const showSeats = [
+  { seatNumber: "A1", seatType: "STANDARD" },
+  { seatNumber: "A2", seatType: "PREMIUM" },
+];
 
 const authState = {
   auth: {
@@ -68,14 +78,17 @@ describe("PaymentSummary checkout flow", () => {
 
   test("displays deterministic checkout pricing and convenience fee", () => {
     renderWithProviders(
-      <PaymentSummary show={show} seats={["A1", "A2"]} handlePreviousStep={vi.fn()} />,
+      <PaymentSummary show={show} seats={["A1", "A2"]} showSeats={showSeats} handlePreviousStep={vi.fn()} />,
       { preloadedState: authState },
     );
 
-    expect(screen.getByText("Ticket Price (2 × ₹200)")).toBeInTheDocument();
-    expect(screen.getAllByText("₹400.00").length).toBeGreaterThan(0);
+    expect(screen.getByText("Ticket Amount")).toBeInTheDocument();
+    expect(screen.getByText("Standard (1 × ₹200.00)")).toBeInTheDocument();
+    expect(screen.getByText("Premium (1 × ₹300.00)")).toBeInTheDocument();
+    expect(screen.getByText("Screen 2")).toBeInTheDocument();
+    expect(screen.getAllByText("₹500.00").length).toBeGreaterThan(0);
     expect(screen.getAllByText("₹35.40").length).toBeGreaterThan(0);
-    expect(screen.getByRole("button", { name: /pay ₹435.40 using upi/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /pay ₹535.40 using upi/i })).toBeInTheDocument();
   });
 
   test("requests seat validation and Razorpay order with expected payload", async () => {
@@ -83,12 +96,12 @@ describe("PaymentSummary checkout flow", () => {
     const originalDispatch = store.dispatch;
     store.dispatch = vi.fn(originalDispatch);
     renderWithProviders(
-      <PaymentSummary show={show} seats={["A1", "A2"]} handlePreviousStep={vi.fn()} />,
+      <PaymentSummary show={show} seats={["A1", "A2"]} showSeats={showSeats} handlePreviousStep={vi.fn()} />,
       { store },
     );
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole("button", { name: /pay ₹435.40 using upi/i }));
+    await user.click(screen.getByRole("button", { name: /pay ₹535.40 using upi/i }));
 
     expect(store.dispatch).toHaveBeenCalledWith(expect.objectContaining({
       type: "booking/validateSeatBookingRequest",
@@ -109,12 +122,12 @@ describe("PaymentSummary checkout flow", () => {
 
   test("successful booking navigates to purchase history", async () => {
     const { store } = renderWithProviders(
-      <PaymentSummary show={show} seats={["A1", "A2"]} handlePreviousStep={vi.fn()} />,
+      <PaymentSummary show={show} seats={["A1", "A2"]} showSeats={showSeats} handlePreviousStep={vi.fn()} />,
       { preloadedState: authState },
     );
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole("button", { name: /pay ₹435.40 using upi/i }));
+    await user.click(screen.getByRole("button", { name: /pay ₹535.40 using upi/i }));
 
     act(() => {
       store.dispatch(validateSeatBookingSuccess({ success: true, data: {} }));
@@ -127,7 +140,7 @@ describe("PaymentSummary checkout flow", () => {
     act(() => {
       store.dispatch(createRazorpayOrderSuccess({
         id: "order_1",
-        amount: 43540,
+        amount: 53540,
         receipt: "receipt_1",
         convenienceFee: 35.4,
       }));
@@ -148,12 +161,12 @@ describe("PaymentSummary checkout flow", () => {
 
   test("booking failure after payment displays support-oriented error", async () => {
     const { store } = renderWithProviders(
-      <PaymentSummary show={show} seats={["A1", "A2"]} handlePreviousStep={vi.fn()} />,
+      <PaymentSummary show={show} seats={["A1", "A2"]} showSeats={showSeats} handlePreviousStep={vi.fn()} />,
       { preloadedState: authState },
     );
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole("button", { name: /pay ₹435.40 using upi/i }));
+    await user.click(screen.getByRole("button", { name: /pay ₹535.40 using upi/i }));
 
     act(() => {
       store.dispatch(validateSeatBookingSuccess({ success: true, data: {} }));
@@ -166,7 +179,7 @@ describe("PaymentSummary checkout flow", () => {
     act(() => {
       store.dispatch(createRazorpayOrderSuccess({
         id: "order_1",
-        amount: 43540,
+        amount: 53540,
         receipt: "receipt_1",
       }));
     });
