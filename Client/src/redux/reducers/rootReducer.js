@@ -13,6 +13,7 @@ import bookingReducer from "../slices/bookingSlice"
 import cityReducer from "../slices/citySlice"
 import screenReducer from "../slices/screenSlice"
 import seatReducer from "../slices/seatSlice"
+import showSeatReducer from "../slices/showSeatSlice"
 
 const appReducer = combineReducers({
    loader: loaderReducer,
@@ -28,7 +29,8 @@ const appReducer = combineReducers({
     booking: bookingReducer,
     city: cityReducer,
     screen: screenReducer,
-    seat: seatReducer
+    seat: seatReducer,
+    showSeat: showSeatReducer
 });
 
 const rootReducer = (state, action) => {

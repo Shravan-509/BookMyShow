@@ -1,12 +1,14 @@
 import { useMemo } from "react"
 import { Button, Card, Space, Tag, Typography } from "antd"
 import { StarOutlined, EyeOutlined } from "@ant-design/icons"
+import { groupPhysicalSeatsByRow } from "./seatLayoutUtils"
 
 const { Text, Title } = Typography
 
 const SeatRecommendation = ({ 
     totalSeats, 
     bookedSeats = [], 
+    availableSeats = [],
     selectedSeats = [], 
     onSeatSelect, 
     groupSize = 1, 
@@ -35,6 +37,55 @@ const SeatRecommendation = ({
     }
 
     const recommendations = useMemo(() => {
+        if (availableSeats.length > 0) {
+            const physicalRows = groupPhysicalSeatsByRow(availableSeats)
+            const totalRows = physicalRows.length
+            const optimalRowIndex = Math.floor(totalRows * 0.4)
+            const recommendations = []
+
+            physicalRows.forEach((row, rowIndex) => {
+                const rowSeats = row.cells
+                    .filter((cell) => cell.type === "seat")
+                    .map((cell) => cell.seat)
+
+                for (let startIndex = 0; startIndex <= rowSeats.length - groupSize; startIndex += 1) {
+                    const seatGroup = rowSeats.slice(startIndex, startIndex + groupSize)
+                    const isConsecutive = seatGroup.every((seat, index) => (
+                        index === 0 || seat.column === seatGroup[index - 1].column + 1
+                    ))
+
+                    if (!isConsecutive) {
+                        continue
+                    }
+
+                    const firstColumn = seatGroup[0].column
+                    const lastColumn = seatGroup[seatGroup.length - 1].column
+                    const centerColumn = rowSeats[Math.floor(rowSeats.length / 2)]?.column || firstColumn
+                    const rowDistance = Math.abs(rowIndex - optimalRowIndex)
+                    const colDistance = Math.abs((firstColumn + lastColumn) / 2 - centerColumn)
+                    let score = Math.max(0, 100 - (rowDistance * 10 + colDistance * 5))
+
+                    if (preferences.preferCenter && colDistance < 3) score += 20
+                    if (preferences.preferBack && rowIndex > totalRows * 0.6) score += 15
+                    if (preferences.preferAisle && (startIndex === 0 || startIndex + groupSize === rowSeats.length)) score += 10
+
+                    recommendations.push({
+                        seats: seatGroup.map((seat) => ({
+                            seatId: seat.seatNumber,
+                            rowLabel: seat.row,
+                            seatNumber: seat.column,
+                            rowIndex,
+                            seatIndex: startIndex,
+                        })),
+                        score,
+                        reason: getRecommendationReason(rowIndex, firstColumn, groupSize, totalRows, rowSeats.length),
+                    })
+                }
+            })
+
+            return recommendations.sort((a, b) => b.score - a.score).slice(0, 3)
+        }
+
         if (!totalSeats || totalSeats === 0) return []
 
         const seatsPerRow = 15;
@@ -105,7 +156,7 @@ const SeatRecommendation = ({
 
         // Sort by score and return top 3
         return recommendations.sort((a, b) => b.score - a.score).slice(0, 3)
-    }, [totalSeats, bookedSeats, groupSize, preferences])
+    }, [availableSeats, totalSeats, bookedSeats, groupSize, preferences])
 
     const selectedRecommendation = useMemo(() => 
     {
