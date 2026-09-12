@@ -139,6 +139,49 @@ describe("Show screen association", () => {
     expect(res.send).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
   });
 
+  test("Show creation persists valid ticketPricing without changing legacy payload compatibility", async () => {
+    const { controller, Show } = loadController();
+    const res = createMockResponse();
+
+    await controller.addShow(request({
+      ...showPayload,
+      ticketPricing: {
+        STANDARD: 150,
+        PREMIUM: 220,
+        RECLINER: 320,
+      },
+    }), res, jest.fn());
+
+    expect(Show.lastPayload).toEqual(expect.objectContaining({
+      ticketPrice: 200,
+      ticketPricing: {
+        STANDARD: 150,
+        PREMIUM: 220,
+        RECLINER: 320,
+      },
+    }));
+    expect(res.send).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+  });
+
+  test("invalid ticketPricing rejects Show creation", async () => {
+    const { controller, Show } = loadController();
+    const res = createMockResponse();
+    const next = jest.fn();
+
+    await controller.addShow(request({
+      ...showPayload,
+      ticketPricing: {
+        STANDARD: 0,
+      },
+    }), res, next);
+
+    expect(Show.lastPayload).toBeUndefined();
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({
+      statusCode: 400,
+      code: "INVALID_TICKET_PRICING",
+    }));
+  });
+
   test("Show creation accepts valid Screen and initializes ShowSeat inventory transactionally", async () => {
     const { controller, Show, screenService, showSeatService, mongooseMock, session } = loadController();
     const res = createMockResponse();
@@ -329,6 +372,73 @@ describe("Show screen association", () => {
       expect.objectContaining({ ticketPrice: 225 }),
       expect.any(Object)
     );
+  });
+
+  test("valid ticketPricing update succeeds", async () => {
+    const { controller, Show } = loadController();
+    const res = createMockResponse();
+    Show.findById.mockReturnValue(selectQuery({ _id: "show-1", theatre: THEATRE_ID, screen: SCREEN_ID }));
+    Show.findByIdAndUpdate.mockReturnValue(populateQuery({
+      _id: "show-1",
+      ...showPayload,
+      ticketPricing: {
+        STANDARD: 175,
+        PREMIUM: 250,
+      },
+      screen: SCREEN_ID,
+    }));
+
+    await controller.updateShow(
+      {
+        ...request({
+          ticketPricing: {
+            STANDARD: 175,
+            PREMIUM: 250,
+          },
+        }),
+        params: { id: "show-1" },
+      },
+      res,
+      jest.fn()
+    );
+
+    expect(Show.findByIdAndUpdate).toHaveBeenCalledWith(
+      "show-1",
+      expect.objectContaining({
+        ticketPricing: {
+          STANDARD: 175,
+          PREMIUM: 250,
+        },
+      }),
+      expect.any(Object)
+    );
+    expect(res.send).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+  });
+
+  test("invalid ticketPricing update is rejected", async () => {
+    const { controller, Show } = loadController();
+    const res = createMockResponse();
+    const next = jest.fn();
+    Show.findById.mockReturnValue(selectQuery({ _id: "show-1", theatre: THEATRE_ID, screen: SCREEN_ID }));
+
+    await controller.updateShow(
+      {
+        ...request({
+          ticketPricing: {
+            PREMIUM: -10,
+          },
+        }),
+        params: { id: "show-1" },
+      },
+      res,
+      next
+    );
+
+    expect(Show.findByIdAndUpdate).not.toHaveBeenCalled();
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({
+      statusCode: 400,
+      code: "INVALID_TICKET_PRICING",
+    }));
   });
 
   test("hard-deleting an initialized Show deletes ShowSeats in the same transaction", async () => {

@@ -4,9 +4,17 @@ const SEAT_A1_ID = "64b7f4f3f4f3f4f3f4f3f403";
 const SEAT_A2_ID = "64b7f4f3f4f3f4f3f4f3f404";
 const SEAT_B1_ID = "64b7f4f3f4f3f4f3f4f3f405";
 
+const showFindByIdQuery = (value) => ({
+    select: jest.fn().mockReturnThis(),
+    populate: jest.fn().mockResolvedValue(value),
+});
+
 const loadService = () => {
     jest.resetModules();
 
+    const Show = {
+        findById: jest.fn(),
+    };
     const screenRepository = {
         findById: jest.fn(),
     };
@@ -15,14 +23,17 @@ const loadService = () => {
     };
     const showSeatRepository = {
         countByShow: jest.fn(),
+        findAvailabilityByShow: jest.fn(),
         insertMany: jest.fn(),
     };
 
+    jest.doMock("../../models/showSchema", () => Show);
     jest.doMock("../../repositories/screenRepository", () => screenRepository);
     jest.doMock("../../repositories/seatRepository", () => seatRepository);
     jest.doMock("../../repositories/showSeatRepository", () => showSeatRepository);
 
     return {
+        Show,
         screenRepository,
         seatRepository,
         showSeatRepository,
@@ -39,8 +50,16 @@ const show = (overrides = {}) => ({
 
 const screen = (overrides = {}) => ({
     _id: SCREEN_ID,
+    name: "Screen 1",
+    screenNumber: 1,
     capacity: 3,
     isActive: true,
+    ...overrides,
+});
+
+const populatedShow = (overrides = {}) => show({
+    totalSeats: 3,
+    screen: screen(),
     ...overrides,
 });
 
@@ -60,6 +79,25 @@ const completeSeats = () => [
     seat({ _id: SEAT_A2_ID, seatNumber: "A2", row: "A", column: 2, seatType: "PREMIUM" }),
     seat({ _id: SEAT_A1_ID, seatNumber: "A1", row: "A", column: 1, seatType: "STANDARD" }),
 ];
+
+const showSeat = (overrides = {}) => ({
+    _id: "64b7f4f3f4f3f4f3f4f3f501",
+    seat: SEAT_A1_ID,
+    seatNumber: "A1",
+    row: "A",
+    column: 1,
+    seatType: "STANDARD",
+    status: "AVAILABLE",
+    booking: "booking-should-not-leak",
+    bookedAt: new Date("2026-09-11T10:00:00Z"),
+    user: "user-should-not-leak",
+    transactionId: "pay-should-not-leak",
+    orderId: "order-should-not-leak",
+    __v: 0,
+    createdAt: new Date("2026-09-11T10:00:00Z"),
+    updatedAt: new Date("2026-09-11T10:00:00Z"),
+    ...overrides,
+});
 
 const setupReadyAudit = ({ service, screenRepository, seatRepository, showSeatRepository }, overrides = {}) => {
     screenRepository.findById.mockResolvedValue(overrides.screen || screen());
@@ -383,5 +421,163 @@ describe("showSeatService", () => {
 
         expect(result.classification).toBe(service.SHOW_SEAT_AUDIT_CLASSIFICATION.OTHER_ERROR);
         expect(result.warnings).toContain("read failed");
+    });
+
+    test("returns initialized customer availability with safe metadata and statuses", async () => {
+        const { service, Show, showSeatRepository } = loadService();
+        Show.findById.mockReturnValue(showFindByIdQuery(populatedShow()));
+        showSeatRepository.findAvailabilityByShow.mockResolvedValue([
+            showSeat({ _id: "showseat-a1", seatNumber: "A1", row: "A", column: 1, status: "AVAILABLE" }),
+            showSeat({ _id: "showseat-a2", seat: SEAT_A2_ID, seatNumber: "A2", row: "A", column: 2, status: "BOOKED" }),
+            showSeat({ _id: "showseat-b1", seat: SEAT_B1_ID, seatNumber: "B1", row: "B", column: 1, status: "AVAILABLE" }),
+        ]);
+
+        const result = await service.getShowSeatAvailability(SHOW_ID);
+
+        expect(result).toEqual({
+            showId: SHOW_ID,
+            screenId: SCREEN_ID,
+            screenName: "Screen 1",
+            screenNumber: 1,
+            capacity: 3,
+            layoutStatus: "INITIALIZED",
+            seats: [
+                {
+                    showSeatId: "showseat-a1",
+                    seatId: SEAT_A1_ID,
+                    seatNumber: "A1",
+                    row: "A",
+                    column: 1,
+                    seatType: "STANDARD",
+                    status: "AVAILABLE",
+                },
+                {
+                    showSeatId: "showseat-a2",
+                    seatId: SEAT_A2_ID,
+                    seatNumber: "A2",
+                    row: "A",
+                    column: 2,
+                    seatType: "STANDARD",
+                    status: "BOOKED",
+                },
+                {
+                    showSeatId: "showseat-b1",
+                    seatId: SEAT_B1_ID,
+                    seatNumber: "B1",
+                    row: "B",
+                    column: 1,
+                    seatType: "STANDARD",
+                    status: "AVAILABLE",
+                },
+            ],
+        });
+        expect(result.seats[0]).not.toHaveProperty("booking");
+        expect(result.seats[0]).not.toHaveProperty("bookedAt");
+        expect(result.seats[0]).not.toHaveProperty("user");
+        expect(result.seats[0]).not.toHaveProperty("transactionId");
+        expect(result.seats[0]).not.toHaveProperty("orderId");
+        expect(result.seats[0]).not.toHaveProperty("__v");
+        expect(result.seats[0]).not.toHaveProperty("createdAt");
+        expect(result.seats[0]).not.toHaveProperty("updatedAt");
+    });
+
+    test("sorts availability by spreadsheet-style row order, column, and seatNumber", async () => {
+        const { service, Show, showSeatRepository } = loadService();
+        Show.findById.mockReturnValue(showFindByIdQuery(populatedShow({
+            screen: screen({ capacity: 5 }),
+        })));
+        showSeatRepository.findAvailabilityByShow.mockResolvedValue([
+            showSeat({ _id: "s-aa2", seatNumber: "AA2", row: "AA", column: 2 }),
+            showSeat({ _id: "s-z1", seatNumber: "Z1", row: "Z", column: 1 }),
+            showSeat({ _id: "s-a2", seatNumber: "A2", row: "A", column: 2 }),
+            showSeat({ _id: "s-a1", seatNumber: "A1", row: "A", column: 1 }),
+            showSeat({ _id: "s-aa1", seatNumber: "AA1", row: "AA", column: 1 }),
+        ]);
+
+        const result = await service.getShowSeatAvailability(SHOW_ID);
+
+        expect(result.seats.map((seat) => seat.seatNumber)).toEqual(["A1", "A2", "Z1", "AA1", "AA2"]);
+    });
+
+    test("rejects malformed Show id", async () => {
+        const { service, Show, showSeatRepository } = loadService();
+
+        await expect(service.getShowSeatAvailability("bad-id")).rejects.toMatchObject({
+            statusCode: 400,
+            code: "INVALID_SHOW_ID",
+        });
+
+        expect(Show.findById).not.toHaveBeenCalled();
+        expect(showSeatRepository.findAvailabilityByShow).not.toHaveBeenCalled();
+    });
+
+    test("returns 404 when Show does not exist", async () => {
+        const { service, Show, showSeatRepository } = loadService();
+        Show.findById.mockReturnValue(showFindByIdQuery(null));
+
+        await expect(service.getShowSeatAvailability(SHOW_ID)).rejects.toMatchObject({
+            statusCode: 404,
+            code: "SHOW_NOT_FOUND",
+        });
+
+        expect(showSeatRepository.findAvailabilityByShow).not.toHaveBeenCalled();
+    });
+
+    test("returns legacy compatibility response for no-screen Show without inventory", async () => {
+        const { service, Show, showSeatRepository } = loadService();
+        Show.findById.mockReturnValue(showFindByIdQuery(show({
+            screen: null,
+            totalSeats: 150,
+        })));
+
+        const result = await service.getShowSeatAvailability(SHOW_ID);
+
+        expect(result).toEqual({
+            showId: SHOW_ID,
+            screenId: null,
+            screenName: null,
+            screenNumber: null,
+            capacity: 150,
+            layoutStatus: "LEGACY",
+            seats: [],
+        });
+        expect(showSeatRepository.findAvailabilityByShow).not.toHaveBeenCalled();
+    });
+
+    test("rejects partial inventory instead of returning an initialized layout", async () => {
+        const { service, Show, showSeatRepository } = loadService();
+        Show.findById.mockReturnValue(showFindByIdQuery(populatedShow()));
+        showSeatRepository.findAvailabilityByShow.mockResolvedValue([
+            showSeat({ seatNumber: "A1", row: "A", column: 1 }),
+            showSeat({ seatNumber: "A2", row: "A", column: 2 }),
+        ]);
+
+        await expect(service.getShowSeatAvailability(SHOW_ID)).rejects.toMatchObject({
+            statusCode: 409,
+            code: "SHOWSEAT_INVENTORY_NOT_READY",
+        });
+    });
+
+    test("returns 1500 seats with one Show query and one ShowSeat query", async () => {
+        const { service, Show, showSeatRepository } = loadService();
+        Show.findById.mockReturnValue(showFindByIdQuery(populatedShow({
+            screen: screen({ capacity: 1500 }),
+        })));
+        showSeatRepository.findAvailabilityByShow.mockResolvedValue(
+            Array.from({ length: 1500 }, (_, index) => showSeat({
+                _id: `showseat-${index + 1}`,
+                seat: `seat-${index + 1}`,
+                seatNumber: `A${index + 1}`,
+                row: "A",
+                column: index + 1,
+            }))
+        );
+
+        const result = await service.getShowSeatAvailability(SHOW_ID);
+
+        expect(result.seats).toHaveLength(1500);
+        expect(Show.findById).toHaveBeenCalledTimes(1);
+        expect(showSeatRepository.findAvailabilityByShow).toHaveBeenCalledTimes(1);
+        expect(showSeatRepository.insertMany).not.toHaveBeenCalled();
     });
 });

@@ -3,6 +3,7 @@ const Show = require("../models/showSchema");
 const Theatre = require("../models/theatreSchema");
 const screenService = require("../services/screenService");
 const showSeatService = require("../services/showSeatService");
+const showPricingService = require("../services/showPricingService");
 const showSeatRepository = require("../repositories/showSeatRepository");
 const AppError = require("../utils/AppError");
 
@@ -67,6 +68,15 @@ const buildShowPayload = async (req, existingShow = {}, options = {}) => {
         ...req.body,
         theatre: targetTheatre,
     };
+
+    if (Object.prototype.hasOwnProperty.call(req.body, "ticketPricing")) {
+        const ticketPricing = showPricingService.validateTicketPricing(req.body.ticketPricing);
+        if (ticketPricing) {
+            showPayload.ticketPricing = ticketPricing;
+        } else {
+            delete showPayload.ticketPricing;
+        }
+    }
 
     if (Object.prototype.hasOwnProperty.call(req.body, "screen")) {
         if (req.body.screen) {

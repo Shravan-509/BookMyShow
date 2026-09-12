@@ -1,7 +1,10 @@
+const mongoose = require("mongoose");
 const screenRepository = require("../repositories/screenRepository");
 const seatRepository = require("../repositories/seatRepository");
 const showSeatRepository = require("../repositories/showSeatRepository");
+const Show = require("../models/showSchema");
 const ShowSeat = require("../models/showSeatSchema");
+const AppError = require("../utils/AppError");
 
 const { SHOW_SEAT_STATUS } = ShowSeat;
 
@@ -16,6 +19,18 @@ const SHOW_SEAT_AUDIT_CLASSIFICATION = Object.freeze({
     OTHER_ERROR: "OTHER_ERROR",
 });
 
+const SHOW_SEAT_LAYOUT_STATUS = Object.freeze({
+    INITIALIZED: "INITIALIZED",
+    LEGACY: "LEGACY",
+});
+
+const BOOKING_SEAT_VALIDATION_MODE = Object.freeze({
+    INITIALIZED: "INITIALIZED",
+    LEGACY: "LEGACY",
+});
+
+const SHOW_SEAT_RESPONSE_STATUSES = new Set(Object.values(SHOW_SEAT_STATUS));
+
 const normalizeSeatLabel = (value) => (
     typeof value === "string" ? value.trim().toUpperCase() : ""
 );
@@ -27,6 +42,23 @@ const asIdString = (value) => {
 
     const id = value._id || value;
     return id.toString();
+};
+
+const ensureValidObjectId = (id, code = "INVALID_SHOW_ID") => {
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+        throw new AppError("Invalid show identifier", 400, code);
+    }
+};
+
+const rowLabelToNumber = (row) => {
+    const label = normalizeSeatLabel(row);
+    if (!/^[A-Z]+$/.test(label)) {
+        return Number.MAX_SAFE_INTEGER;
+    }
+
+    return [...label].reduce((total, char) => (
+        total * 26 + char.charCodeAt(0) - 64
+    ), 0);
 };
 
 const createBaseResult = (show) => ({
@@ -46,7 +78,10 @@ const createBaseResult = (show) => ({
 });
 
 const sortSeats = (seats) => [...seats].sort((left, right) => {
-    const rowComparison = String(left.row).localeCompare(String(right.row));
+    const leftRowOrder = rowLabelToNumber(left.row);
+    const rightRowOrder = rowLabelToNumber(right.row);
+    const rowComparison = leftRowOrder - rightRowOrder
+        || String(left.row).localeCompare(String(right.row));
     if (rowComparison !== 0) {
         return rowComparison;
     }
@@ -58,6 +93,30 @@ const sortSeats = (seats) => [...seats].sort((left, right) => {
     return String(left.seatNumber).localeCompare(String(right.seatNumber));
 });
 
+const sanitizeShowSeatForAvailability = (showSeat) => ({
+    showSeatId: asIdString(showSeat),
+    seatId: asIdString(showSeat.seat),
+    seatNumber: showSeat.seatNumber,
+    row: showSeat.row,
+    column: showSeat.column,
+    seatType: showSeat.seatType,
+    status: SHOW_SEAT_RESPONSE_STATUSES.has(showSeat.status)
+        ? showSeat.status
+        : SHOW_SEAT_STATUS.AVAILABLE,
+});
+
+const getScreenLabel = (screen) => {
+    if (!screen) {
+        return null;
+    }
+
+    if (screen.name) {
+        return screen.name;
+    }
+
+    return screen.screenNumber ? `Screen ${screen.screenNumber}` : null;
+};
+
 const indexSeatsByLabel = (seats) => seats.reduce((index, seat) => {
     const label = normalizeSeatLabel(seat.seatNumber);
     if (label) {
@@ -65,6 +124,160 @@ const indexSeatsByLabel = (seats) => seats.reduce((index, seat) => {
     }
     return index;
 }, new Map());
+
+const createSeatConflictError = ({
+    unavailableSeats,
+    availableSeats,
+    allBookedSeats,
+    message = "Some seats were already booked. Please choose different seats.",
+    code = "SEAT_ALREADY_BOOKED",
+}) => {
+    const error = new AppError(message, 409, code);
+    error.details = {
+        availableSeats,
+        unavailableSeats,
+        allBookedSeats,
+    };
+    return error;
+};
+
+const normalizeSeatSelection = (seats) => {
+    if (!Array.isArray(seats) || seats.length === 0) {
+        throw new AppError("Seats array is required", 400, "INVALID_SEAT_SELECTION");
+    }
+
+    const normalizedSeats = seats.map(normalizeSeatLabel);
+
+    if (
+        normalizedSeats.some((seat) => !seat || seat.length > 20)
+        || seats.some((seat) => typeof seat !== "string")
+    ) {
+        throw new AppError("Seats array is required", 400, "INVALID_SEAT_SELECTION");
+    }
+
+    if (new Set(normalizedSeats).size !== normalizedSeats.length) {
+        throw new AppError("Duplicate seats are not allowed", 400, "DUPLICATE_SEAT_SELECTION");
+    }
+
+    return normalizedSeats;
+};
+
+const getNormalizedBookedSeats = (show) => (
+    Array.isArray(show?.bookedSeats)
+        ? show.bookedSeats.map(normalizeSeatLabel).filter(Boolean)
+        : []
+);
+
+const getShowSeatCapacity = (show) => Number(show?.screen?.capacity ?? show?.totalSeats ?? 0);
+
+const resolveBookingSeatValidationMode = async (show, options = {}) => {
+    if (!show?.screen) {
+        return {
+            mode: BOOKING_SEAT_VALIDATION_MODE.LEGACY,
+            capacity: Number(show?.totalSeats || 0),
+        };
+    }
+
+    const capacity = getShowSeatCapacity(show);
+    const showSeatCount = await showSeatRepository.countByShow(show._id, options);
+
+    if (showSeatCount !== capacity) {
+        throw new AppError(
+            "ShowSeat inventory is not ready for this show",
+            409,
+            "SHOWSEAT_INVENTORY_NOT_READY"
+        );
+    }
+
+    return {
+        mode: BOOKING_SEAT_VALIDATION_MODE.INITIALIZED,
+        capacity,
+    };
+};
+
+const validateBookingSeatSelection = async (show, seats, options = {}) => {
+    const normalizedSeats = normalizeSeatSelection(seats);
+    const bookedSeatLabels = getNormalizedBookedSeats(show);
+    const bookedSeatSet = new Set(bookedSeatLabels);
+    const legacyUnavailableSeats = normalizedSeats.filter((seat) => bookedSeatSet.has(seat));
+    const validationMode = await resolveBookingSeatValidationMode(show, options);
+
+    if (validationMode.mode === BOOKING_SEAT_VALIDATION_MODE.LEGACY) {
+        if (legacyUnavailableSeats.length > 0) {
+            throw createSeatConflictError({
+                unavailableSeats: legacyUnavailableSeats,
+                availableSeats: normalizedSeats.filter((seat) => !bookedSeatSet.has(seat)),
+                allBookedSeats: bookedSeatLabels,
+                message: `Seats ${legacyUnavailableSeats.join(", ")} are no longer available`,
+            });
+        }
+
+        return {
+            mode: validationMode.mode,
+            seats: normalizedSeats,
+            availableSeats: normalizedSeats,
+            unavailableSeats: [],
+            allBookedSeats: bookedSeatLabels,
+        };
+    }
+
+    const showSeats = await showSeatRepository.findByShowAndSeatNumbers(show._id, normalizedSeats, options);
+    const showSeatsByLabel = indexSeatsByLabel(showSeats);
+    const missingSeats = normalizedSeats.filter((seat) => !showSeatsByLabel.has(seat));
+
+    if (missingSeats.length > 0 || showSeats.length !== normalizedSeats.length) {
+        throw createSeatConflictError({
+            unavailableSeats: missingSeats,
+            availableSeats: normalizedSeats.filter((seat) => !missingSeats.includes(seat)),
+            allBookedSeats: bookedSeatLabels,
+            message: "Selected seats are not available for this show",
+            code: "SHOWSEAT_SEAT_NOT_FOUND",
+        });
+    }
+
+    const showSeatUnavailableSeats = normalizedSeats.filter((seat) => (
+        showSeatsByLabel.get(seat)?.status !== SHOW_SEAT_STATUS.AVAILABLE
+    ));
+    const unavailableSeats = [...new Set([...legacyUnavailableSeats, ...showSeatUnavailableSeats])];
+
+    if (unavailableSeats.length > 0) {
+        throw createSeatConflictError({
+            unavailableSeats,
+            availableSeats: normalizedSeats.filter((seat) => !unavailableSeats.includes(seat)),
+            allBookedSeats: bookedSeatLabels,
+        });
+    }
+
+    return {
+        mode: validationMode.mode,
+        seats: normalizedSeats,
+        showSeats,
+        availableSeats: normalizedSeats,
+        unavailableSeats: [],
+        allBookedSeats: bookedSeatLabels,
+    };
+};
+
+const markSeatsBookedForBooking = async ({ showId, seatNumbers, bookingId, bookedAt }, options = {}) => {
+    const result = await showSeatRepository.markSeatsBooked({
+        showId,
+        seatNumbers,
+        bookingId,
+        bookedAt,
+    }, options);
+
+    const modifiedCount = result.modifiedCount ?? result.nModified ?? 0;
+
+    if (modifiedCount !== seatNumbers.length) {
+        throw createSeatConflictError({
+            unavailableSeats: seatNumbers,
+            availableSeats: [],
+            allBookedSeats: [],
+        });
+    }
+
+    return result;
+};
 
 const classifyLegacyBookedSeats = ({ bookedSeats = [], activeSeats, inactiveSeats }) => {
     const activeByLabel = indexSeatsByLabel(activeSeats);
@@ -294,10 +507,61 @@ const initializeShowSeats = async (show, options = {}) => {
     };
 };
 
+const getShowSeatAvailability = async (showId) => {
+    ensureValidObjectId(showId);
+
+    const show = await Show.findById(showId)
+        .select("_id screen totalSeats")
+        .populate("screen", "name screenNumber capacity theatre isActive");
+
+    if (!show) {
+        throw new AppError("Show not found", 404, "SHOW_NOT_FOUND");
+    }
+
+    if (!show.screen) {
+        return {
+            showId: asIdString(show),
+            screenId: null,
+            screenName: null,
+            screenNumber: null,
+            capacity: show.totalSeats || 0,
+            layoutStatus: SHOW_SEAT_LAYOUT_STATUS.LEGACY,
+            seats: [],
+        };
+    }
+
+    const capacity = Number(show.screen.capacity ?? show.totalSeats ?? 0);
+    const showSeats = await showSeatRepository.findAvailabilityByShow(show._id);
+
+    if (showSeats.length !== capacity) {
+        throw new AppError(
+            "ShowSeat inventory is not ready for this show",
+            409,
+            "SHOWSEAT_INVENTORY_NOT_READY"
+        );
+    }
+
+    return {
+        showId: asIdString(show),
+        screenId: asIdString(show.screen),
+        screenName: getScreenLabel(show.screen),
+        screenNumber: show.screen.screenNumber ?? null,
+        capacity,
+        layoutStatus: SHOW_SEAT_LAYOUT_STATUS.INITIALIZED,
+        seats: sortSeats(showSeats).map(sanitizeShowSeatForAvailability),
+    };
+};
+
 module.exports = {
+    BOOKING_SEAT_VALIDATION_MODE,
     SHOW_SEAT_AUDIT_CLASSIFICATION,
+    SHOW_SEAT_LAYOUT_STATUS,
     auditShowSeatInitialization,
     buildShowSeatPayloads,
+    getShowSeatAvailability,
     initializeShowSeats,
+    markSeatsBookedForBooking,
     normalizeSeatLabel,
+    normalizeSeatSelection,
+    validateBookingSeatSelection,
 };

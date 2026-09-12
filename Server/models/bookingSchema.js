@@ -1,4 +1,14 @@
 const mongoose = require("mongoose");
+const Seat = require("./seatSchema");
+
+const { SEAT_TYPES } = Seat;
+
+const positivePriceValidator = {
+    validator(value) {
+        return value === undefined || (Number.isFinite(value) && value >= 0);
+    },
+    message: "{PATH} must be a non-negative number",
+};
 
 const bookingSchema = new mongoose.Schema(
     {
@@ -45,6 +55,34 @@ const bookingSchema = new mongoose.Schema(
         amount: {
             type: Number,
             required: true
+        },
+        ticketAmount: {
+            type: Number,
+            validate: positivePriceValidator,
+        },
+        seatPricing: {
+            type: [
+                {
+                    seatNumber: {
+                        type: String,
+                        required: true,
+                        trim: true,
+                        uppercase: true,
+                    },
+                    seatType: {
+                        type: String,
+                        enum: Object.values(SEAT_TYPES),
+                        required: true,
+                    },
+                    price: {
+                        type: Number,
+                        required: true,
+                        validate: positivePriceValidator,
+                    },
+                    _id: false,
+                },
+            ],
+            default: [],
         },
         convenienceFee: {
             type: Number,

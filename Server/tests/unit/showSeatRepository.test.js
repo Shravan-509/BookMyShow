@@ -2,8 +2,9 @@ const loadRepository = () => {
     jest.resetModules();
 
     const sort = jest.fn().mockReturnValue("sorted-query");
+    const lean = jest.fn().mockReturnValue("lean-query");
     const ShowSeat = {
-        find: jest.fn().mockReturnValue({ sort }),
+        find: jest.fn().mockReturnValue({ sort, lean }),
         findOne: jest.fn().mockReturnValue("find-one-query"),
         countDocuments: jest.fn().mockReturnValue("count-query"),
         insertMany: jest.fn().mockResolvedValue([]),
@@ -16,6 +17,7 @@ const loadRepository = () => {
         repository: require("../../repositories/showSeatRepository"),
         ShowSeat,
         sort,
+        lean,
     };
 };
 
@@ -28,6 +30,20 @@ describe("showSeatRepository", () => {
         expect(result).toBe("sorted-query");
         expect(ShowSeat.find).toHaveBeenCalledWith({ show: "show-1" }, null, {});
         expect(sort).toHaveBeenCalledWith({ row: 1, column: 1 });
+    });
+
+    test("queries projected ShowSeat availability without populating", () => {
+        const { repository, ShowSeat, lean } = loadRepository();
+
+        const result = repository.findAvailabilityByShow("show-1");
+
+        expect(result).toBe("lean-query");
+        expect(ShowSeat.find).toHaveBeenCalledWith(
+            { show: "show-1" },
+            "_id seat seatNumber row column seatType status",
+            {}
+        );
+        expect(lean).toHaveBeenCalledTimes(1);
     });
 
     test("queries ShowSeats by Show and status in row and column order", () => {
@@ -71,6 +87,7 @@ describe("showSeatRepository", () => {
         const options = { session: "session-1" };
 
         repository.findByShow("show-1", options);
+        repository.findAvailabilityByShow("show-1", options);
         repository.findByShowAndStatus("show-1", "BOOKED", options);
         repository.countByShow("show-1", options);
         repository.findByShowAndSeat("show-1", "seat-1", options);
@@ -78,6 +95,12 @@ describe("showSeatRepository", () => {
         expect(ShowSeat.find).toHaveBeenNthCalledWith(1, { show: "show-1" }, null, options);
         expect(ShowSeat.find).toHaveBeenNthCalledWith(
             2,
+            { show: "show-1" },
+            "_id seat seatNumber row column seatType status",
+            options
+        );
+        expect(ShowSeat.find).toHaveBeenNthCalledWith(
+            3,
             { show: "show-1", status: "BOOKED" },
             null,
             options

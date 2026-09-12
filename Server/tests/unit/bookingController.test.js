@@ -6,6 +6,7 @@ const TEST_SECRET = "test_razorpay_secret";
 const USER_ID = new mongoose.Types.ObjectId().toString();
 const SHOW_ID = new mongoose.Types.ObjectId().toString();
 const THEATRE_ID = new mongoose.Types.ObjectId().toString();
+const SCREEN_ID = new mongoose.Types.ObjectId().toString();
 const OTHER_USER_ID = new mongoose.Types.ObjectId().toString();
 
 const createSignature = (orderId, transactionId) => crypto
@@ -35,6 +36,11 @@ const loadController = () => {
   process.env.RAZORPAY_KEY_SECRET = TEST_SECRET;
   process.env.RAZORPAY_KEY_ID = "rzp_test_key";
 
+  const session = {
+    withTransaction: jest.fn(async (callback) => callback()),
+    endSession: jest.fn().mockResolvedValue(undefined),
+  };
+
   const razorpayInstance = {
     orders: {
       create: jest.fn(),
@@ -46,7 +52,7 @@ const loadController = () => {
   };
 
   const Booking = jest.fn(function BookingModel(payload) {
-    Object.assign(this, payload);
+    Object.assign(this, { _id: "booking-1" }, payload);
     this.save = Booking.saveMock || jest.fn().mockResolvedValue(this);
     this.toObject = () => ({ ...this });
   });
@@ -70,11 +76,31 @@ const loadController = () => {
     findById: jest.fn(),
   };
 
+  const showSeatRepository = {
+    findByShow: jest.fn(),
+    findAvailabilityByShow: jest.fn(),
+    findByShowAndStatus: jest.fn(),
+    countByShow: jest.fn().mockResolvedValue(0),
+    findByShowAndSeat: jest.fn(),
+    findByShowAndSeatNumbers: jest.fn().mockResolvedValue([]),
+    markSeatsBooked: jest.fn().mockResolvedValue({ modifiedCount: 0 }),
+    insertMany: jest.fn(),
+    deleteByShow: jest.fn(),
+  };
+
+  const actualMongoose = jest.requireActual("mongoose");
+  const mongooseMock = {
+    ...actualMongoose,
+    startSession: jest.fn().mockResolvedValue(session),
+  };
+
+  jest.doMock("mongoose", () => mongooseMock);
   jest.doMock("razorpay", () => jest.fn(() => razorpayInstance));
   jest.doMock("../../models/bookingSchema", () => Booking);
   jest.doMock("../../models/showSchema", () => Show);
   jest.doMock("../../models/theatreSchema", () => Theatre);
   jest.doMock("../../models/userSchema", () => User);
+  jest.doMock("../../repositories/showSeatRepository", () => showSeatRepository);
   jest.doMock("../../utils/idGenerator", () => ({ generateBookingId: jest.fn(() => "BMS1234") }));
   jest.doMock("../../utils/ticket-pdf", () => ({ generateTicketPDF: jest.fn().mockResolvedValue(Buffer.from("pdf")) }));
   jest.doMock("../../utils/email", () => ({ sendTicketEmail: jest.fn().mockResolvedValue({ messageId: "email-1" }) }));
@@ -88,18 +114,44 @@ const loadController = () => {
     Show,
     Theatre,
     User,
+    showSeatRepository,
+    mongooseMock,
+    session,
     pdf: require("../../utils/ticket-pdf"),
     email: require("../../utils/email"),
   };
 };
 
-const validShow = (ticketPrice = 200) => ({
+const validShow = (ticketPrice = 200, overrides = {}) => ({
   _id: SHOW_ID,
   ticketPrice,
   bookedSeats: [],
   movie: { movieName: "Interstellar", poster: "poster.jpg" },
   theatre: { _id: THEATRE_ID, name: "PVR", address: "Forum" },
+  ...overrides,
 });
+
+const initializedShow = (overrides = {}) => ({
+  ...validShow(overrides.ticketPrice || 200),
+  screen: {
+    _id: SCREEN_ID,
+    capacity: overrides.capacity || 2,
+    name: "Screen 1",
+    screenNumber: 1,
+  },
+  ...overrides,
+});
+
+const showSeatDocs = (overrides = {}) => ([
+  { _id: "show-seat-a1", seatNumber: "A1", seatType: overrides.A1Type || "STANDARD", status: overrides.A1 || "AVAILABLE" },
+  { _id: "show-seat-a2", seatNumber: "A2", seatType: overrides.A2Type || "STANDARD", status: overrides.A2 || "AVAILABLE" },
+]);
+
+const mixedShowSeatDocs = () => ([
+  { _id: "show-seat-a1", seatNumber: "A1", seatType: "STANDARD", status: "AVAILABLE" },
+  { _id: "show-seat-j5", seatNumber: "J5", seatType: "PREMIUM", status: "AVAILABLE" },
+  { _id: "show-seat-r2", seatNumber: "R2", seatType: "RECLINER", status: "AVAILABLE" },
+]);
 
 const validRazorpayOrder = (amount = 44720, feePerTicket = 20) => ({
   id: "order_1",
@@ -222,6 +274,199 @@ describe("BookingController pricing and Razorpay order creation", () => {
     expect(res.status).toHaveBeenCalledWith(400);
     expect(razorpayInstance.orders.create).not.toHaveBeenCalled();
   });
+
+  test("rejects initialized ShowSeat conflicts before Razorpay order creation", async () => {
+    const { controller, razorpayInstance, Show, showSeatRepository } = loadController();
+    Show.findById.mockResolvedValue(initializedShow());
+    showSeatRepository.countByShow.mockResolvedValue(2);
+    showSeatRepository.findByShowAndSeatNumbers.mockResolvedValue(showSeatDocs({ A2: "BOOKED" }));
+    const res = createMockResponse();
+
+    await controller.createOrder(
+      { userId: USER_ID, body: { showId: SHOW_ID, seats: ["A1", "A2"], feePerTicket: 20 } },
+      res,
+      jest.fn(),
+    );
+
+    expect(res.status).toHaveBeenCalledWith(409);
+    expect(razorpayInstance.orders.create).not.toHaveBeenCalled();
+  });
+
+  test.each([
+    ["STANDARD", { A1Type: "STANDARD", A2Type: "STANDARD" }, 34720, 300],
+    ["PREMIUM", { A1Type: "PREMIUM", A2Type: "PREMIUM" }, 48720, 440],
+    ["RECLINER", { A1Type: "RECLINER", A2Type: "RECLINER" }, 68720, 640],
+  ])("uses explicit %s ShowSeat pricing for initialized Razorpay order creation", async (
+    _seatType,
+    seatOverrides,
+    expectedPaise,
+    expectedTicketAmount,
+  ) => {
+    const { controller, razorpayInstance, Show, showSeatRepository } = loadController();
+    Show.findById.mockResolvedValue(initializedShow({
+      ticketPricing: {
+        STANDARD: 150,
+        PREMIUM: 220,
+        RECLINER: 320,
+      },
+    }));
+    showSeatRepository.countByShow.mockResolvedValue(2);
+    showSeatRepository.findByShowAndSeatNumbers.mockResolvedValue(showSeatDocs(seatOverrides));
+    razorpayInstance.orders.create.mockResolvedValue({ id: "order_1", amount: expectedPaise });
+    const res = createMockResponse();
+
+    await controller.createOrder(
+      {
+        userId: USER_ID,
+        body: {
+          showId: SHOW_ID,
+          seats: ["A1", "A2"],
+          feePerTicket: 20,
+          price: 1,
+          amount: 1,
+        },
+      },
+      res,
+      jest.fn(),
+    );
+
+    expect(razorpayInstance.orders.create).toHaveBeenCalledWith(expect.objectContaining({
+      amount: expectedPaise,
+    }));
+    expect(res.send).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        ticketAmount: expectedTicketAmount,
+        totalAmount: expectedPaise / 100,
+      }),
+    }));
+  });
+
+  test("uses mixed ShowSeat pricing and preserves selected seat order in createOrder response", async () => {
+    const { controller, razorpayInstance, Show, showSeatRepository } = loadController();
+    Show.findById.mockResolvedValue(initializedShow({
+      capacity: 3,
+      ticketPricing: {
+        STANDARD: 150,
+        PREMIUM: 220,
+        RECLINER: 320,
+      },
+    }));
+    showSeatRepository.countByShow.mockResolvedValue(3);
+    showSeatRepository.findByShowAndSeatNumbers.mockResolvedValue([
+      mixedShowSeatDocs()[2],
+      mixedShowSeatDocs()[0],
+      mixedShowSeatDocs()[1],
+    ]);
+    razorpayInstance.orders.create.mockResolvedValue({ id: "order_1", amount: 76080 });
+    const res = createMockResponse();
+
+    await controller.createOrder(
+      {
+        userId: USER_ID,
+        body: {
+          showId: SHOW_ID,
+          seats: ["A1", "J5", "R2"],
+          feePerTicket: 20,
+          seatPricing: [{ seatNumber: "A1", seatType: "STANDARD", price: 1 }],
+        },
+      },
+      res,
+      jest.fn(),
+    );
+
+    expect(razorpayInstance.orders.create).toHaveBeenCalledWith(expect.objectContaining({
+      amount: 76080,
+    }));
+    expect(res.send).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        ticketAmount: 690,
+        convenienceFee: 70.8,
+        totalAmount: 760.8,
+        seatPricing: [
+          { seatNumber: "A1", seatType: "STANDARD", price: 150 },
+          { seatNumber: "J5", seatType: "PREMIUM", price: 220 },
+          { seatNumber: "R2", seatType: "RECLINER", price: 320 },
+        ],
+      }),
+    }));
+  });
+
+  test("missing initialized price category falls back to Show ticketPrice", async () => {
+    const { controller, razorpayInstance, Show, showSeatRepository } = loadController();
+    Show.findById.mockResolvedValue(initializedShow({
+      ticketPrice: 175,
+      ticketPricing: {
+        STANDARD: 150,
+      },
+    }));
+    showSeatRepository.countByShow.mockResolvedValue(2);
+    showSeatRepository.findByShowAndSeatNumbers.mockResolvedValue(showSeatDocs({
+      A1Type: "PREMIUM",
+      A2Type: "RECLINER",
+    }));
+    razorpayInstance.orders.create.mockResolvedValue({ id: "order_1", amount: 39720 });
+    const res = createMockResponse();
+
+    await controller.createOrder(
+      { userId: USER_ID, body: { showId: SHOW_ID, seats: ["A1", "A2"], feePerTicket: 20 } },
+      res,
+      jest.fn(),
+    );
+
+    expect(razorpayInstance.orders.create).toHaveBeenCalledWith(expect.objectContaining({
+      amount: 39720,
+    }));
+    expect(res.send).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        ticketAmount: 350,
+        seatPricing: [
+          { seatNumber: "A1", seatType: "PREMIUM", price: 175 },
+          { seatNumber: "A2", seatType: "RECLINER", price: 175 },
+        ],
+      }),
+    }));
+  });
+
+  test("legacy Show flat pricing remains unchanged and includes fallback seatPricing", async () => {
+    const { controller, razorpayInstance, Show, showSeatRepository } = loadController();
+    Show.findById.mockResolvedValue(validShow(200));
+    razorpayInstance.orders.create.mockResolvedValue({ id: "order_1", amount: 44720 });
+    const res = createMockResponse();
+
+    await controller.createOrder(
+      { userId: USER_ID, body: { showId: SHOW_ID, seats: ["A1", "A2"], feePerTicket: 20 } },
+      res,
+      jest.fn(),
+    );
+
+    expect(showSeatRepository.findByShowAndSeatNumbers).not.toHaveBeenCalled();
+    expect(razorpayInstance.orders.create).toHaveBeenCalledWith(expect.objectContaining({
+      amount: 44720,
+    }));
+    expect(res.send).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        ticketAmount: 400,
+        seatPricing: [
+          { seatNumber: "A1", seatType: "STANDARD", price: 200 },
+          { seatNumber: "A2", seatType: "STANDARD", price: 200 },
+        ],
+      }),
+    }));
+  });
+
+  test("rejects duplicate normalized seats before Razorpay order creation", async () => {
+    const { controller, razorpayInstance } = loadController();
+    const res = createMockResponse();
+
+    await controller.createOrder(
+      { userId: USER_ID, body: { showId: SHOW_ID, seats: ["a1", "A1"], feePerTicket: 20 } },
+      res,
+      jest.fn(),
+    );
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(razorpayInstance.orders.create).not.toHaveBeenCalled();
+  });
 });
 
 describe("BookingController booking persistence and payment validation", () => {
@@ -268,6 +513,11 @@ describe("BookingController booking persistence and payment validation", () => {
       user: USER_ID,
       transactionId: "pay_1",
       orderId: "order_1",
+      ticketAmount: 400,
+      seatPricing: [
+        { seatNumber: "A1", seatType: "STANDARD", price: 200 },
+        { seatNumber: "A2", seatType: "STANDARD", price: 200 },
+      ],
       amount: 447.2,
       convenienceFee: 47.2,
     }));
@@ -277,6 +527,195 @@ describe("BookingController booking persistence and payment validation", () => {
       success: true,
       message: "Booking Successful",
     }));
+  });
+
+  test("books initialized ShowSeats transactionally after payment validation", async () => {
+    const ctx = arrangeValidBooking({ showDocument: initializedShow() });
+    ctx.showSeatRepository.countByShow.mockResolvedValue(2);
+    ctx.showSeatRepository.findByShowAndSeatNumbers.mockResolvedValue(showSeatDocs());
+    ctx.showSeatRepository.markSeatsBooked.mockResolvedValue({ modifiedCount: 2 });
+    const req = { userId: USER_ID, body: bookingPayload({ seats: [" a1 ", "A2"] }) };
+    const res = createMockResponse();
+
+    await ctx.controller.bookSeat(req, res, jest.fn());
+
+    expect(ctx.mongooseMock.startSession).toHaveBeenCalledTimes(1);
+    expect(ctx.session.withTransaction).toHaveBeenCalledTimes(1);
+    expect(ctx.Show.findOneAndUpdate).toHaveBeenCalledWith(
+      { _id: SHOW_ID, bookedSeats: { $nin: ["A1", "A2"] } },
+      { $push: { bookedSeats: { $each: ["A1", "A2"] } } },
+      { returnDocument: "after", session: ctx.session },
+    );
+    expect(ctx.showSeatRepository.markSeatsBooked).toHaveBeenCalledWith(
+      expect.objectContaining({
+        showId: SHOW_ID,
+        seatNumbers: ["A1", "A2"],
+        bookingId: expect.anything(),
+      }),
+      { session: ctx.session },
+    );
+    expect(ctx.Show.findByIdAndUpdate).not.toHaveBeenCalled();
+    expect(res.send).toHaveBeenCalledWith(expect.objectContaining({
+      success: true,
+      message: "Booking Successful",
+    }));
+  });
+
+  test("authoritative mixed subtotal is recomputed and persisted for initialized booking", async () => {
+    const ctx = arrangeValidBooking({
+      amount: 41720,
+      showDocument: initializedShow({
+        ticketPricing: {
+          STANDARD: 150,
+          PREMIUM: 220,
+        },
+      }),
+    });
+    ctx.showSeatRepository.countByShow.mockResolvedValue(2);
+    ctx.showSeatRepository.findByShowAndSeatNumbers.mockResolvedValue(showSeatDocs({
+      A1Type: "STANDARD",
+      A2Type: "PREMIUM",
+    }));
+    ctx.showSeatRepository.markSeatsBooked.mockResolvedValue({ modifiedCount: 2 });
+    const req = {
+      userId: USER_ID,
+      body: bookingPayload({
+        seats: ["A1", "A2"],
+        amount: 1,
+        convenienceFee: 1,
+        seatPricing: [{ seatNumber: "A1", seatType: "STANDARD", price: 1 }],
+      }),
+    };
+    const res = createMockResponse();
+
+    await ctx.controller.bookSeat(req, res, jest.fn());
+
+    expect(ctx.Booking).toHaveBeenCalledWith(expect.objectContaining({
+      seats: ["A1", "A2"],
+      ticketAmount: 370,
+      seatPricing: [
+        { seatNumber: "A1", seatType: "STANDARD", price: 150 },
+        { seatNumber: "A2", seatType: "PREMIUM", price: 220 },
+      ],
+      amount: 417.2,
+      convenienceFee: 47.2,
+    }));
+    expect(ctx.Show.findOneAndUpdate).toHaveBeenCalledWith(
+      { _id: SHOW_ID, bookedSeats: { $nin: ["A1", "A2"] } },
+      { $push: { bookedSeats: { $each: ["A1", "A2"] } } },
+      { returnDocument: "after", session: ctx.session },
+    );
+    expect(ctx.showSeatRepository.markSeatsBooked).toHaveBeenCalledWith(
+      expect.objectContaining({
+        showId: SHOW_ID,
+        seatNumbers: ["A1", "A2"],
+      }),
+      { session: ctx.session },
+    );
+  });
+
+  test("price change after Razorpay order creation rejects stale paid amount", async () => {
+    const ctx = arrangeValidBooking({
+      amount: 44720,
+      showDocument: initializedShow({
+        ticketPricing: {
+          STANDARD: 250,
+        },
+      }),
+    });
+    ctx.showSeatRepository.countByShow.mockResolvedValue(2);
+    ctx.showSeatRepository.findByShowAndSeatNumbers.mockResolvedValue(showSeatDocs());
+    const res = createMockResponse();
+
+    await ctx.controller.bookSeat({ userId: USER_ID, body: bookingPayload() }, res, jest.fn());
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "Payment amount does not match booking amount",
+    });
+    expect(ctx.Booking).not.toHaveBeenCalled();
+    expect(ctx.Show.findOneAndUpdate).not.toHaveBeenCalled();
+    expect(ctx.showSeatRepository.markSeatsBooked).not.toHaveBeenCalled();
+  });
+
+  test("payment amount mismatch is rejected before booking or seat writes persist", async () => {
+    const ctx = arrangeValidBooking({
+      amount: 100,
+      showDocument: initializedShow({
+        ticketPricing: {
+          STANDARD: 150,
+          PREMIUM: 220,
+        },
+      }),
+    });
+    ctx.showSeatRepository.countByShow.mockResolvedValue(2);
+    ctx.showSeatRepository.findByShowAndSeatNumbers.mockResolvedValue(showSeatDocs({
+      A1Type: "STANDARD",
+      A2Type: "PREMIUM",
+    }));
+    const res = createMockResponse();
+
+    await ctx.controller.bookSeat({ userId: USER_ID, body: bookingPayload() }, res, jest.fn());
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(ctx.Booking).not.toHaveBeenCalled();
+    expect(ctx.Show.findOneAndUpdate).not.toHaveBeenCalled();
+    expect(ctx.showSeatRepository.markSeatsBooked).not.toHaveBeenCalled();
+  });
+
+  test("legacy Show booking still succeeds with flat ticketAmount snapshot", async () => {
+    const ctx = arrangeValidBooking({ showDocument: validShow(200) });
+    const req = { userId: USER_ID, body: bookingPayload({ seats: ["A1", "A2"] }) };
+    const res = createMockResponse();
+
+    await ctx.controller.bookSeat(req, res, jest.fn());
+
+    expect(ctx.Booking).toHaveBeenCalledWith(expect.objectContaining({
+      seats: ["A1", "A2"],
+      ticketAmount: 400,
+      seatPricing: [
+        { seatNumber: "A1", seatType: "STANDARD", price: 200 },
+        { seatNumber: "A2", seatType: "STANDARD", price: 200 },
+      ],
+      amount: 447.2,
+    }));
+    expect(res.send).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+  });
+
+  test("rejects concurrent initialized ShowSeat booking conflicts without legacy rollback", async () => {
+    const ctx = arrangeValidBooking({ showDocument: initializedShow() });
+    ctx.showSeatRepository.countByShow.mockResolvedValue(2);
+    ctx.showSeatRepository.findByShowAndSeatNumbers.mockResolvedValue(showSeatDocs());
+    ctx.showSeatRepository.markSeatsBooked.mockResolvedValue({ modifiedCount: 1 });
+    const res = createMockResponse();
+
+    await ctx.controller.bookSeat({ userId: USER_ID, body: bookingPayload() }, res, jest.fn());
+
+    expect(ctx.session.withTransaction).toHaveBeenCalledTimes(1);
+    expect(ctx.Show.findByIdAndUpdate).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(409);
+    expect(res.send).toHaveBeenCalledWith(expect.objectContaining({
+      success: false,
+      message: "Some seats were already booked. Please choose different seats.",
+    }));
+  });
+
+  test("rejects initialized booking when ShowSeat inventory is incomplete", async () => {
+    const ctx = arrangeValidBooking({ showDocument: initializedShow({ capacity: 3 }) });
+    ctx.showSeatRepository.countByShow.mockResolvedValue(2);
+    const res = createMockResponse();
+
+    await ctx.controller.bookSeat({ userId: USER_ID, body: bookingPayload() }, res, jest.fn());
+
+    expect(ctx.mongooseMock.startSession).not.toHaveBeenCalled();
+    expect(ctx.Show.findOneAndUpdate).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(409);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      message: "ShowSeat inventory is not ready for this show",
+      code: "SHOWSEAT_INVENTORY_NOT_READY",
+    });
   });
 
   test("rejects invalid Razorpay signature before gateway fetches", async () => {
@@ -401,6 +840,20 @@ describe("BookingController booking persistence and payment validation", () => {
       message: "Valid show id and seats array are required",
     });
   });
+
+  test("rejects duplicate normalized booking seats before gateway fetches", async () => {
+    const ctx = arrangeValidBooking();
+    const res = createMockResponse();
+
+    await ctx.controller.bookSeat(
+      { userId: USER_ID, body: bookingPayload({ seats: ["a1", "A1"] }) },
+      res,
+      jest.fn(),
+    );
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(ctx.razorpayInstance.orders.fetch).not.toHaveBeenCalled();
+  });
 });
 
 describe("BookingController seat validation and history", () => {
@@ -444,6 +897,31 @@ describe("BookingController seat validation and history", () => {
     expect(res.send).toHaveBeenCalledWith(expect.objectContaining({
       success: false,
       data: expect.objectContaining({ unavailableSeats: ["A1"] }),
+    }));
+  });
+
+  test("validates initialized ShowSeat availability against ShowSeat status and legacy bookedSeats", async () => {
+    const { controller, Show, showSeatRepository } = loadController();
+    Show.findById.mockReturnValue(createPopulateQuery(initializedShow({ bookedSeats: ["A1"] })));
+    showSeatRepository.countByShow.mockResolvedValue(2);
+    showSeatRepository.findByShowAndSeatNumbers.mockResolvedValue(showSeatDocs({ A2: "BOOKED" }));
+    const res = createMockResponse();
+
+    await controller.validateSeats(
+      { body: { showId: SHOW_ID, seats: ["A1", "A2"] } },
+      res,
+      jest.fn(),
+    );
+
+    expect(showSeatRepository.findByShowAndSeatNumbers).toHaveBeenCalledWith(
+      SHOW_ID,
+      ["A1", "A2"],
+      {},
+    );
+    expect(res.status).toHaveBeenCalledWith(409);
+    expect(res.send).toHaveBeenCalledWith(expect.objectContaining({
+      success: false,
+      data: expect.objectContaining({ unavailableSeats: ["A1", "A2"] }),
     }));
   });
 

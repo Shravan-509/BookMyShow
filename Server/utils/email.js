@@ -214,7 +214,14 @@ const sendTicketEmail = async ({name, email, booking, show, movie, theatre, pdfB
 
         let quantity = booking.seats?.length || 1 ;
         let quantStr = `${quantity} ticket${quantity > 1 ? "s": ""}`;
-        let ticketAmount = show?.ticketPrice * quantity || 0;
+        let ticketAmount = Number.isFinite(booking?.ticketAmount)
+            ? booking.ticketAmount
+            : show?.ticketPrice * quantity || 0;
+        const seatDetails = Array.isArray(booking?.seatPricing) && booking.seatPricing.length > 0
+            ? booking.seatPricing
+                .map((seat) => `${seat.seatNumber} ${seat.seatType || "STANDARD"} (Rs.${Number(seat.price || 0).toFixed(2)})`)
+                .join(", ")
+            : booking.seats?.join(", ") || "N/A";
         let convenienceFee = booking.convenienceFee ?? 0;
         let gstPercent = booking?.gstPercent || 0;
         let gst = gstPercent / 100; 
@@ -248,14 +255,14 @@ const sendTicketEmail = async ({name, email, booking, show, movie, theatre, pdfB
             showTime: showTime,
             bookingDate: bookingDate,
             bookingTime: bookingTime,
-            seats: booking.seats?.join(", ") || "N/A",
+            seats: seatDetails,
             quantity: quantStr,
             ticketAmount: ticketAmount.toFixed(2),
             convenienceFee: convenienceFee.toFixed(2),
             baseAmount: baseAmount.toFixed(2),
             gstPercent: gstPercent,
             gstAmount: gstAmount.toFixed(2),
-            amountPaid: (booking.amount ?? 0).toFixed(2),
+            amountPaid: (booking.amount ?? ticketAmount + convenienceFee).toFixed(2),
             paymentMethod: booking?.paymentMethod || "N/A",
             confirmationNumber : (booking?.receipt).slice(-6),
             year: new Date().getFullYear().toString()

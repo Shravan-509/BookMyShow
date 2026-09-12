@@ -5,11 +5,13 @@ const Razorpay = require("razorpay");
 const crypto = require("crypto");
 const mongoose = require("mongoose");
 const { generateBookingId } = require("../utils/idGenerator");
+const showSeatService = require("../services/showSeatService");
 
 const path = require("path")
 const User = require("../models/userSchema")
 const { generateTicketPDF } = require("../utils/ticket-pdf")
 const { sendTicketEmail } = require("../utils/email")
+const showPricingService = require("../services/showPricingService");
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,       
@@ -17,10 +19,14 @@ const razorpay = new Razorpay({
 })
 
 const validateSeatInput = (seats) => (
-    Array.isArray(seats)
-    && seats.length > 0
-    && seats.every((seat) => typeof seat === "string" && seat.trim().length > 0 && seat.length <= 20)
-    && new Set(seats).size === seats.length
+    (() => {
+        try {
+            showSeatService.normalizeSeatSelection(seats);
+            return true;
+        } catch (error) {
+            return false;
+        }
+    })()
 )
 
 const validateFeePerTicket = (feePerTicket) => (
@@ -30,27 +36,71 @@ const validateFeePerTicket = (feePerTicket) => (
     && feePerTicket <= 20
 )
 
-const calculateBookingPricing = (ticketPrice, seats, feePerTicket) => {
-    const authoritativeTicketPrice = Number(ticketPrice)
+const calculateFeesForTicketAmount = (ticketAmount, seatCount, feePerTicket) => {
+    const authoritativeTicketAmount = Number(ticketAmount)
 
-    if (!Number.isFinite(authoritativeTicketPrice) || authoritativeTicketPrice < 0) {
-        throw new Error("Invalid show ticket price")
+    if (!Number.isFinite(authoritativeTicketAmount) || authoritativeTicketAmount < 0) {
+        throw new Error("Invalid ticket amount")
     }
 
-    const ticketAmount = Number((authoritativeTicketPrice * seats.length).toFixed(2))
-    const baseConvenienceFee = feePerTicket * seats.length
+    const roundedTicketAmount = Number(authoritativeTicketAmount.toFixed(2))
+    const baseConvenienceFee = feePerTicket * seatCount
     const gst = Number((baseConvenienceFee * 0.18).toFixed(2))
     const convenienceFee = Number((baseConvenienceFee + gst).toFixed(2))
-    const totalAmount = Number((ticketAmount + convenienceFee).toFixed(2))
+    const totalAmount = Number((roundedTicketAmount + convenienceFee).toFixed(2))
     const totalAmountInPaise = Math.round(totalAmount * 100)
 
     return {
-        ticketAmount,
+        ticketAmount: roundedTicketAmount,
         feePerTicket,
         gst,
         convenienceFee,
         totalAmount,
         totalAmountInPaise,
+    }
+}
+
+const buildLegacySeatPricing = (show, seats) => {
+    const ticketPrice = Number(show?.ticketPrice)
+
+    if (!Number.isFinite(ticketPrice) || ticketPrice <= 0) {
+        throw new Error("Invalid show ticket price")
+    }
+
+    return {
+        ticketAmount: Number((ticketPrice * seats.length).toFixed(2)),
+        seatPricing: seats.map((seatNumber) => ({
+            seatNumber,
+            seatType: "STANDARD",
+            price: ticketPrice,
+        })),
+    }
+}
+
+const orderShowSeatsBySelection = (seats, showSeats = []) => {
+    const showSeatsByLabel = new Map(
+        showSeats.map((showSeat) => [
+            showSeatService.normalizeSeatLabel(showSeat.seatNumber),
+            showSeat,
+        ])
+    )
+
+    return seats.map((seatNumber) => showSeatsByLabel.get(showSeatService.normalizeSeatLabel(seatNumber)))
+}
+
+const calculateBookingPricing = ({ show, seats, feePerTicket, showSeats = null }) => {
+    const ticketPricing = Array.isArray(showSeats)
+        ? showPricingService.buildSeatPricing(show, orderShowSeatsBySelection(seats, showSeats))
+        : buildLegacySeatPricing(show, seats)
+    const feePricing = calculateFeesForTicketAmount(
+        ticketPricing.ticketAmount,
+        seats.length,
+        feePerTicket
+    )
+
+    return {
+        ...feePricing,
+        seatPricing: ticketPricing.seatPricing,
     }
 }
 
@@ -90,6 +140,119 @@ const addCurrency = (amounts) => Number(
     amounts.reduce((sum, amount) => sum + Number(amount || 0), 0).toFixed(2)
 )
 
+const loadShowForBooking = async (showId, { includeDetails = false, session = null } = {}) => {
+    let query = Show.findById(showId);
+
+    if (query?.session && session) {
+        query = query.session(session);
+    }
+
+    if (query?.populate) {
+        const populateConfig = includeDetails
+            ? [
+                { path: "movie" },
+                { path: "theatre" },
+                { path: "screen", select: "name screenNumber capacity theatre isActive" },
+            ]
+            : { path: "screen", select: "capacity" };
+
+        return query.populate(populateConfig);
+    }
+
+    return query;
+};
+
+const sendOperationalError = (res, error) => {
+    const body = {
+        success: false,
+        message: error.message,
+    };
+
+    if (error.code) {
+        body.code = error.code;
+    }
+
+    return res.status(error.statusCode || 500).json(body);
+};
+
+const sendSeatConflict = (res, error) => res.status(error.statusCode || 409).send({
+    success: false,
+    message: error.message,
+    data: error.details,
+});
+
+const createBookingDocument = ({
+    showId,
+    userId,
+    seats,
+    seatType,
+    transactionId,
+    orderId,
+    receipt,
+    razorpayOrder,
+    pricing,
+    gstPercent,
+    paymentMethod,
+}) => new Booking({
+    show: showId,
+    user: userId,
+    seats,
+    seatType: seatType || "Standard",
+    transactionId,
+    orderId,
+    receipt: razorpayOrder.receipt || receipt,
+    bookingId: generateBookingId(),
+    ticketAmount: pricing.ticketAmount,
+    seatPricing: pricing.seatPricing,
+    amount: pricing.totalAmount,
+    convenienceFee: pricing.convenienceFee,
+    gstPercent: gstPercent ?? 18,
+    paymentMethod: paymentMethod || "N/A",
+    ticketStatus: "Confirmed",
+});
+
+const sendTicketArtifacts = async ({ newBooking, reservedShow }) => {
+    const userId = newBooking.user
+    const userDoc = await User.findById(userId).lean()
+    const toEmail = userDoc?.email
+    let pdfBuffer = null
+
+    try
+    {
+        pdfBuffer = await generateTicketPDF({
+            booking: newBooking.toObject(),
+            show: reservedShow.toObject(),
+            movie: reservedShow.movie,
+            theatre: reservedShow.theatre,
+        })
+    }
+    catch (err)
+    {
+        // PDF should not block the booking; log and continue
+        console.error("[ticket-pdf] Error generating PDF:", err.message)
+    }
+
+    if(toEmail)
+    {
+        try
+        {
+            await sendTicketEmail({
+                name: userDoc.name,
+                email: toEmail,
+                booking: newBooking.toObject(),
+                show: reservedShow.toObject(),
+                movie: reservedShow.movie,
+                theatre: reservedShow.theatre,
+                pdfBuffer,
+            })
+        }
+        catch (error)
+        {
+            console.error("[email] Error sending ticket email:", error.message)
+        }
+    }
+};
+
 const simplifyBooking = (booking, { includeUser = false } = {}) => {
     const show = booking.show
     const movie = show?.movie
@@ -107,6 +270,8 @@ const simplifyBooking = (booking, { includeUser = false } = {}) => {
         showTime: show?.time,
         seats: booking.seats,
         ticketPrice: show?.ticketPrice,
+        ticketAmount: booking?.ticketAmount,
+        seatPricing: booking?.seatPricing,
         convenienceFee: booking?.convenienceFee,
         gstPercent: booking?.gstPercent,
         ticketStatus: booking?.ticketStatus,
@@ -138,8 +303,10 @@ const validateSeats = async (req, res, next) => {
             })
         }
 
+        const normalizedSeats = showSeatService.normalizeSeatSelection(seats)
+
         // Find the show and check seat availability
-        const show = await Show.findById(showId).populate(["movie", "theatre"])
+        const show = await loadShowForBooking(showId, { includeDetails: true })
 
         if(!show)
         {
@@ -149,30 +316,16 @@ const validateSeats = async (req, res, next) => {
             })
         }
 
-        // Check if any of the requested seats are already booked
-        const unavailableSeats = seats.filter((seat) => show.bookedSeats.includes(seat))
-
-        if(unavailableSeats.length > 0)
-        {
-            return res.status(409).send({
-                success: false,
-                message: `Seats ${unavailableSeats.join(", ")} are no longer available`,
-                data: {
-                    availableSeats : seats.filter((seat) => !show.bookedSeats.includes(seat)),
-                    unavailableSeats: unavailableSeats,
-                    allBookedSeats: show.bookedSeats
-                }
-            })
-        }
+        const availability = await showSeatService.validateBookingSeatSelection(show, normalizedSeats)
 
         // All Seats are available
         res.send({
             success: true,
             message: "All selected seats are available",
             data: {
-                availableSeats : seats,
+                availableSeats : availability.availableSeats,
                 unavailableSeats: [],
-                allBookedSeats: show.bookedSeats,
+                allBookedSeats: availability.allBookedSeats,
                 show: {
                     id: show._id,
                     movie: show.movie.movieName,
@@ -184,6 +337,14 @@ const validateSeats = async (req, res, next) => {
             }
         })
     } catch (error) {
+        if (error?.details?.unavailableSeats) {
+            return sendSeatConflict(res, error)
+        }
+
+        if (error?.isOperational) {
+            return sendOperationalError(res, error)
+        }
+
         res.status(400)
         next(error)
     }
@@ -211,6 +372,8 @@ const createOrder = async (req, res, next) => {
             })
         }
 
+        const normalizedSeats = showSeatService.normalizeSeatSelection(seats)
+
         if(!validateFeePerTicket(feePerTicket))
         {
             return res.status(400).json({
@@ -219,7 +382,7 @@ const createOrder = async (req, res, next) => {
             })
         }
 
-        const show = await Show.findById(showId)
+        const show = await loadShowForBooking(showId)
 
         if(!show)
         {
@@ -229,7 +392,16 @@ const createOrder = async (req, res, next) => {
             })
         }
 
-        const pricing = calculateBookingPricing(show.ticketPrice, seats, feePerTicket)
+        const seatValidation = await showSeatService.validateBookingSeatSelection(show, normalizedSeats)
+
+        const pricing = calculateBookingPricing({
+            show,
+            seats: normalizedSeats,
+            feePerTicket,
+            showSeats: seatValidation.mode === showSeatService.BOOKING_SEAT_VALIDATION_MODE.INITIALIZED
+                ? seatValidation.showSeats
+                : null,
+        })
 
         const options = {
             amount: pricing.totalAmountInPaise,
@@ -238,7 +410,7 @@ const createOrder = async (req, res, next) => {
             notes: {
                 userId: req.userId.toString(),
                 showId: show._id.toString(),
-                seatCount: seats.length.toString(),
+                seatCount: normalizedSeats.length.toString(),
                 feePerTicket: feePerTicket.toString(),
             },
         }
@@ -251,6 +423,7 @@ const createOrder = async (req, res, next) => {
             data: {
                 ...order,
                 ticketAmount: pricing.ticketAmount,
+                seatPricing: pricing.seatPricing,
                 feePerTicket: pricing.feePerTicket,
                 gst: pricing.gst,
                 convenienceFee: pricing.convenienceFee,
@@ -259,6 +432,14 @@ const createOrder = async (req, res, next) => {
         });
 
     } catch (error) {
+        if (error?.details?.unavailableSeats) {
+            return sendSeatConflict(res, error)
+        }
+
+        if (error?.isOperational) {
+            return sendOperationalError(res, error)
+        }
+
         res.status(400);
         next(error);
     }
@@ -294,6 +475,8 @@ const bookSeat = async (req, res, next) => {
                     message: "Valid show id and seats array are required",
                 })
             }
+
+            const normalizedSeats = showSeatService.normalizeSeatSelection(seats)
        
         const generatedSignature = crypto
             .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
@@ -308,7 +491,7 @@ const bookSeat = async (req, res, next) => {
             const [razorpayOrder, razorpayPayment, show] = await Promise.all([
                 razorpay.orders.fetch(orderId),
                 razorpay.payments.fetch(transactionId),
-                Show.findById(showId),
+                loadShowForBooking(showId),
             ])
 
             if(!show)
@@ -341,7 +524,7 @@ const bookSeat = async (req, res, next) => {
             if(
                 orderNotes.userId !== req.userId.toString()
                 || orderNotes.showId !== showId.toString()
-                || Number(orderNotes.seatCount) !== seats.length
+                || Number(orderNotes.seatCount) !== normalizedSeats.length
                 || !validateFeePerTicket(feePerTicket)
             )
             {
@@ -351,7 +534,15 @@ const bookSeat = async (req, res, next) => {
                 })
             }
 
-            const pricing = calculateBookingPricing(show.ticketPrice, seats, feePerTicket)
+            const bookingSeatValidation = await showSeatService.validateBookingSeatSelection(show, normalizedSeats)
+            const pricing = calculateBookingPricing({
+                show,
+                seats: normalizedSeats,
+                feePerTicket,
+                showSeats: bookingSeatValidation.mode === showSeatService.BOOKING_SEAT_VALIDATION_MODE.INITIALIZED
+                    ? bookingSeatValidation.showSeats
+                    : null,
+            })
 
             if(
                 Number(razorpayOrder.amount) !== pricing.totalAmountInPaise
@@ -379,11 +570,90 @@ const bookSeat = async (req, res, next) => {
                 })
             }
 
+            if (bookingSeatValidation.mode === showSeatService.BOOKING_SEAT_VALIDATION_MODE.INITIALIZED) {
+                const session = await mongoose.startSession()
+                let newBooking
+                let reservedShow
+
+                try
+                {
+                    await session.withTransaction(async () => {
+                        const transactionalShow = await loadShowForBooking(showId, { session })
+                        await showSeatService.validateBookingSeatSelection(transactionalShow, normalizedSeats, { session })
+
+                        reservedShow = await Show.findOneAndUpdate(
+                            { _id: showId, bookedSeats: { $nin: normalizedSeats } },
+                            { $push: { bookedSeats: { $each: normalizedSeats } } },
+                            { returnDocument: "after", session },
+                        ).populate(["movie", "theatre"])
+
+                        if (!reservedShow)
+                        {
+                            throw new Error("SEAT_RESERVATION_CONFLICT")
+                        }
+
+                        newBooking = createBookingDocument({
+                            showId,
+                            userId: req.userId,
+                            seats: normalizedSeats,
+                            seatType,
+                            transactionId,
+                            orderId,
+                            receipt,
+                            razorpayOrder,
+                            pricing,
+                            gstPercent,
+                            paymentMethod,
+                        })
+
+                        await newBooking.save({ session })
+                        await showSeatService.markSeatsBookedForBooking({
+                            showId,
+                            seatNumbers: normalizedSeats,
+                            bookingId: newBooking._id,
+                            bookedAt: newBooking.createdAt || new Date(),
+                        }, { session })
+                    })
+                }
+                catch (err)
+                {
+                    if(err.code === 11000)
+                    {
+                        return res.status(409).json({
+                            success: false,
+                            message: "Payment has already been used for a booking",
+                        })
+                    }
+
+                    if(err.message === "SEAT_RESERVATION_CONFLICT")
+                    {
+                        return res.status(409).send({
+                            success: false,
+                            message: "Some seats were already booked. Please choose different seats.",
+                        })
+                    }
+
+                    throw err
+                }
+                finally
+                {
+                    await session.endSession()
+                }
+
+                await sendTicketArtifacts({ newBooking, reservedShow })
+
+                return res.send({
+                    success: true,
+                    message: "Booking Successful",
+                    data: newBooking
+                })
+            }
+
             // 1) Atomically reserve seats to prevent double booking
             // If any requested seat already exists in bookedSeats, the update will fail (result = null)
             const reservedShow = await Show.findOneAndUpdate(
-                { _id: showId, bookedSeats: { $nin: seats } },
-                { $push: { bookedSeats: { $each: seats } } },
+                { _id: showId, bookedSeats: { $nin: normalizedSeats } },
+                { $push: { bookedSeats: { $each: normalizedSeats } } },
                 { returnDocument: "after" },
             ).populate(["movie", "theatre"])
 
@@ -407,12 +677,14 @@ const bookSeat = async (req, res, next) => {
             const newBooking = new Booking({
                 show: showId,
                 user: req.userId,
-                seats,
+                seats: normalizedSeats,
                 seatType: seatType || "Standard",
                 transactionId,
                 orderId,
                 receipt: razorpayOrder.receipt || receipt,
                 bookingId,
+                ticketAmount: pricing.ticketAmount,
+                seatPricing: pricing.seatPricing,
                 amount: pricing.totalAmount,
                 convenienceFee: pricing.convenienceFee,
                 gstPercent: gstPercent ?? 18,
@@ -427,7 +699,7 @@ const bookSeat = async (req, res, next) => {
             catch (err) 
             {
                 // If booking save fails, rollback the seat reservation
-                await Show.findByIdAndUpdate(showId, { $pull: { bookedSeats: { $in: seats } } })
+                await Show.findByIdAndUpdate(showId, { $pull: { bookedSeats: { $in: normalizedSeats } } })
 
                 if(err.code === 11000)
                 {
@@ -440,47 +712,7 @@ const bookSeat = async (req, res, next) => {
                 throw err
             }
             
-            // 3) Generate Ticket PDF
-            const userId = newBooking.user
-            const userDoc = await User.findById(userId).lean()
-            const toEmail = userDoc?.email
-            let pdfBuffer = null
-
-            try 
-            {
-                pdfBuffer = await generateTicketPDF({
-                    booking: newBooking.toObject(),
-                    show: reservedShow.toObject(),
-                    movie: reservedShow.movie,
-                    theatre: reservedShow.theatre,
-                })
-            } 
-            catch (err) 
-            {
-                // PDF should not block the booking; log and continue
-                console.error("[ticket-pdf] Error generating PDF:", err.message)
-            }
-
-            // 4) Email Ticket (attach PDF if generated)
-            if(toEmail)
-            {
-                try 
-                {
-                    await sendTicketEmail({
-                        name: userDoc.name,
-                        email: toEmail,
-                        booking: newBooking.toObject(),
-                        show: reservedShow.toObject(),
-                        movie: reservedShow.movie,
-                        theatre: reservedShow.theatre,
-                        pdfBuffer,
-                    })
-                } 
-                catch (error) 
-                {
-                    console.error("[email] Error sending ticket email:", error.message)
-                }
-            }
+            await sendTicketArtifacts({ newBooking, reservedShow })
 
             res.send({
                 success: true,
@@ -490,6 +722,14 @@ const bookSeat = async (req, res, next) => {
             
 
     } catch (error) {
+        if (error?.details?.unavailableSeats) {
+            return sendSeatConflict(res, error)
+        }
+
+        if (error?.isOperational) {
+            return sendOperationalError(res, error)
+        }
+
         res.status(400);
         next(error);
     }

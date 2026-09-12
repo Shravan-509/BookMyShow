@@ -103,9 +103,15 @@ async function generateTicketPDF({ booking, show, movie, theatre }) {
       doc.font("Helvetica-Bold").fillColor("#000").text("Show Time: ", detailsX, doc.y + 2, { continued: true });
       doc.font("Helvetica").fillColor("#666").text(showTime || "N/A");
 
+      const seatDetails = Array.isArray(booking?.seatPricing) && booking.seatPricing.length > 0
+        ? booking.seatPricing
+          .map((seat) => `${seat.seatNumber} ${seat.seatType || "STANDARD"} (Rs. ${Number(seat.price || 0).toFixed(2)})`)
+          .join(", ")
+        : booking.seats?.join(", ") || "N/A";
+
       // Seats
       doc.font("Helvetica-Bold").fillColor("#000").text("Seats: ", detailsX, doc.y + 10, { continued: true });
-      doc.font("Helvetica").fillColor("#666").text(booking.seats?.join(", ") || "N/A");
+      doc.font("Helvetica").fillColor("#666").text(seatDetails);
     
 
       //Qr Code
@@ -125,7 +131,9 @@ async function generateTicketPDF({ booking, show, movie, theatre }) {
       let summaryY = doc.y + 10
 
       // Ticket Amount
-      let ticketAmount = (show?.ticketPrice || 0 ) * booking.seats?.length
+      let ticketAmount = Number.isFinite(booking?.ticketAmount)
+        ? booking.ticketAmount
+        : (show?.ticketPrice || 0 ) * booking.seats?.length
       let convenienceFee = booking.convenienceFee ?? 0;
       let gstPercent = booking?.gstPercent || 18;
       let gst = gstPercent / 100; 
@@ -163,7 +171,7 @@ async function generateTicketPDF({ booking, show, movie, theatre }) {
 
       summaryY += 20
       doc.fontSize(14).font("Helvetica-Bold").fillColor("#000").text("Amount Paid", 50, summaryY)
-      doc.text(`Rs. ${booking.amount.toFixed(2)}`, doc.page.width - 150, summaryY, { align: "right" })
+      doc.text(`Rs. ${(booking.amount ?? ticketAmount + convenienceFee).toFixed(2)}`, doc.page.width - 150, summaryY, { align: "right" })
 
       // Footer Note
       doc.fontSize(10).fillColor("#666").text(
