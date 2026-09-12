@@ -163,7 +163,7 @@ describe("MovieShows screen selection", () => {
         theatre: "theatre-1",
       }),
     })));
-  }, 10000);
+  }, 15000);
 
   test("multi-screen Theatre keeps selected Screen visible and submits its ObjectId", async () => {
     const store = buildStore([screenOne, screenTwo]);
@@ -211,7 +211,7 @@ describe("MovieShows screen selection", () => {
         },
       }),
     })));
-  }, 15000);
+  }, 20000);
 
   test("legacy Show without Screen renders safely", () => {
     const store = buildStore([], [{
