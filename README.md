@@ -70,12 +70,12 @@ sequenceDiagram
 
     User->>Client: Select seats and continue
     Client->>API: POST /bookings/validateSeats
-    API->>DB: Check show.bookedSeats
+    API->>DB: Check ShowSeat inventory or legacy show.bookedSeats
     DB-->>API: Availability result
     API-->>Client: Available/unavailable seats
     Client->>API: POST /bookings/createOrder with showId, seats, feePerTicket
-    API->>DB: Load authoritative show.ticketPrice
-    API->>API: Validate fee and recalculate GST/total
+    API->>DB: Resolve ShowSeat seat types and Show pricing
+    API->>API: Validate fee and recalculate ticket subtotal/GST/total
     API->>Razorpay: Create INR order with server-calculated paise amount
     Razorpay-->>API: order_id
     API-->>Client: Razorpay order
@@ -83,8 +83,7 @@ sequenceDiagram
     Razorpay-->>Client: payment_id, order_id, signature
     Client->>API: POST /bookings/bookSeat
     API->>API: Verify HMAC signature and expected order/payment amount
-    API->>DB: Atomically push seats with $nin guard
-    API->>DB: Save booking
+    API->>DB: Transactionally update bookedSeats, ShowSeats, and Booking
     API->>Email: Send ticket email with PDF when available
     API-->>Client: Booking success
 ```
@@ -216,7 +215,7 @@ Key groups:
 | Cities | `/bms/v1/cities` |
 | Screens | `/bms/v1/screens` |
 | Seats | `/bms/v1/seats`, `/bms/v1/screens/:screenId/seats` |
-| Shows | `/bms/v1/shows` |
+| Shows | `/bms/v1/shows`, `/bms/v1/shows/:showId/seats` |
 | Bookings | `/bms/v1/bookings` |
 
 ## BookMyShow v2
@@ -249,12 +248,16 @@ Current v2 status:
 | Phase 2 - Screen | Complete |
 | Phase 3 - Physical Seat Management | Complete |
 | Phase 4A - ShowSeat Inventory Foundation | Complete |
-| Phase 4B - Customer ShowSeat Availability | Planned / Not Started |
+| Phase 4B - Customer ShowSeat Booking + Pricing | Complete |
 | Phase 5 - Seat Locking | Planned / Not Started |
 
 Phase 4A adds per-show ShowSeat inventory snapshots initialized from physical Seats. Historical migration initialized 382 Shows with 243,728 ShowSeat documents, including 13 `BOOKED` snapshots from legacy `Show.bookedSeats`; the final audit shows all 382 Shows as `ALREADY_INITIALIZED` with 0 `READY` and 0 errors or warnings.
 
-Customer booking remains temporarily compatible with the legacy path. `SeatSelection.jsx` and `SeatLayout.jsx` still generate seat labels, while `Booking.seats` and `Show.bookedSeats` remain string arrays until the planned Phase 4B customer ShowSeat availability transition.
+Phase 4B connects customer booking to ShowSeat availability for initialized screen-aware Shows. `SeatSelection.jsx` fetches `/bms/v1/shows/:showId/seats`, `SeatLayout.jsx` renders actual ShowSeat rows/columns/gaps, and booking validation/order/payment confirmation synchronizes `Show.bookedSeats`, `ShowSeat.status`, and `Booking` in the backend. Legacy no-screen Shows still fall back to the older generated layout and `Show.bookedSeats` checks. `Booking.seats` and frontend `selectedSeats` remain string arrays such as `["A1", "B11"]`.
+
+Show pricing remains owned by the Show. Required `ticketPrice` is the backward-compatible default, and optional `ticketPricing.STANDARD`, `ticketPricing.PREMIUM`, and `ticketPricing.RECLINER` override specific physical seat types. The frontend displays category pricing and mixed selected-seat subtotals, but the backend independently recalculates authoritative totals from ShowSeat seat types, `Show.ticketPricing`, and the `ticketPrice` fallback before creating Razorpay orders or confirming bookings. New bookings store `ticketAmount` and `seatPricing[]` snapshots for booking history, PDF tickets, and email confirmations.
+
+Phase 5 seat locking is not implemented yet. There is no `LOCKED` ShowSeat state, temporary hold owner, expiry, TTL index, or Razorpay checkout hold; concurrent users may still view the same `AVAILABLE` seat before the final transaction allows only one booking to succeed.
 
 The safe backfill script defaults to dry-run mode:
 

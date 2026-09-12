@@ -15,7 +15,8 @@ BookMyShow/
 │   ├── public/
 │   ├── src/
 │   │   ├── api/
-│   │   │   └── seat.js
+│   │   │   ├── seat.js
+│   │   │   └── showSeat.js
 │   │   ├── assets/
 │   │   ├── components/
 │   │   │   └── SeatLayout.test.jsx
@@ -52,15 +53,19 @@ BookMyShow/
 │   │   ├── hooks/
 │   │   ├── redux/
 │   │   │   ├── sagas/
-│   │   │   │   └── seatSaga.js
+│   │   │   │   ├── seatSaga.js
+│   │   │   │   └── showSeatSaga.js
 │   │   │   ├── slices/
 │   │   │   │   ├── bookingSlice.test.js
-│   │   │   │   └── seatSlice.js
+│   │   │   │   ├── seatSlice.js
+│   │   │   │   └── showSeatSlice.js
 │   │   │   └── store.js
 │   │   ├── test/
 │   │   │   ├── setup.js
 │   │   │   └── renderWithProviders.jsx
 │   │   ├── utils/
+│   │   │   ├── screenDisplay.js
+│   │   │   └── ticketPricing.js
 │   │   ├── App.jsx
 │   │   ├── App.test.jsx
 │   │   └── main.jsx
@@ -71,7 +76,8 @@ BookMyShow/
 ├── Server/
 │   ├── config/
 │   ├── controllers/
-│   │   └── SeatController.js
+│   │   ├── SeatController.js
+│   │   └── ShowSeatController.js
 │   ├── middlewares/
 │   ├── models/
 │   │   ├── seatSchema.js
@@ -88,6 +94,7 @@ BookMyShow/
 │   │   └── importCities.js
 │   ├── services/
 │   │   ├── seatService.js
+│   │   ├── showPricingService.js
 │   │   └── showSeatService.js
 │   ├── tests/
 │   │   ├── helpers/
@@ -98,6 +105,7 @@ BookMyShow/
 │   │   │   ├── cityRoute.test.js
 │   │   │   ├── screenRoute.test.js
 │   │   │   ├── seatRoute.test.js
+│   │   │   ├── showSeatRoute.test.js
 │   │   │   └── errorHandling.test.js
 │   │   └── unit/
 │   │       ├── backfillTheatreCities.test.js
@@ -112,6 +120,7 @@ BookMyShow/
 │   │       ├── seatSchema.test.js
 │   │       ├── seatService.test.js
 │   │       ├── showScreen.test.js
+│   │       ├── showPricingService.test.js
 │   │       ├── showSeatRepository.test.js
 │   │       ├── showSeatSchema.test.js
 │   │       ├── showSeatService.test.js

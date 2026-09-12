@@ -49,7 +49,10 @@ flowchart TD
     Show --> Screen
     Show --> ShowSeat["ShowSeat Inventory"]
     ShowSeat --> Seat
+    Show --> Pricing["ticketPricing"]
     Show --> Booking["Booking"]
+    Booking --> BookingSeats["seats String[]"]
+    Booking --> BookingPricing["ticketAmount + seatPricing[]"]
 ```
 
 ## Physical Seat And ShowSeat Boundary
@@ -66,15 +69,17 @@ flowchart LR
         ShowSeat --> SeatSnapshot["Seat label/type snapshots"]
     end
 
-    subgraph CustomerBooking["Current Customer Booking"]
-        ShowCapacity["Screen.capacity / legacy Show.totalSeats"] --> SeatSelection["SeatSelection.jsx"]
-        SeatSelection --> SeatLayout["SeatLayout.jsx dynamic labels"]
+    subgraph CustomerBooking["Phase 4B Customer Booking"]
+        ShowSeat --> AvailabilityAPI["GET /shows/:showId/seats"]
+        AvailabilityAPI --> SeatSelection["SeatSelection.jsx"]
+        SeatSelection --> SeatLayout["SeatLayout.jsx physical rows/columns/gaps"]
         SeatLayout --> BookingSeats["Booking.seats string labels"]
         SeatLayout --> ShowBookedSeats["Show.bookedSeats string labels"]
+        SeatSelection --> PriceDisplay["display-only mixed price summary"]
     end
 ```
 
-Phase 4A initializes ShowSeat inventory for screen-aware Shows, but customer booking still uses the legacy label-based flow. `LOCKED` inventory state, lock expiry, lock owner, and TTL cleanup are future work.
+Phase 4B uses ShowSeat inventory for initialized screen-aware customer booking while preserving the string seat-label payload. Legacy no-screen Shows still use generated labels. `LOCKED` inventory state, lock expiry, lock owner, and TTL cleanup are future work.
 
 ## JWT Flow
 
@@ -93,14 +98,15 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     Client->>Booking: validateSeats
-    Booking->>MongoDB: Check bookedSeats
+    Booking->>MongoDB: Check ShowSeat availability or legacy bookedSeats
     Client->>Booking: createOrder
+    Booking->>MongoDB: Resolve ShowSeat seatType and Show ticketPricing
     Booking->>Razorpay: Create order
     Client->>Razorpay: Checkout
     Razorpay-->>Client: payment id + signature
     Client->>Booking: bookSeat
     Booking->>Booking: Verify signature
-    Booking->>MongoDB: Atomic seat reservation + booking save
+    Booking->>MongoDB: Transactionally update bookedSeats, ShowSeats, and Booking
     Booking->>Brevo: Ticket email
 ```
 

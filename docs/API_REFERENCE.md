@@ -173,6 +173,7 @@ Seat numbers are normalized and must match `row + column`, for example `A + 1 = 
 | --- | --- | --- | --- |
 | `POST` | `/shows` | Show document | Adds a show; screen-aware creation initializes ShowSeat inventory transactionally |
 | `GET` | `/shows/:id` | none | Returns show with populated movie, theatre, and screen; cached for 30 seconds |
+| `GET` | `/shows/:showId/seats` | none | Returns customer-safe ShowSeat availability for a Show |
 | `GET` | `/shows/theatre/:id` | none | Returns shows for a theatre with populated movie and screen; cached for 30 seconds |
 | `POST` | `/shows/theatres/movie` | `{ movie, date }` | Groups shows by theatre for a selected movie/date |
 | `PATCH` | `/shows/:id` | Partial show document | Updates show; changing `screen` is rejected after ShowSeat inventory exists |
@@ -187,12 +188,19 @@ Show body fields:
   "time": "19:30",
   "movie": "MOVIE_OBJECT_ID",
   "ticketPrice": 250,
+  "ticketPricing": {
+    "STANDARD": 250,
+    "PREMIUM": 350,
+    "RECLINER": 550
+  },
   "theatre": "THEATRE_OBJECT_ID",
   "screen": "SCREEN_OBJECT_ID"
 }
 ```
 
 `Show.theatre` remains required for booking compatibility. `Show.screen` is optional for legacy no-screen Shows, but when supplied the backend validates that the Screen exists, is active, belongs to the selected Theatre, and has a complete physical Seat layout (`activeSeatCount === Screen.capacity`). For screen-aware Shows, the backend derives `Show.totalSeats` from `Screen.capacity`, creates the Show and ShowSeats in one MongoDB transaction, and all new ShowSeats start as `AVAILABLE`. Transaction support is required for screen-aware creation.
+
+`ticketPrice` remains required and is the default per-seat price. `ticketPricing` is optional and may provide positive numeric overrides for `STANDARD`, `PREMIUM`, and `RECLINER`. Missing seat-type overrides fall back to `ticketPrice`.
 
 The scheduler-compatible payload omits `totalSeats`; the backend derives it:
 
@@ -208,13 +216,47 @@ The scheduler-compatible payload omits `totalSeats`; the backend derives it:
 }
 ```
 
+### ShowSeat Availability
+
+`GET /bms/v1/shows/:showId/seats` is a JWT-protected customer-accessible read endpoint. It is not restricted to admin/partner roles and does not repair, create, or mutate inventory.
+
+Success response for initialized screen-aware Shows:
+
+```json
+{
+  "success": true,
+  "message": "Show seats fetched successfully",
+  "data": {
+    "showId": "SHOW_OBJECT_ID",
+    "screenId": "SCREEN_OBJECT_ID",
+    "screenName": "Screen 2",
+    "screenNumber": 2,
+    "capacity": 250,
+    "layoutStatus": "INITIALIZED",
+    "seats": [
+      {
+        "showSeatId": "SHOWSEAT_OBJECT_ID",
+        "seatId": "SEAT_OBJECT_ID",
+        "seatNumber": "A1",
+        "row": "A",
+        "column": 1,
+        "seatType": "STANDARD",
+        "status": "AVAILABLE"
+      }
+    ]
+  }
+}
+```
+
+Legacy no-screen Shows return `layoutStatus: "LEGACY"` with an empty `seats` array and capacity from the legacy Show capacity snapshot. Partial or inconsistent ShowSeat inventory returns `409 SHOWSEAT_INVENTORY_NOT_READY`. Malformed show ids return `400`, and missing Shows return `404`. The response intentionally excludes booking references, booked timestamps, users, payment data, transaction/order ids, timestamps, and `__v`.
+
 ## Bookings
 
 | Method | Endpoint | Body | Purpose |
 | --- | --- | --- | --- |
-| `POST` | `/bookings/validateSeats` | `{ showId, seats }` | Checks if selected seats are still available |
-| `POST` | `/bookings/createOrder` | `{ showId, seats, feePerTicket }` | Loads authoritative show price, validates the ₹15-₹20 fee, recalculates GST/total, and creates a Razorpay INR order in paise |
-| `POST` | `/bookings/bookSeat` | Booking confirmation payload | Verifies Razorpay signature and expected order/payment amount, reserves seats atomically, saves booking, sends ticket |
+| `POST` | `/bookings/validateSeats` | `{ showId, seats }` | Checks initialized ShowSeat availability or legacy `show.bookedSeats` availability |
+| `POST` | `/bookings/createOrder` | `{ showId, seats, feePerTicket }` | Resolves authoritative seat-type pricing, validates the ₹15-₹20 fee, recalculates GST/total, and creates a Razorpay INR order in paise |
+| `POST` | `/bookings/bookSeat` | Booking confirmation payload | Verifies Razorpay signature and expected order/payment amount, synchronizes ShowSeat/Show booking state, saves booking, sends ticket |
 | `GET` | `/bookings/:id` | none | Returns simplified bookings only when `:id` matches the authenticated JWT user |
 | `GET` | `/bookings/admin/all` | none | Admin-only simplified booking list for all users |
 | `GET` | `/bookings/theatre/:theatreId` | none | Admin/partner route; partners can access only owned theatre bookings |
@@ -241,8 +283,12 @@ Important booking behavior:
 
 | Step | Detail |
 | --- | --- |
-| Seat validation | `validateSeats` returns unavailable seats if any requested seat is already in `show.bookedSeats` |
+| Seat validation | Initialized Shows validate requested labels against ShowSeat documents with `AVAILABLE` status and `show.bookedSeats`; legacy Shows use `show.bookedSeats` only |
 | Payment verification | `bookSeat` computes HMAC SHA256 with `RAZORPAY_KEY_SECRET`, fetches Razorpay order/payment details, and verifies the paid amount against server-calculated pricing |
-| Seat reservation | Seats are added with a conditional MongoDB update using `$nin` and `$push/$each` |
-| Booking save | Booking stores Razorpay ids, receipt, generated booking id, amount, fees, GST, payment method, and status |
-| Ticket side effects | PDF and email failures are logged but do not undo the booking |
+| Seat reservation | Initialized Shows update `Show.bookedSeats`, `ShowSeat.status`, and `Booking` in a MongoDB transaction; legacy Shows keep the conditional `$nin` / `$push` update |
+| Booking save | Booking stores Razorpay ids, receipt, generated booking id, `ticketAmount`, `seatPricing[]`, final `amount`, fees, GST, payment method, and status |
+| Ticket side effects | Booking history, PDF, and email prefer Booking price snapshots; PDF/email failures are logged but do not undo the booking |
+
+Frontend checkout pricing is display-only. The backend recomputes ticket totals from selected seat labels, ShowSeat seat types, `Show.ticketPricing`, and `Show.ticketPrice` fallback during both order creation and final booking confirmation. `feePerTicket` remains a bounded compatibility input used to compute the convenience fee and 18% GST component.
+
+Simplified booking responses include legacy fields such as `seats`, `ticketPrice`, `seatType`, and `convenienceFee`, and now include `ticketAmount` plus `seatPricing[]` when present. Booking history, generated PDF tickets, and email confirmations should prefer those stored Booking snapshots rather than recomputing historical prices from the current Show.

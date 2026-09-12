@@ -12,6 +12,7 @@
 | Payment verification | Razorpay HMAC signature and expected order/payment amount verification before booking persistence |
 | Email verification | Short-lived verification records for email, 2FA, password reset, and email change flows |
 | Sensitive response fields | Password and reset fields excluded from profile/admin user responses |
+| ShowSeat availability | Customer seat inventory responses expose only seat identity/layout/status fields and omit booking/payment/user metadata |
 
 ## Security Flow
 
@@ -43,6 +44,8 @@ The application implements role-aware frontend routing, backend role middleware 
 NoSQL injection mitigation was evaluated as part of the security review. `express-mongo-sanitize` is identified as a recommended hardening measure but is not currently enabled in the deployed implementation.
 
 Razorpay webhook reconciliation is not implemented. The current payment flow verifies the Checkout signature and expected Razorpay order/payment amount during booking confirmation.
+
+Frontend ticket prices are display-only. The backend recalculates selected-seat pricing from ShowSeat seat types, `Show.ticketPricing`, and `Show.ticketPrice` fallback before creating Razorpay orders and again before booking persistence.
 
 ## Review Findings
 

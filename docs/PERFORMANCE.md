@@ -20,7 +20,7 @@
 | Caching | `node-cache` for shared catalogue GET endpoints |
 | Cache-Control | Static assets use long-lived public caching; API responses default to `private, no-store` |
 | Rate limiting | General, auth, and booking limiters |
-| Seat concurrency | Atomic MongoDB update with `$nin` and `$push/$each` |
+| Seat concurrency | Initialized Shows use transactional `Show.bookedSeats` + ShowSeat + Booking updates; legacy Shows keep the atomic `$nin` and `$push/$each` path |
 
 ## Performance Recommendations
 

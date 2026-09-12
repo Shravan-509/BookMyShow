@@ -59,9 +59,11 @@ erDiagram
 - `showseats` stores per-Show snapshots of active physical Seats. The indexes are unique `{ show, seat }`, `{ show, status }`, and `{ show, seatNumber }`.
 - New screen-aware Show creation requires a complete physical Seat layout where active Seat count equals `screens.capacity`. Show creation and ShowSeat initialization run in one transaction, and `shows.totalSeats` remains a compatibility snapshot derived from `screens.capacity`.
 - Phase 4A historical migration initialized 382 Shows and 243,728 ShowSeat documents, including 13 `BOOKED` ShowSeats mapped from legacy booked labels. The final audit state is 382 `ALREADY_INITIALIZED`, 0 `READY`, and 0 migration errors or warnings.
+- `shows.ticketPrice` remains the required default price, while optional `shows.ticketPricing.STANDARD`, `PREMIUM`, and `RECLINER` override specific seat types.
+- New bookings store `bookings.ticketAmount` and `bookings.seatPricing[]` as immutable purchased-seat price snapshots. `bookings.amount` remains the final paid amount used by revenue aggregation.
 - The ShowSeat model currently supports `AVAILABLE` and `BOOKED`. `LOCKED`, lock owner, lock expiry, and TTL indexes are not implemented until a future locking phase.
 - `bookingId` is unique and indexed for public ticket references.
 - Account deletion cascades verification records, bookings, and theatres owned by the deleted user.
 - Movie and theatre deletion currently do not cascade dependent records; initialized Show deletion removes related ShowSeat inventory, while existing Booking records are not cascaded.
 
-Physical Seats and ShowSeats now coexist with the current customer booking flow. Customer Seat selection still uses generated labels from `SeatLayout.jsx`; `Booking.seats` and `Show.bookedSeats` remain string arrays until the planned Phase 4B customer ShowSeat availability transition.
+Physical Seats and ShowSeats now drive customer booking for initialized screen-aware Shows. The customer availability endpoint returns sanitized ShowSeat labels, rows, columns, seat types, and statuses; booking confirmation updates `Show.bookedSeats`, matching ShowSeats, and the Booking record transactionally. Legacy no-screen Shows remain compatible with generated labels and `Show.bookedSeats` only. `Booking.seats` remains a string array.

@@ -30,6 +30,7 @@ flowchart LR
 | `screen` | Theatre-specific Screen list and Screen create/update/delete workflows |
 | `seat` | Physical Seat list and layout summary by Screen; Seat create/update/disable/re-enable and bulk layout workflows |
 | `show` | Show list, selected show, screen-aware show create/edit, theatre-by-movie results |
+| `showSeat` | Customer ShowSeat availability inventory for a selected Show; cleared between Shows and populated by `/shows/:showId/seats` |
 | `booking` | Seat validation, Razorpay order, booking creation, bookings, revenue |
 | `user` | Admin user listing |
 | `ui` | Auth tab and login error state |

@@ -26,6 +26,7 @@ The central Express error middleware normalizes uncaught backend errors into the
 | Expired or invalid JWT | `401` with authentication message |
 | Role mismatch | `403` with insufficient-permissions message |
 | Seats unavailable | `409` with unavailable seat list |
+| ShowSeat inventory not ready | `409` with `SHOWSEAT_INVENTORY_NOT_READY` |
 | Screen layout incomplete for new Show | `409` with `SCREEN_LAYOUT_INCOMPLETE` |
 | Screen has no active Seats for new Show | `409` with `SCREEN_HAS_NO_ACTIVE_SEATS` |
 | ShowSeat initialization failure | `500` with `SHOWSEAT_INITIALIZATION_FAILED` |

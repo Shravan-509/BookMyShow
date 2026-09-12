@@ -117,7 +117,7 @@ flowchart LR
 ```
 
 
-BookMyShow v2 Phase 1 introduces the City domain as the first incremental service/repository-backed module. Phase 1.1 adds optional City metadata fields: `cityCode`, `tier`, and GeoJSON `location`. Phase 2 introduces the Screen domain as the physical auditorium inside a Theatre. Phase 3 introduces persistent physical Seat configuration under each Screen. Phase 4A introduces per-Show ShowSeat inventory snapshots initialized from physical Seats.
+BookMyShow v2 Phase 1 introduces the City domain as the first incremental service/repository-backed module. Phase 1.1 adds optional City metadata fields: `cityCode`, `tier`, and GeoJSON `location`. Phase 2 introduces the Screen domain as the physical auditorium inside a Theatre. Phase 3 introduces persistent physical Seat configuration under each Screen. Phase 4A introduces per-Show ShowSeat inventory snapshots initialized from physical Seats. Phase 4B connects customer booking to ShowSeat availability and per-show seat-type pricing.
 
 Implemented v2 domain hierarchy:
 
@@ -125,7 +125,10 @@ Implemented v2 domain hierarchy:
 City -> Theatre -> Screen -> Seat
 Movie -> Show -> Screen
 Show -> ShowSeat -> Seat
+Show -> ticketPricing
 Show -> Booking
+Booking -> seats String[]
+Booking -> ticketAmount + seatPricing[]
 ```
 
 Each Screen owns its own physical layout:
@@ -152,7 +155,7 @@ Phase status:
 | Phase 2 - Screen | Complete |
 | Phase 3 - Physical Seat Management | Complete |
 | Phase 4A - ShowSeat Inventory Foundation | Complete |
-| Phase 4B - Customer ShowSeat Availability | Planned / Not Started |
+| Phase 4B - Customer ShowSeat Booking + Pricing | Complete |
 | Phase 5 - Seat Locking | Planned / Not Started |
 
 Request flow:
@@ -237,16 +240,16 @@ The client is a React 19 application created around Vite. It uses feature folder
 | --- | --- |
 | `Client/src/App.jsx` | Defines lazy-loaded routes, route guards, and initial auth check |
 | `Client/src/api/` | Axios-backed API classes grouped by domain |
-| `Client/src/components/` | Shared UI such as `MainLayout`, `SeatLayout`, `SeatRecommendation`, skeleton loaders |
+| `Client/src/components/` | Shared UI such as `MainLayout`, physical/legacy `SeatLayout`, `SeatRecommendation`, skeleton loaders |
 | `Client/src/features/auth/pages/` | Login, registration, email verification, 2FA, password reset, reverification |
 | `Client/src/features/home/pages/Home.jsx` | Authenticated movie listing/home experience |
 | `Client/src/features/movies/pages/` | Movie details, show times, seat selection, checkout, booking history |
 | `Client/src/features/profile/pages/` | Profile, password, email, security, reminder, and danger-zone tabs |
 | `Client/src/features/admin/pages/` | Admin dashboard, movie management, theatre list, users, bookings |
 | `Client/src/features/partner/pages/` | Partner dashboard, theatre management, screen management, physical Seat management, shows, theatre bookings, revenue |
-| `Client/src/redux/` | Store, reducers, slices, sagas, action orchestration |
+| `Client/src/redux/` | Store, reducers, slices, sagas, action orchestration, including ShowSeat availability state |
 | `Client/src/hooks/` | Domain hooks wrapping selectors and dispatches |
-| `Client/src/utils/` | Date formatting, notifications, reminders, security validation, optimized image helpers |
+| `Client/src/utils/` | Date formatting, notifications, reminders, security validation, optimized image helpers, screen display helpers, and ticket pricing helpers |
 
 Important frontend implementation details:
 
@@ -267,8 +270,8 @@ The backend is an Express app mounted under `/bms/v1`.
 | `Server/server.js` | App bootstrap, middleware stack, DB connection, route mounting, server startup |
 | `Server/config/db.js` | Mongoose connection using `MONGODB_CONNECTION_STRING` |
 | `Server/routes/` | Express routers for auth, users, movies, cities, theatres, screens, seats, shows, bookings |
-| `Server/controllers/` | Request validation, business workflows, database operations, external integrations |
-| `Server/services/` | City, Screen, Seat, and ShowSeat business rules, Theatre ownership validation, capacity invariants, and reference validation |
+| `Server/controllers/` | Request validation, business workflows, database operations, booking/payment synchronization, and external integrations |
+| `Server/services/` | City, Screen, Seat, ShowSeat, and Show pricing business rules, Theatre ownership validation, capacity invariants, and reference validation |
 | `Server/repositories/` | City, Screen, Seat, and ShowSeat database operations |
 | `Server/models/` | Mongoose schemas for users, movies, cities, theatres, screens, seats, shows, showseats, bookings, verification codes |
 | `Server/middlewares/authorization.js` | JWT validation and role-check helper |
@@ -828,9 +831,9 @@ Admin and Partner users manage physical Seats from Partner Theatre Management th
 
 Sequential row generation uses spreadsheet-style row names: `A ... Z`, then `AA ... AZ`, `BA`, and beyond. Excluded columns represent consistent gaps or aisles and reduce the actual generated Seat count.
 
-### ShowSeat Inventory Foundation
+### ShowSeat Customer Booking
 
-Phase 4A adds per-Show inventory snapshots while preserving the current customer booking flow.
+Phase 4A adds per-Show inventory snapshots, and Phase 4B uses those snapshots in customer booking for initialized screen-aware Shows.
 
 | Aspect | Current implementation |
 | --- | --- |
@@ -842,11 +845,18 @@ Phase 4A adds per-Show inventory snapshots while preserving the current customer
 | Capacity snapshot | `Show.totalSeats` remains a compatibility snapshot derived from `Screen.capacity` |
 | Update invariant | `Show.screen` cannot be changed after ShowSeat inventory exists |
 | Delete behavior | Hard-deleting an initialized Show removes its ShowSeats in the same transaction |
+| Customer availability | `GET /bms/v1/shows/:showId/seats` returns sanitized ShowSeat inventory for initialized Shows and `LEGACY` for no-screen Shows |
+| Customer layout | `SeatLayout.jsx` renders actual ShowSeat rows, physical columns, missing-column gaps, booked/available states, and large-screen pan/zoom controls |
+| Booking synchronization | Final booking updates `Show.bookedSeats`, matching ShowSeats, and Booking in one transaction for initialized Shows |
+| Pricing | `Show.ticketPrice` remains the default; optional `Show.ticketPricing` overrides `STANDARD`, `PREMIUM`, and `RECLINER` |
+| Booking price snapshot | New bookings store `ticketAmount` and `seatPricing[]`; `Booking.seats` remains `String[]` |
 | Locking | No `LOCKED` status, lock owner, lock expiry, or TTL index exists yet |
 
 Historical migration initialized 382 Shows into 243,728 ShowSeat documents. The final audit state is 382 `ALREADY_INITIALIZED`, 0 `READY`, 13 `BOOKED` ShowSeats, and 0 migration errors or warnings.
 
-The current customer booking flow does not fetch ShowSeat documents. `SeatSelection.jsx` and `SeatLayout.jsx` continue generating seat labels from capacity, and `Booking.seats`/`Show.bookedSeats` remain string arrays until the planned Phase 4B customer ShowSeat availability transition.
+Customer `selectedSeats` and `Booking.seats` remain seat-label string arrays such as `["A1", "B11"]`; the frontend does not submit ShowSeat ids or authoritative prices. Checkout, booking history, PDF tickets, and email confirmations display Booking price snapshots where available and fall back to legacy `ticketPrice` calculations for older bookings.
+
+The scheduler remains compatible with this model because it continues submitting `ticketPrice`; it does not explicitly configure `ticketPricing` yet, so scheduled Shows use the backend base-price fallback for all seat types.
 
 ## 10. Payment Integration
 
@@ -877,21 +887,21 @@ sequenceDiagram
 
     activate Booking
 
-    Booking->>DB: Read show.bookedSeats labels
+    Booking->>DB: Read ShowSeat inventory or legacy bookedSeats labels
 
     activate DB
 
-    DB-->>Booking: Label availability
+    DB-->>Booking: Availability result
 
     deactivate DB
 
     alt Seats Available
 
-        Booking->>DB: Atomically reserve selected labels
+        Booking->>DB: Validate selected labels
 
         activate DB
 
-        DB-->>Booking: bookedSeats updated
+        DB-->>Booking: Seats currently available
 
         deactivate DB
 
@@ -915,6 +925,8 @@ sequenceDiagram
     UI->>API: Create Payment Order
 
     activate API
+
+    API->>DB: Resolve seat types and authoritative ticket amount
 
     API->>Razorpay: Create Order
 
@@ -946,13 +958,11 @@ sequenceDiagram
 
         activate Booking
 
-        Booking->>DB: Mark Seats Booked
-
-        Booking->>DB: Create Booking Record
+        Booking->>DB: Transactionally update bookedSeats, ShowSeats, and Booking
 
         activate DB
 
-        DB-->>Booking: Booking Saved
+        DB-->>Booking: Booking state synchronized
 
         deactivate DB
 
@@ -987,12 +997,12 @@ Payment implementation notes:
 
 | Concern | Implementation |
 | --- | --- |
-| Order creation | `createOrder` accepts `showId`, `seats`, and `feePerTicket`; it loads `show.ticketPrice`, validates the ₹15-₹20 fee, recalculates GST/total, and creates a Razorpay order with the server-calculated paise amount |
+| Order creation | `createOrder` accepts `showId`, `seats`, and `feePerTicket`; it resolves initialized ShowSeat seat types or legacy seats, applies `Show.ticketPricing` with `Show.ticketPrice` fallback, validates the ₹15-₹20 fee, recalculates GST/total, and creates a Razorpay order with the server-calculated paise amount |
 | Client checkout | `Checkout.jsx` loads `https://checkout.razorpay.com/v1/checkout.js` dynamically and uses `VITE_RAZORPAY_KEY_ID` |
 | Signature verification | `bookSeat` verifies `orderId|transactionId` with `RAZORPAY_KEY_SECRET`, fetches Razorpay order/payment data, and confirms the paid amount matches server-calculated pricing |
-| Double-booking prevention | `Show.findOneAndUpdate({ _id, bookedSeats: { $nin: seats } }, { $push: { bookedSeats: { $each: seats } } })` |
-| Rollback | If booking save fails after seat reservation, booked seats are pulled back from the show |
-| Ticket delivery | PDF generation and email are attempted after booking; failures are logged and do not cancel the booking |
+| Double-booking prevention | Initialized Shows use a MongoDB transaction plus conditional ShowSeat booking updates; legacy Shows use `Show.findOneAndUpdate({ _id, bookedSeats: { $nin: seats } }, { $push: { bookedSeats: { $each: seats } } })` |
+| Rollback | Initialized Show booking failures roll back the transaction; legacy booking save failures pull labels back from `bookedSeats` |
+| Ticket delivery | PDF generation and email prefer Booking price snapshots and are attempted after booking; failures are logged and do not cancel the booking |
 
 ## 11. Performance Optimizations
 
@@ -1271,8 +1281,8 @@ Implementation-aligned enhancements:
 | Token invalidation | Include and verify `tokenVersion` in JWT payloads after password/email changes |
 | Booking lifecycle | Add cancellation/refund APIs and explicit payment status transitions |
 | Webhooks | Add Razorpay webhook support for asynchronous payment reconciliation |
-| Customer ShowSeat availability | Move customer SeatLayout and SeatSelection to actual ShowSeat inventory data |
 | Seat locking | Add `LOCKED` status, lock owner, lock expiry, conflict handling, and TTL cleanup |
+| Booking analytics | Add screen, auditorium, seat-type revenue, occupancy, utilization, and dynamic-pricing analytics |
 | Cache invalidation | Clear route-level caches after movie/theatre/show mutations |
 | Tests | Add controller, saga, and route integration tests around auth, payments, and seat concurrency |
 | Monitoring | Add structured logging, error tracking, and metrics dashboards |

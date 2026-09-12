@@ -137,14 +137,15 @@ Source: `Server/models/showSchema.js`
 | `date` | `Date` | Yes | - | Used with movie id to fetch theatres/shows |
 | `time` | `String` | Yes | - | Display and ticket time |
 | `movie` | `ObjectId` | Yes | ref `movies` | Populated in show and booking APIs |
-| `ticketPrice` | `Number` | Yes | - | Per-seat price |
+| `ticketPrice` | `Number` | Yes | - | Backward-compatible default per-seat price |
+| `ticketPricing` | `Object` | No | optional positive `STANDARD`, `PREMIUM`, `RECLINER` numbers | Per-show seat-type price overrides; missing values fall back to `ticketPrice` |
 | `totalSeats` | `Number` | Yes | - | Seat layout capacity |
 | `bookedSeats` | `[String]` | No | default `[]` | Seat ids like `A1`, `A2`; updated atomically during booking |
 | `theatre` | `ObjectId` | Yes | ref `theatres` | Populated in show and booking APIs |
 | `screen` | `ObjectId` | No | ref `Screen` | Optional for legacy Shows; new UI submits it explicitly |
 | `createdAt`, `updatedAt` | `Date` | Auto | timestamps | Managed by Mongoose |
 
-For screen-aware Shows, the backend derives `totalSeats` from `Screen.capacity`. New screen-aware Show creation requires the physical Seat layout to be complete (`activeSeatCount === Screen.capacity`) and creates the Show plus ShowSeat inventory in one transaction. Legacy no-screen Show creation remains temporarily compatible and does not initialize ShowSeats.
+For screen-aware Shows, the backend derives `totalSeats` from `Screen.capacity`. New screen-aware Show creation requires the physical Seat layout to be complete (`activeSeatCount === Screen.capacity`) and creates the Show plus ShowSeat inventory in one transaction. Legacy no-screen Show creation remains temporarily compatible and does not initialize ShowSeats. Show remains the pricing owner: physical Seats and ShowSeats carry `seatType`, while resolved prices come from `Show.ticketPricing[seatType]` or the `Show.ticketPrice` fallback.
 
 ## showseats
 
@@ -171,7 +172,7 @@ Indexes:
 | `{ show: 1, status: 1 }` | Supports availability/status queries per Show |
 | `{ show: 1, seatNumber: 1 }` | Supports seat-label lookup and audit reporting per Show |
 
-Phase 4A migration initialized 382 existing Shows into 243,728 ShowSeat documents. The final audit reports 382 `ALREADY_INITIALIZED`, 0 `READY`, 13 `BOOKED` ShowSeats, and 0 migration errors or warnings. There is no lock owner, lock expiry, `LOCKED` status, or TTL index in the current implementation.
+Phase 4A migration initialized 382 existing Shows into 243,728 ShowSeat documents. The final audit reports 382 `ALREADY_INITIALIZED`, 0 `READY`, 13 `BOOKED` ShowSeats, and 0 migration errors or warnings. Phase 4B customer booking reads this inventory for initialized screen-aware Shows and writes booked state back to matching ShowSeats during booking confirmation. There is no lock owner, lock expiry, `LOCKED` status, or TTL index in the current implementation.
 
 ## bookings
 
@@ -188,6 +189,8 @@ Source: `Server/models/bookingSchema.js`
 | `receipt` | `String` | Yes | - | Razorpay receipt |
 | `bookingId` | `String` | Yes | `unique`, indexed | 7-character public reference |
 | `amount` | `Number` | Yes | - | Stored in rupees after server divides paise by 100 |
+| `ticketAmount` | `Number` | No | non-negative | Ticket subtotal snapshot for the purchased seats |
+| `seatPricing` | `[Object]` | No | default `[]` | Historical purchased-seat price snapshot with `seatNumber`, `seatType`, and `price` |
 | `convenienceFee` | `Number` | No | default `0` | Fee component |
 | `gstPercent` | `Number` | No | default `18` | GST applied to convenience fee calculations |
 | `paymentMethod` | `String` | No | default `N/A` | Client-selected payment method label |
@@ -222,6 +225,7 @@ flowchart TD
     Seat["seats"]
     Show["shows"]
     ShowSeat["showseats"]
+    PriceSnapshot["ticketAmount + seatPricing[]"]
 
     User -->|owner| Theatre
     City -->|city| Theatre
@@ -235,6 +239,9 @@ flowchart TD
     Show -->|show| ShowSeat
     Seat -->|seat| ShowSeat
     Show -->|show| Booking
+    Show -->|ticketPricing price source| PriceSnapshot
+    ShowSeat -->|seatType source| PriceSnapshot
+    Booking -->|stores| PriceSnapshot
 ```
 
 Deletion behavior in controllers:
@@ -248,4 +255,4 @@ Deletion behavior in controllers:
 | Delete seat | Logically disables the Seat by setting `isActive=false`; physical identity is retained |
 | Delete show | Hard-deletes the Show; initialized Shows remove their ShowSeat documents in the same transaction, while related bookings are not cascaded |
 
-ShowSeat inventory is available as the backend per-Show snapshot foundation. Customer booking remains compatible with the existing dynamic `SeatLayout.jsx` path: `Booking.seats` and `Show.bookedSeats` continue storing string labels, and customer Seat selection does not yet read ShowSeat inventory until Phase 4B.
+ShowSeat inventory is now used by customer booking for initialized screen-aware Shows. Customer `SeatSelection.jsx` requests sanitized ShowSeat availability, `SeatLayout.jsx` renders the physical rows/columns/gaps, and final booking synchronizes `Booking`, `Show.bookedSeats`, and matching ShowSeats. Legacy no-screen Shows continue using the generated layout and `Show.bookedSeats` only. `Booking.seats` remains a string array, and historical bookings without `ticketAmount` or `seatPricing` remain readable through legacy fallback logic.

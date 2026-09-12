@@ -128,7 +128,9 @@ flowchart TD
     Show --> Screen
     Show --> ShowSeat["ShowSeat"]
     ShowSeat --> Seat
+    Show --> Pricing["ticketPricing"]
     Show --> Booking["Booking"]
+    Booking --> BookingPricing["ticketAmount + seatPricing[]"]
 ```
 
 Seat represents persistent physical Screen configuration. ShowSeat represents the per-Show inventory snapshot copied from those physical Seats. Each Screen owns its own layout, so two Screens may both contain `A1`, but a single Screen cannot contain duplicate `A1` or duplicate row/column positions.
@@ -151,7 +153,7 @@ Theatre
 
 Layout completeness is derived, not stored: `INCOMPLETE` means active Seat count is below capacity, and `COMPLETE` means it equals capacity. The invalid state where active Seat count exceeds capacity is prevented.
 
-Phase 4A does not switch customer booking to ShowSeat documents. `SeatSelection.jsx` and `SeatLayout.jsx` continue dynamically generating customer seat labels from Screen capacity or legacy `Show.totalSeats`; `Booking.seats` and `Show.bookedSeats` remain string arrays.
+Phase 4B switches initialized screen-aware customer booking to ShowSeat availability while preserving the string seat-label contract. `SeatSelection.jsx` fetches sanitized ShowSeat inventory, `SeatLayout.jsx` renders actual physical rows/columns/gaps, and `Booking.seats` plus `Show.bookedSeats` remain string arrays for compatibility. Legacy no-screen Shows continue using generated labels and `Show.bookedSeats` only.
 
 ## Backend Request Flow
 
@@ -659,7 +661,7 @@ sequenceDiagram
 
 ## BookMyShow v2 City, Screen, Seat, and ShowSeat Architecture
 
-Phase 1 introduces City as the first incremental service/repository-backed domain while preserving the existing controller-driven architecture for established modules. Phase 1.1 enriches City with optional `cityCode`, `tier`, and GeoJSON `location` metadata. Phase 2 introduces Screen as the physical auditorium under Theatre. Phase 3 introduces persistent physical Seat configuration under Screen. Phase 4A introduces per-Show ShowSeat inventory snapshots initialized from physical Seats. It does not introduce customer-facing ShowSeat selection, seat locking, dynamic pricing, or payment refactoring.
+Phase 1 introduces City as the first incremental service/repository-backed domain while preserving the existing controller-driven architecture for established modules. Phase 1.1 enriches City with optional `cityCode`, `tier`, and GeoJSON `location` metadata. Phase 2 introduces Screen as the physical auditorium under Theatre. Phase 3 introduces persistent physical Seat configuration under Screen. Phase 4A introduces per-Show ShowSeat inventory snapshots initialized from physical Seats. Phase 4B connects customer booking to ShowSeat availability and adds per-show seat-type pricing display backed by server-side pricing authority. It does not introduce temporary locking, lock expiry, TTL cleanup, or Phase 5 hold behavior.
 
 ```mermaid
 flowchart LR
@@ -705,7 +707,10 @@ Current target relationships:
 City -> Theatre -> Screen -> Seat
 Movie -> Show -> Screen
 Show -> ShowSeat -> Seat
+Show -> ticketPricing
 Show -> Booking
+Booking -> seats String[]
+Booking -> ticketAmount + seatPricing[]
 ```
 
 Every Theatre conceptually has at least one Screen. A single-screen Theatre is represented as `Theatre -> Screen 1`, while multiplexes create multiple Screen records. Each Screen has its own Seat layout; Seat labels are unique within a Screen, not globally. `Show.theatre` remains required for booking compatibility and `Show.screen` remains optional for legacy Shows.
@@ -722,7 +727,15 @@ For new screen-aware Shows, `ShowController` requires a complete physical Seat l
 
 ShowSeat is a snapshot, so changing `Show.screen` after ShowSeat inventory exists is rejected. The backend does not automatically delete/recreate or re-sync ShowSeats during Show updates. Hard-deleting an initialized Show removes its ShowSeats in the same transaction.
 
-Customer booking is not yet driven by ShowSeat inventory. `SeatSelection.jsx` and `SeatLayout.jsx` continue dynamically generating customer seat labels, while `Booking.seats` and `Show.bookedSeats` remain string arrays until Phase 4B.
+Customer booking is driven by ShowSeat inventory for initialized screen-aware Shows. `GET /bms/v1/shows/:showId/seats` returns customer-safe fields only: `showSeatId`, `seatId`, `seatNumber`, `row`, `column`, `seatType`, and `status`. The frontend still submits selected seat labels such as `["A1", "B11"]`; it does not submit ShowSeat ids or authoritative prices.
+
+Show remains the pricing owner. Required `Show.ticketPrice` is the default price and optional `Show.ticketPricing.STANDARD`, `PREMIUM`, and `RECLINER` override physical seat types. ShowSeat snapshots `seatType` but does not store price. `Booking.ticketAmount` and `Booking.seatPricing[]` preserve the purchased-seat price snapshot for history, PDF tickets, and email confirmation. Revenue aggregation continues using `Booking.amount`.
+
+The backend recalculates pricing during both Razorpay order creation and final booking confirmation. For initialized Shows, selected labels resolve to ShowSeat seat types, then to `Show.ticketPricing` or `Show.ticketPrice` fallback. `feePerTicket` remains a bounded compatibility input for convenience-fee calculation, and GST remains 18% on that fee component. Client-submitted pricing is display-only.
+
+The scheduler remains compatible because it submits the existing `ticketPrice` field for screen-aware Shows. It does not explicitly configure seat-type pricing yet, so scheduled Shows without `ticketPricing` resolve every seat type to the base ticket price.
+
+Phase 5 locking is not started. There is no `LOCKED` ShowSeat status, lock owner, lock expiry, TTL index, Razorpay checkout hold, or real-time lock refresh. The final booking transaction prevents double booking, but two customers can still see the same `AVAILABLE` seat before one booking succeeds.
 
 ## Route Groups
 
