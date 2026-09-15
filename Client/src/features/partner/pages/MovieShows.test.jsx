@@ -1,9 +1,28 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, test, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, test, vi } from "vitest";
 import MovieShows from "./MovieShows";
 import { getAvailableSeats, getResolvedTotalSeats } from "./showCapacityUtils";
 import { renderWithProviders, setupStore } from "../../../test/renderWithProviders";
+
+const originalGetComputedStyle = window.getComputedStyle;
+
+beforeAll(() => {
+  window.getComputedStyle = () => ({
+    getPropertyValue: () => "",
+    transitionDelay: "0s",
+    transitionDuration: "0s",
+    animationDelay: "0s",
+    animationDuration: "0s",
+    animationName: "none",
+    display: "block",
+    appearance: "none",
+  });
+});
+
+afterAll(() => {
+  window.getComputedStyle = originalGetComputedStyle;
+});
 
 const theatre = {
   _id: "theatre-1",
