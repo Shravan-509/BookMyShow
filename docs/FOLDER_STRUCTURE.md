@@ -33,6 +33,8 @@ BookMyShow/
 │   │   │   ├── home/
 │   │   │   ├── movies/
 │   │   │   │   └── pages/
+│   │   │   │       ├── BookingConfirmation.jsx
+│   │   │   │       ├── BookingConfirmation.test.jsx
 │   │   │   │       ├── Checkout.test.jsx
 │   │   │   │       └── Bookings.test.jsx
 │   │   │   ├── partner/

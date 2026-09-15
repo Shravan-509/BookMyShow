@@ -1130,6 +1130,7 @@ table th {
 .seat-recommendation-card.ant-card {
   border-radius: 8px;
   box-shadow: 0 8px 22px rgba(15, 23, 42, 0.045);
+  max-width: 1260px;
 }
 
 .show-context-card .ant-card-body {
@@ -1151,7 +1152,7 @@ table th {
 }
 
 .show-context-content .ant-typography {
-  margin: 0 0 8px;
+  margin: 0 0 0px;
 }
 
 .show-context-meta {
@@ -1159,6 +1160,7 @@ table th {
   flex-wrap: wrap;
   gap: 7px 10px;
   align-items: center;
+  margin: 8px 0px 8px 0px;
 }
 
 .show-context-datetime {
@@ -1508,7 +1510,6 @@ table th {
 .checkout-main-column {
   display: flex;
   flex-direction: column;
-  gap: 14px;
   min-width: 0;
 }
 
@@ -1518,6 +1519,10 @@ table th {
 
 .checkout-heading h3.ant-typography {
   margin-bottom: 2px;
+}
+
+.checkout-flow-card .checkout-heading {
+  margin-bottom: 18px;
 }
 
 .checkout-flow-card.ant-card,
@@ -1545,7 +1550,7 @@ table th {
 
 .checkout-contact-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(1, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -1603,6 +1608,46 @@ table th {
   font-size: 22px;
 }
 
+.checkout-status-region {
+  margin-top: 14px;
+}
+
+.checkout-status-inline {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 11px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.checkout-status-inline .ant-spin,
+.checkout-status-inline > .anticon {
+  margin-top: 2px;
+  color: #f84464;
+  font-size: 20px;
+}
+
+.checkout-status-inline.success > .anticon {
+  color: #16a34a;
+}
+
+.checkout-status-inline.failed > .anticon {
+  color: #ef4444;
+}
+
+.checkout-status-inline > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.checkout-status-inline .ant-typography {
+  margin: 0;
+}
+
 .checkout-trust-row,
 .checkout-policy-note {
   display: flex;
@@ -1642,6 +1687,259 @@ table th {
 .checkout-summary-column {
   position: sticky;
   top: 16px;
+}
+
+.booking-confirmation-shell {
+  padding: 24px 16px 28px;
+  background: linear-gradient(180deg, #f7f8fb 0%, #eef3f8 100%);
+}
+
+.booking-confirmation-shell.recovery {
+  display: flex;
+  align-items: flex-start;
+}
+
+.booking-confirmation-container {
+  width: min(1280px, 100%);
+  margin: 0 auto;
+}
+
+.booking-confirmation-hero {
+  margin-top: 18px;
+}
+
+.booking-confirmation-ticket.ant-card,
+.booking-confirmation-info-card.ant-card,
+.booking-confirmation-recovery-card.ant-card {
+  border-radius: 8px;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+}
+
+.booking-confirmation-ticket .ant-card-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(180px, 240px);
+  gap: 24px;
+  align-items: center;
+  padding: 28px;
+}
+
+.booking-confirmation-success {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+}
+
+.booking-confirmation-check {
+  display: inline-flex;
+  width: 64px;
+  height: 64px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #16a34a;
+  color: #fff;
+  font-size: 38px;
+  box-shadow: 0 14px 28px rgba(22, 163, 74, 0.25);
+}
+
+.booking-confirmation-success .ant-typography {
+  margin: 0;
+}
+
+.booking-confirmation-success h1.ant-typography {
+  margin-bottom: 6px;
+  font-size: 34px;
+  line-height: 1.14;
+}
+
+.booking-confirmation-email-note {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.booking-confirmation-ticket-divider {
+  height: 116px;
+  border-left: 1px dashed #d1d5db;
+}
+
+.booking-confirmation-id-panel {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 18px;
+  border: 1px solid #dcfce7;
+  border-radius: 8px;
+  background: #f0fdf4;
+}
+
+.booking-confirmation-id {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 18px;
+  overflow-wrap: anywhere;
+}
+
+.booking-confirmation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  margin: 12px 0 16px;
+}
+
+.booking-confirmation-download-note {
+  flex-basis: 100%;
+  text-align: center;
+  font-size: 12px;
+}
+
+.booking-confirmation-actions .ant-btn-primary,
+.booking-confirmation-recovery-card .ant-btn-primary {
+  border-color: #f84464;
+  background: #f84464;
+  box-shadow: 0 10px 22px rgba(248, 68, 100, 0.22);
+}
+
+.booking-confirmation-actions .ant-btn-primary:hover,
+.booking-confirmation-recovery-card .ant-btn-primary:hover {
+  border-color: #dc3558 !important;
+  background: #dc3558 !important;
+}
+
+.booking-confirmation-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(320px, 1fr);
+  gap: 18px;
+  align-items: stretch;
+}
+
+.booking-confirmation-info-card.ant-card,
+.booking-confirmation-summary,
+.booking-confirmation-summary .booking-summary-card.ant-card {
+  height: 100%;
+}
+
+.booking-confirmation-info-card .ant-card-body {
+  padding: 24px;
+}
+
+.booking-confirmation-info-header,
+.booking-confirmation-movie-row {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.booking-confirmation-info-header {
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.booking-confirmation-info-header .ant-typography,
+.booking-confirmation-movie-row .ant-typography {
+  margin: 0;
+}
+
+.booking-confirmation-movie-row img {
+  width: 86px;
+  height: 116px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.booking-confirmation-detail-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin: 20px 0;
+}
+
+.booking-confirmation-detail-list > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.booking-confirmation-detail-list strong,
+.booking-confirmation-detail-list .ant-typography {
+  overflow-wrap: anywhere;
+}
+
+.booking-confirmation-seat-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.booking-confirmation-seat-groups > div {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  border-radius: 8px;
+  background: #fff7f9;
+}
+
+.booking-confirmation-seat-groups span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.booking-confirmation-qr {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.booking-confirmation-qr-code {
+  display: flex;
+  flex: 0 0 auto;
+}
+
+.booking-confirmation-qr-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.booking-confirmation-summary {
+  position: sticky;
+  top: 16px;
+}
+
+.booking-confirmation-recovery-card.ant-card {
+  max-width: 640px;
+  margin: 26px auto 0;
+  text-align: center;
+}
+
+.booking-confirmation-recovery-card .ant-card-body {
+  padding: 36px;
+}
+
+.booking-confirmation-recovery-icon {
+  margin-bottom: 12px;
+  color: #16a34a;
+  font-size: 48px;
 }
 
 .seat-recommendation-card.ant-card {
@@ -1751,6 +2049,25 @@ table th {
     grid-template-columns: 1fr;
   }
 
+  .booking-confirmation-ticket .ant-card-body,
+  .booking-confirmation-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .booking-confirmation-ticket-divider {
+    display: none;
+  }
+
+  .booking-confirmation-summary {
+    position: static;
+    height: auto;
+  }
+
+  .booking-confirmation-info-card.ant-card,
+  .booking-confirmation-summary .booking-summary-card.ant-card {
+    height: auto;
+  }
+
   .checkout-summary-column {
     position: static;
     max-height: none;
@@ -1813,6 +2130,38 @@ table th {
 
   .checkout-payment-method {
     grid-template-columns: 1fr;
+  }
+
+  .booking-confirmation-shell {
+    padding: 16px 12px 32px;
+  }
+
+  .booking-confirmation-ticket .ant-card-body,
+  .booking-confirmation-info-card .ant-card-body,
+  .booking-confirmation-recovery-card .ant-card-body {
+    padding: 18px;
+  }
+
+  .booking-confirmation-success {
+    flex-direction: column;
+  }
+
+  .booking-confirmation-success h1.ant-typography {
+    font-size: 28px;
+  }
+
+  .booking-confirmation-detail-list {
+    grid-template-columns: 1fr;
+  }
+
+  .booking-confirmation-actions .ant-btn {
+    width: 100%;
+  }
+
+  .booking-confirmation-seat-groups > div,
+  .booking-confirmation-qr {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .seat-selection-legend {

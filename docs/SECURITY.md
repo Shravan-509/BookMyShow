@@ -47,6 +47,8 @@ Razorpay webhook reconciliation is not implemented. The current payment flow ver
 
 Frontend ticket prices are display-only. The backend recalculates selected-seat pricing from ShowSeat seat types, `Show.ticketPricing`, and `Show.ticketPrice` fallback before creating Razorpay orders and again before booking persistence.
 
+The booking confirmation page does not expose Razorpay secrets or unnecessary payment identifiers. It receives the confirmed Booking through navigation state after backend persistence succeeds. Refresh/direct navigation falls back to My Bookings because a customer-safe single-booking-by-bookingId endpoint has not been added.
+
 ## Review Findings
 
 | Priority | Finding | Recommendation |

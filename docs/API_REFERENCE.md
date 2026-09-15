@@ -292,3 +292,5 @@ Important booking behavior:
 Frontend checkout pricing is display-only. The backend recomputes ticket totals from selected seat labels, ShowSeat seat types, `Show.ticketPricing`, and `Show.ticketPrice` fallback during both order creation and final booking confirmation. `feePerTicket` remains a bounded compatibility input used to compute the convenience fee and 18% GST component.
 
 Simplified booking responses include legacy fields such as `seats`, `ticketPrice`, `seatType`, and `convenienceFee`, and now include `ticketAmount` plus `seatPricing[]` when present. Booking history, generated PDF tickets, and email confirmations should prefer those stored Booking snapshots rather than recomputing historical prices from the current Show.
+
+The frontend confirmation route `/booking-confirmation/:bookingId` is not a backend API endpoint. It renders from the confirmed Booking returned by `POST /bookings/bookSeat` plus checkout navigation state. A customer-safe single-booking lookup by booking id and a direct ticket download endpoint are not implemented.

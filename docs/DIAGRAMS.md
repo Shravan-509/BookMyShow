@@ -81,6 +81,19 @@ flowchart LR
 
 Phase 4B uses ShowSeat inventory for initialized screen-aware customer booking while preserving the string seat-label payload. Legacy no-screen Shows still use generated labels. `LOCKED` inventory state, lock expiry, lock owner, and TTL cleanup are future work.
 
+## Phase 4C Booking Journey
+
+```mermaid
+flowchart LR
+    Showtime["Showtime Selection"] --> Seats["Seat Selection"]
+    Seats --> Checkout["Checkout / Razorpay"]
+    Checkout --> Confirm["/booking-confirmation/:bookingId"]
+    Confirm --> History["My Bookings"]
+    Confirm --> Fallback["Refresh fallback"]
+```
+
+Phase 4C uses shared `BookingProgress` and `BookingSummaryCard` across the customer journey. Confirmation is entered only after backend booking persistence succeeds and uses the returned Booking plus navigation-state Show context. Refresh fallback links to My Bookings because there is no customer-safe single-booking lookup endpoint yet. Direct ticket download is disabled because current PDF delivery is backend/email based.
+
 ## JWT Flow
 
 ```mermaid
@@ -108,6 +121,8 @@ sequenceDiagram
     Booking->>Booking: Verify signature
     Booking->>MongoDB: Transactionally update bookedSeats, ShowSeats, and Booking
     Booking->>Brevo: Ticket email
+    Booking-->>Client: Booking document
+    Client->>Client: Navigate to /booking-confirmation/:bookingId
 ```
 
 ## Email Verification and 2FA

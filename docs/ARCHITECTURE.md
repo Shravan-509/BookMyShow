@@ -733,6 +733,14 @@ Show remains the pricing owner. Required `Show.ticketPrice` is the default price
 
 The backend recalculates pricing during both Razorpay order creation and final booking confirmation. For initialized Shows, selected labels resolve to ShowSeat seat types, then to `Show.ticketPricing` or `Show.ticketPrice` fallback. `feePerTicket` remains a bounded compatibility input for convenience-fee calculation, and GST remains 18% on that fee component. Client-submitted pricing is display-only.
 
+Phase 4C completes the frontend booking journey:
+
+```text
+Showtime Selection -> Seat Selection -> Checkout -> Booking Confirmation
+```
+
+`MovieDetails.jsx`, `ShowTime.jsx`, `SeatSelection.jsx`, `Checkout.jsx`, and `BookingConfirmation.jsx` share a four-step `BookingProgress`, structured show context, physical seat-map UX, mixed seat-type pricing display, and `BookingSummaryCard`. Checkout navigates to `/booking-confirmation/:bookingId` only after backend booking persistence succeeds. The confirmation route uses the returned Booking plus navigation-state Show context; refresh/direct navigation falls back to My Bookings because no customer-safe single-booking lookup endpoint exists yet. Direct ticket download is disabled because current PDF generation and delivery are backend/email based.
+
 The scheduler remains compatible because it submits the existing `ticketPrice` field for screen-aware Shows. It does not explicitly configure seat-type pricing yet, so scheduled Shows without `ticketPricing` resolve every seat type to the base ticket price.
 
 Phase 5 locking is not started. There is no `LOCKED` ShowSeat status, lock owner, lock expiry, TTL index, Razorpay checkout hold, or real-time lock refresh. The final booking transaction prevents double booking, but two customers can still see the same `AVAILABLE` seat before one booking succeeds.

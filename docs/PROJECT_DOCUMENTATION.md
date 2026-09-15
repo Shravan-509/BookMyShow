@@ -117,7 +117,7 @@ flowchart LR
 ```
 
 
-BookMyShow v2 Phase 1 introduces the City domain as the first incremental service/repository-backed module. Phase 1.1 adds optional City metadata fields: `cityCode`, `tier`, and GeoJSON `location`. Phase 2 introduces the Screen domain as the physical auditorium inside a Theatre. Phase 3 introduces persistent physical Seat configuration under each Screen. Phase 4A introduces per-Show ShowSeat inventory snapshots initialized from physical Seats. Phase 4B connects customer booking to ShowSeat availability and per-show seat-type pricing.
+BookMyShow v2 Phase 1 introduces the City domain as the first incremental service/repository-backed module. Phase 1.1 adds optional City metadata fields: `cityCode`, `tier`, and GeoJSON `location`. Phase 2 introduces the Screen domain as the physical auditorium inside a Theatre. Phase 3 introduces persistent physical Seat configuration under each Screen. Phase 4A introduces per-Show ShowSeat inventory snapshots initialized from physical Seats. Phase 4B connects customer booking to ShowSeat availability and per-show seat-type pricing. Phase 4C completes the redesigned customer booking journey from showtime selection through confirmation.
 
 Implemented v2 domain hierarchy:
 
@@ -156,6 +156,7 @@ Phase status:
 | Phase 3 - Physical Seat Management | Complete |
 | Phase 4A - ShowSeat Inventory Foundation | Complete |
 | Phase 4B - Customer ShowSeat Booking + Pricing | Complete |
+| Phase 4C - Booking Experience Redesign | Complete |
 | Phase 5 - Seat Locking | Planned / Not Started |
 
 Request flow:
@@ -858,6 +859,28 @@ Customer `selectedSeats` and `Booking.seats` remain seat-label string arrays suc
 
 The scheduler remains compatible with this model because it continues submitting `ticketPrice`; it does not explicitly configure `ticketPricing` yet, so scheduled Shows use the backend base-price fallback for all seat types.
 
+### Phase 4C Booking Experience
+
+Phase 4C redesigns the customer journey while preserving the Phase 4B booking contracts.
+
+```text
+Showtime Selection -> Seat Selection -> Checkout -> Confirmation
+```
+
+| Area | Current implementation |
+| --- | --- |
+| Progress | Shared `BookingProgress` marks Showtime, Seats, Checkout, and Confirmation states |
+| Showtime | `ShowTime.jsx` groups theatres, screens, times, city context, and lowest available price labels |
+| Seat selection | `SeatSelection.jsx` fetches ShowSeat availability, supports the ticket-count selector, physical pan/zoom map, expanded map mode, pricing legend, and recommendations |
+| Pricing display | Mixed `STANDARD`, `PREMIUM`, and `RECLINER` selections show frontend subtotals while backend pricing remains authoritative |
+| Checkout | `Checkout.jsx` keeps contact details, Razorpay payment, terms, edit seats, GST display, and `BookingSummaryCard` in a compact two-column layout |
+| Confirmation | `/booking-confirmation/:bookingId` renders the real Booking ID, Ticket Details, QR, movie/theatre/screen/date/time/seats, Booking price snapshots, and My Bookings action |
+| Refresh fallback | Direct navigation or browser refresh without navigation state shows a recovery card that links to My Bookings |
+| Ticket download | Direct download is disabled on confirmation because current ticket PDF delivery is backend/email based |
+| Accessibility | Buttons use explicit accessible names, progress exposes the current step, seat buttons expose label/type/status, and status text does not rely only on color |
+
+Phase 4C does not add a customer-safe single-booking retrieval endpoint, a direct PDF download endpoint, seat locking, hold timers, or real-time seat reservations.
+
 ## 10. Payment Integration
 
 Razorpay is integrated with an order-create, server-side price calculation, signature verification, and amount-verification flow.
@@ -1199,6 +1222,8 @@ BookMyShow/
 | Module | Responsibility |
 | --- | --- |
 | `MainLayout.jsx` | Authenticated shell with role-aware navigation, drawer menu, header, footer, logout |
+| `BookingProgress.jsx` | Shared four-step Showtime, Seats, Checkout, and Confirmation progress indicator |
+| `BookingSummaryCard.jsx` | Reusable booking summary for seat selection, checkout, and confirmation contexts |
 | `SeatLayout.jsx` | Interactive seat grid, booked/selected states, mouse/touch pan, wheel/pinch zoom |
 | `SeatRecommendation.jsx` | Scores seat groups based on center position, viewing distance, aisle/back preferences |
 | `SeatManagement.jsx` | Admin/Partner physical Seat configuration UI under Screen Management |

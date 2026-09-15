@@ -8,6 +8,7 @@
 | Rendering | `memo`, `useMemo`, `useCallback` in shared components |
 | State selection | Reselect selectors in slices and utility selectors |
 | Perceived loading | Ant Design `Skeleton` and `Spin` states in selected movie, show, seat, and booking screens |
+| Booking journey | Route-split booking confirmation page, memoized pricing summaries, and pan/zoom seat map controls for large physical layouts |
 | Image behavior | Static SVG/WebP assets served by Vite; further image optimization is a future enhancement |
 
 ## Backend

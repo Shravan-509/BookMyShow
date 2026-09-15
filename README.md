@@ -249,6 +249,7 @@ Current v2 status:
 | Phase 3 - Physical Seat Management | Complete |
 | Phase 4A - ShowSeat Inventory Foundation | Complete |
 | Phase 4B - Customer ShowSeat Booking + Pricing | Complete |
+| Phase 4C - Booking Experience Redesign | Complete |
 | Phase 5 - Seat Locking | Planned / Not Started |
 
 Phase 4A adds per-show ShowSeat inventory snapshots initialized from physical Seats. Historical migration initialized 382 Shows with 243,728 ShowSeat documents, including 13 `BOOKED` snapshots from legacy `Show.bookedSeats`; the final audit shows all 382 Shows as `ALREADY_INITIALIZED` with 0 `READY` and 0 errors or warnings.
@@ -256,6 +257,10 @@ Phase 4A adds per-show ShowSeat inventory snapshots initialized from physical Se
 Phase 4B connects customer booking to ShowSeat availability for initialized screen-aware Shows. `SeatSelection.jsx` fetches `/bms/v1/shows/:showId/seats`, `SeatLayout.jsx` renders actual ShowSeat rows/columns/gaps, and booking validation/order/payment confirmation synchronizes `Show.bookedSeats`, `ShowSeat.status`, and `Booking` in the backend. Legacy no-screen Shows still fall back to the older generated layout and `Show.bookedSeats` checks. `Booking.seats` and frontend `selectedSeats` remain string arrays such as `["A1", "B11"]`.
 
 Show pricing remains owned by the Show. Required `ticketPrice` is the backward-compatible default, and optional `ticketPricing.STANDARD`, `ticketPricing.PREMIUM`, and `ticketPricing.RECLINER` override specific physical seat types. The frontend displays category pricing and mixed selected-seat subtotals, but the backend independently recalculates authoritative totals from ShowSeat seat types, `Show.ticketPricing`, and the `ticketPrice` fallback before creating Razorpay orders or confirming bookings. New bookings store `ticketAmount` and `seatPricing[]` snapshots for booking history, PDF tickets, and email confirmations.
+
+Phase 4C completes the customer booking journey from Showtime Selection to Seat Selection, Checkout, and Booking Confirmation. The flow uses shared `BookingProgress`, structured Theatre/Screen/date context, physical ShowSeat layout rendering with legacy fallback, ticket-count controls, seat recommendations, pan/zoom/reset/expand seat-map controls, the blue "All eyes this way please!" screen indicator, differentiated seat-type pricing, `BookingSummaryCard`, Razorpay checkout, and a protected `/booking-confirmation/:bookingId` route.
+
+Confirmation displays the real Booking ID, Ticket Details, QR code, Booking price snapshots, View My Bookings, Explore More Movies, and a disabled Download Ticket action. Direct confirmation refresh/navigation falls back gracefully to My Bookings because there is no customer-safe single-booking-detail endpoint. Download Ticket remains disabled because current PDF ticket delivery is handled by backend/email, not a frontend download endpoint.
 
 Phase 5 seat locking is not implemented yet. There is no `LOCKED` ShowSeat state, temporary hold owner, expiry, TTL index, or Razorpay checkout hold; concurrent users may still view the same `AVAILABLE` seat before the final transaction allows only one booking to succeed.
 

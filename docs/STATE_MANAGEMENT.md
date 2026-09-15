@@ -36,6 +36,12 @@ flowchart LR
 | `ui` | Auth tab and login error state |
 | `loader` | Global loading flag |
 
+## Booking Journey State
+
+The Phase 4C booking journey keeps selected seats as string labels. `SeatSelection.jsx` owns the transient selection and ticket-count UI, while `showSeat` stores the fetched availability layout for the current Show. `Checkout.jsx` dispatches seat validation, Razorpay order creation, and booking confirmation through `bookingSlice` actions and navigates to `/booking-confirmation/:bookingId` only after `booking.bookingData` is populated by `bookSeatsSuccess`.
+
+`BookingConfirmation.jsx` can read the most recent `booking.bookingData`, but its primary data path is React Router navigation state containing the returned Booking plus checkout Show context. Direct refresh without that state falls back to My Bookings because there is no single-booking retrieval action or customer-safe API endpoint.
+
 ## Persisted State
 
 The root reducer is wrapped with `redux-persist`. On `logout`, the root reducer resets all slices by returning `undefined` state to the combined reducer.
