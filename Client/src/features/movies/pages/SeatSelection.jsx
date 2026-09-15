@@ -1,245 +1,148 @@
-import React, { useEffect, useState, useCallback, useMemo } from "react"
-import { format } from 'date-fns';
-
-import { Link, useParams } from "react-router-dom"
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { format } from "date-fns";
+import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeftOutlined,
   CalendarOutlined,
   ClockCircleOutlined,
-  EyeOutlined,
-  CreditCardOutlined,
-} from "@ant-design/icons"
-import {
-  Button,
-  Card,
-  Col,
-  Divider,
-  Form,
-  Input,
-  InputNumber,
-  Row,
-  Skeleton,
-  Space,
-  Spin,
-  Steps,
-  Tag,
-  Typography,
-  Badge,
-} from "antd"
-import { useDispatch, useSelector } from "react-redux"
-import { SeatLayout } from "../../../components/SeatLayout"
-import { SHOWSEAT_LAYOUT_STATUS, SHOWSEAT_STATUS } from "../../../components/seatLayoutUtils"
-import { useAuth } from "../../../hooks/useAuth"
-import PaymentSummary from "./Checkout"
+  CloseOutlined,
+  FullscreenOutlined,
+  MinusOutlined,
+  PlusOutlined,
+} from "@ant-design/icons";
+import { Button, Card, Divider, Form, Input, Skeleton, Spin, Tag, Typography } from "antd";
+import { useDispatch, useSelector } from "react-redux";
+import BookingProgress from "../../../components/booking/BookingProgress";
+import BookingSummaryCard from "../../../components/booking/BookingSummaryCard";
+import { SeatLayout } from "../../../components/SeatLayout";
+import SeatRecommendation from "../../../components/SeatRecommendation";
+import { SHOWSEAT_LAYOUT_STATUS, SHOWSEAT_STATUS } from "../../../components/seatLayoutUtils";
+import { useAuth } from "../../../hooks/useAuth";
+import PaymentSummary from "./Checkout";
 import {
   getShowByIdRequest,
   selectSelectedShow,
   selectShowError,
   selectShowLoading,
-} from "../../../redux/slices/showSlice"
+} from "../../../redux/slices/showSlice";
 import {
   clearShowSeats,
   fetchShowSeatsRequest,
   selectShowSeatError,
   selectShowSeatInventory,
   selectShowSeatLoading,
-} from "../../../redux/slices/showSeatSlice"
-import { notify } from "../../../utils/notificationUtils"
-import SeatRecommendation from "../../../components/SeatRecommendation"
+} from "../../../redux/slices/showSeatSlice";
+import { notify } from "../../../utils/notificationUtils";
 import { formatDate, formatParsedTime } from "../../../utils/dateFormatter";
 import { getScreenDisplayName } from "../../../utils/screenDisplay";
 import {
   buildSelectedSeatPricing,
   formatCurrency,
-  groupSeatPricing,
+  getSeatTypeLabel,
   resolveSeatTypePrice,
+  SUPPORTED_SEAT_TYPES,
 } from "../../../utils/ticketPricing";
-const { Title, Text } = Typography
-const { Step } = Steps
+
+const { Text, Title } = Typography;
+const MAX_SELECTABLE_SEATS = 5;
+const MIN_TICKET_COUNT = 1;
+const EMPTY_SHOW_SEATS = [];
 
 const LoadingSkeleton = React.memo(() => (
-  <div className="min-h-screen p-4 md:p-6 lg:p-12 bg-gray-50 flex justify-center">
-    <Card className="w-full max-w-4xl">
-      <div className="text-center py-12">
-        <Skeleton active paragraph={{ rows: 4 }} />
-        <Row gutter={[24, 24]} className="mt-8">
-          {Array.from({ length: 12 }, (_, i) => (
-            <Col xs={24} md={12} key={i}>
-              <Skeleton active paragraph={{ rows: 3 }} />
-            </Col>
-          ))}
-        </Row>
-      </div>
-    </Card>
+  <div className="booking-page-shell">
+    <div className="booking-page-container">
+      <Card className="w-full" variant="borderless">
+        <Skeleton active paragraph={{ rows: 8 }} />
+      </Card>
+    </div>
   </div>
-))
+));
 
-LoadingSkeleton.displayName = "LoadingSkeleton"
+LoadingSkeleton.displayName = "LoadingSkeleton";
 
 const ScreenDisplay = React.memo(() => (
-  <div className="flex flex-col items-center mt-6">
+  <div className="screen-direction-indicator">
     <svg
       width="300"
       height="50"
       viewBox="0 0 300 50"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      style={{ minHeight: "50px" }} // Prevent layout shift
+      aria-hidden="true"
+      style={{ minHeight: "50px" }}
     >
       <polygon points="10,40 30,10 270,10 290,40" fill="#D6E9FF" stroke="#B0D4FF" strokeWidth="1" />
       <polygon points="10,40 290,40 285,45 15,45" fill="#EAF4FF" stroke="#B0D4FF" strokeWidth="1" />
     </svg>
-    <div className="text-xs text-gray-700 mt-2">All eyes this way please!</div>
+    <div>All eyes this way please!</div>
   </div>
-))
+));
 
-ScreenDisplay.displayName = "ScreenDisplay"
+ScreenDisplay.displayName = "ScreenDisplay";
 
 const Booking = () => {
-  const { user } = useAuth()
-  const params = useParams()
-  const dispatch = useDispatch()
-  const [contactForm] = Form.useForm()
-  const [currentStep, setCurrentStep] = useState(0)
-  const [ticketCount, setTicketCount] = useState(2)
-  const [selectedSeats, setSelectedSeats] = useState([])
-  const [showBookingSummary, setShowBookingSummary] = useState(false)
-  const [isMobile, setIsMobile] = useState(false)
+  const { user } = useAuth();
+  const params = useParams();
+  const dispatch = useDispatch();
+  const [contactForm] = Form.useForm();
+  const [currentStep, setCurrentStep] = useState(0);
+  const [selectedSeats, setSelectedSeats] = useState([]);
+  const [desiredTicketCount, setDesiredTicketCount] = useState(2);
+  const [isSeatMapExpanded, setIsSeatMapExpanded] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const [seatPreferences] = useState({
     preferCenter: true,
     preferBack: false,
     preferAisle: false,
-  })
+  });
 
-  const loading = useSelector(selectShowLoading)
-  const showError = useSelector(selectShowError)
-  const show = useSelector(selectSelectedShow)
-  const showSeatInventory = useSelector(selectShowSeatInventory)
-  const showSeatLoading = useSelector(selectShowSeatLoading)
-  const showSeatError = useSelector(selectShowSeatError)
-  const resolvedTotalSeats = show?.screen?.capacity ?? show?.totalSeats ?? 0
-  const hasInitializedInventory = showSeatInventory?.layoutStatus === SHOWSEAT_LAYOUT_STATUS.INITIALIZED
-  const isScreenAwareShow = Boolean(show?.screen)
-  const loadedShowId = show?._id?.toString?.() || show?._id || show?.id
-  const inventoryShowId = showSeatInventory?.showId?.toString?.() || showSeatInventory?.showId
-  const showSeatInventoryBelongsToShow = inventoryShowId === loadedShowId
-  const canRenderPhysicalLayout = isScreenAwareShow && hasInitializedInventory && showSeatInventoryBelongsToShow
-  const canRenderLegacyLayout = !isScreenAwareShow || showSeatInventory?.layoutStatus === SHOWSEAT_LAYOUT_STATUS.LEGACY
-  const shouldShowSeatInventoryLoading = isScreenAwareShow && (showSeatLoading || !showSeatInventoryBelongsToShow) && !showSeatError
-  const shouldShowSeatInventoryError = isScreenAwareShow && Boolean(showSeatError)
-  const screenDisplayName = getScreenDisplayName(show?.screen)
+  const loading = useSelector(selectShowLoading);
+  const showError = useSelector(selectShowError);
+  const show = useSelector(selectSelectedShow);
+  const showSeatInventory = useSelector(selectShowSeatInventory);
+  const showSeatLoading = useSelector(selectShowSeatLoading);
+  const showSeatError = useSelector(selectShowSeatError);
+  const resolvedTotalSeats = show?.screen?.capacity ?? show?.totalSeats ?? 0;
+  const hasInitializedInventory = showSeatInventory?.layoutStatus === SHOWSEAT_LAYOUT_STATUS.INITIALIZED;
+  const isScreenAwareShow = Boolean(show?.screen);
+  const loadedShowId = show?._id?.toString?.() || show?._id || show?.id;
+  const inventoryShowId = showSeatInventory?.showId?.toString?.() || showSeatInventory?.showId;
+  const showSeatInventoryBelongsToShow = inventoryShowId === loadedShowId;
+  const canRenderPhysicalLayout = isScreenAwareShow && hasInitializedInventory && showSeatInventoryBelongsToShow;
+  const canRenderLegacyLayout = !isScreenAwareShow || showSeatInventory?.layoutStatus === SHOWSEAT_LAYOUT_STATUS.LEGACY;
+  const shouldShowSeatInventoryLoading = isScreenAwareShow && (showSeatLoading || !showSeatInventoryBelongsToShow) && !showSeatError;
+  const shouldShowSeatInventoryError = isScreenAwareShow && Boolean(showSeatError);
+  const screenDisplayName = getScreenDisplayName(show?.screen);
+  const showSeatsForPricing = canRenderPhysicalLayout ? showSeatInventory.seats : EMPTY_SHOW_SEATS;
+
   const selectedSeatPricing = useMemo(() => (
-    buildSelectedSeatPricing(
-      show,
-      canRenderPhysicalLayout ? showSeatInventory.seats : [],
-      selectedSeats,
-    )
-  ), [canRenderPhysicalLayout, selectedSeats, show, showSeatInventory])
-  const selectedSeatGroups = useMemo(
-    () => groupSeatPricing(selectedSeatPricing.seatPricing),
-    [selectedSeatPricing.seatPricing],
-  )
+    buildSelectedSeatPricing(show, showSeatsForPricing, selectedSeats)
+  ), [selectedSeats, show, showSeatsForPricing]);
+
   const getSeatPrice = useCallback(
     (seatType) => resolveSeatTypePrice(show, seatType),
     [show],
-  )
+  );
+
   const physicalAvailableSeats = useMemo(() => (
     canRenderPhysicalLayout
       ? showSeatInventory.seats.filter((seat) => seat.status === SHOWSEAT_STATUS.AVAILABLE)
       : []
-  ), [canRenderPhysicalLayout, showSeatInventory])
+  ), [canRenderPhysicalLayout, showSeatInventory]);
 
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768)
-    }
-    checkMobile()
-    window.addEventListener("resize", checkMobile)
-    return () => window.removeEventListener("resize", checkMobile)
-  }, [])
+  const recommendationGroupSize = desiredTicketCount;
+  const formattedShowDate = formatDate(show?.date, "EEE, dd MMM, yyyy");
+  const formattedShowTime = formatParsedTime(show?.time);
+  const showtimeRouteDate = show?.date ? format(new Date(show.date), "yyyyMMdd") : format(new Date(), "yyyyMMdd");
+  const bookingProgressStep = currentStep === 0 ? "seats" : "checkout";
 
-  useEffect(() => {
-    dispatch(clearShowSeats())
-    dispatch(getShowByIdRequest(params.id))
-    return () => {
-      dispatch(clearShowSeats())
-    }
-  }, [dispatch, params.id])
-
-  useEffect(() => {
-    if (!params.id || !loadedShowId || loadedShowId !== params.id) {
-      return
-    }
-
-    if (!show?.screen) {
-      dispatch(clearShowSeats())
-      return
-    }
-
-    dispatch(fetchShowSeatsRequest({ showId: loadedShowId }))
-  }, [dispatch, loadedShowId, params.id, show?.screen])
-
-  const handleTicketCount = useCallback((value) => {
-    if (value) {
-      setTicketCount(value)
-      setSelectedSeats([])
-    }
-  }, [])
-
-  const handlePreviousStep = useCallback(() => {
-    setCurrentStep((prev) => prev - 1)
-  }, [])
-
-  const handleNextStep = useCallback(() => {
-    if (currentStep === 0 && selectedSeats.length !== ticketCount) {
-      notify("warning", `Please select exactly ${ticketCount} seats`)
-      return
-    }
-
-    if (currentStep === 1) {
-      contactForm
-        .validateFields()
-        .then(() => {
-          setCurrentStep((prev) => prev + 1)
-        })
-        .catch((info) => {
-          notify("warning", `Validate failed : ${info}`)
-        })
-      return
-    }
-
-    setCurrentStep((prev) => prev + 1)
-  }, [currentStep, selectedSeats.length, ticketCount, contactForm])
-
-  const handleSeatSelection = useCallback(
-    (seatId) => {
-      if (selectedSeats.includes(seatId)) {
-        setSelectedSeats((prev) => prev.filter((id) => id !== seatId))
-      } else if (selectedSeats.length < ticketCount) {
-        setSelectedSeats((prev) => [...prev, seatId])
-      } else {
-        notify("warning", `You can only select ${ticketCount} seats`)
-      }
-    },
-    [selectedSeats, ticketCount],
-  )
-
-  const handleRecommendedSeatSelection = useCallback(
-    (recommendedSeats) => {
-      // Clear current seat selection first
-      setSelectedSeats([])
-      // Add each seat individually to match the existing selection logic
-      recommendedSeats.forEach((seat) => {
-        setSelectedSeats((prev) => {
-          if (!prev.includes(seat.seatId) && prev.length < ticketCount) {
-            return [...prev, seat.seatId]
-          }
-          return prev
-        })
-      })
-    },
-    [ticketCount],
-  )
+  const seatLegendItems = useMemo(() => (
+    SUPPORTED_SEAT_TYPES.map((seatType) => ({
+      seatType,
+      label: getSeatTypeLabel(seatType),
+      price: getSeatPrice(seatType),
+    }))
+  ), [getSeatPrice]);
 
   const formInitialValues = useMemo(
     () => ({
@@ -248,65 +151,173 @@ const Booking = () => {
       phone: user?.phone,
     }),
     [user?.name, user?.email, user?.phone],
-  )
+  );
 
-  const bookingSummaryContent = (
-    <div className="p-4">
-      <div className="mb-4">
-        <Text strong className="text-lg">
-          {show?.movie.movieName}
-        </Text>
-        <div className="text-sm text-gray-600 mt-1">{show?.theatre.name}</div>
-        {screenDisplayName && (
-          <div className="text-sm text-gray-600">{screenDisplayName}</div>
-        )}
-        <div className="text-sm text-gray-600">
-          {formatDate(show?.date, "EEE, dd MMM, yyyy")} | {" "}
-          {formatParsedTime(show?.time)}
-        </div>
-      </div>
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
 
-      <Divider />
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
-      <div className="mb-4">
-        <div className="flex justify-between items-center mb-2">
-          <Text>Tickets: {ticketCount}</Text>
-          <Text strong>{formatCurrency(selectedSeatPricing.ticketAmount)}</Text>
-        </div>
-        <div className="text-sm text-gray-600">
-          Selected: {selectedSeats.length > 0 ? selectedSeats.join(", ") : "None"}
-        </div>
-        {selectedSeatGroups.length > 0 && (
-          <div className="mt-2 space-y-1">
-            {selectedSeatGroups.map((group) => (
-              <div key={`${group.seatType}-${group.price}`} className="flex justify-between text-xs text-gray-600">
-                <span>{group.seatTypeLabel} × {group.count}</span>
-                <span>{formatCurrency(group.total)}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+  useEffect(() => {
+    dispatch(clearShowSeats());
+    dispatch(getShowByIdRequest(params.id));
+    return () => {
+      dispatch(clearShowSeats());
+    };
+  }, [dispatch, params.id]);
 
-      <div className="flex justify-center gap-2 mt-4">
-        <div className="flex items-center mr-4">
-          <div className="w-4 h-4 bg-gray-200 rounded-sm mr-2" />
-          <Text className="text-xs">Available</Text>
-        </div>
-        <div className="flex items-center mr-4">
-          <div className="w-4 h-4 bg-[#1ea83c] rounded-sm mr-2" />
-          <Text className="text-xs">Selected</Text>
-        </div>
-        <div className="flex items-center">
-          <div className="w-4 h-4 bg-gray-500 rounded-sm mr-2" />
-          <Text className="text-xs">Booked</Text>
-        </div>
+  useEffect(() => {
+    if (!params.id || !loadedShowId || loadedShowId !== params.id) {
+      return;
+    }
+
+    if (!show?.screen) {
+      dispatch(clearShowSeats());
+      return;
+    }
+
+    dispatch(fetchShowSeatsRequest({ showId: loadedShowId }));
+  }, [dispatch, loadedShowId, params.id, show?.screen]);
+
+  const handlePreviousStep = useCallback(() => {
+    setCurrentStep((prev) => prev - 1);
+  }, []);
+
+  const handleNextStep = useCallback(() => {
+    if (currentStep === 0 && selectedSeats.length === 0) {
+      notify("warning", "Please select at least one seat");
+      return;
+    }
+
+    if (currentStep === 1) {
+      contactForm
+        .validateFields()
+        .then(() => {
+          setCurrentStep((prev) => prev + 1);
+        })
+        .catch((info) => {
+          notify("warning", `Validate failed : ${info}`);
+        });
+      return;
+    }
+
+    setCurrentStep((prev) => prev + 1);
+  }, [contactForm, currentStep, selectedSeats.length]);
+
+  const incrementTicketCount = useCallback(() => {
+    setDesiredTicketCount((prev) => Math.min(MAX_SELECTABLE_SEATS, prev + 1));
+  }, []);
+
+  const decrementTicketCount = useCallback(() => {
+    setDesiredTicketCount((prev) => Math.max(MIN_TICKET_COUNT, selectedSeats.length, prev - 1));
+  }, [selectedSeats.length]);
+
+  const handleSeatSelection = useCallback(
+    (seatId) => {
+      if (selectedSeats.includes(seatId)) {
+        setSelectedSeats((prev) => prev.filter((id) => id !== seatId));
+      } else if (selectedSeats.length < desiredTicketCount) {
+        setSelectedSeats((prev) => [...prev, seatId]);
+      } else {
+        notify("warning", `You've selected ${desiredTicketCount} of ${desiredTicketCount} seats.`);
+      }
+    },
+    [desiredTicketCount, selectedSeats],
+  );
+
+  const handleRecommendedSeatSelection = useCallback((recommendedSeats) => {
+    setSelectedSeats([]);
+    recommendedSeats.slice(0, desiredTicketCount).forEach((seat) => {
+      setSelectedSeats((prev) => {
+        if (!prev.includes(seat.seatId) && prev.length < desiredTicketCount) {
+          return [...prev, seat.seatId];
+        }
+        return prev;
+      });
+    });
+  }, [desiredTicketCount]);
+
+  const renderTicketCounter = () => (
+    <div className="ticket-count-control" aria-label="Number of tickets">
+      <Text type="secondary">Number of tickets</Text>
+      <div className="ticket-count-stepper">
+        <Button
+          aria-label="Decrease ticket count"
+          icon={<MinusOutlined aria-hidden="true" />}
+          disabled={desiredTicketCount <= MIN_TICKET_COUNT || desiredTicketCount <= selectedSeats.length}
+          onClick={decrementTicketCount}
+        />
+        <span aria-live="polite">{desiredTicketCount}</span>
+        <Button
+          aria-label="Increase ticket count"
+          icon={<PlusOutlined aria-hidden="true" />}
+          disabled={desiredTicketCount >= MAX_SELECTABLE_SEATS}
+          onClick={incrementTicketCount}
+        />
       </div>
     </div>
-  )
+  );
+
+  const renderSeatLegend = () => (
+    <div className="seat-selection-legend" aria-label="Seat legend">
+      <div className="seat-legend-group" aria-label="Seat availability">
+        <span><i className="legend-seat available" /> Available</span>
+        <span><i className="legend-seat selected" /> Selected</span>
+        <span><i className="legend-seat booked" /> Booked</span>
+      </div>
+      <div className="seat-legend-divider" aria-hidden="true" />
+      <div className="seat-legend-group" aria-label="Seat category pricing">
+        {seatLegendItems.map((item) => (
+          <span key={item.seatType}>
+            <i className={`legend-seat type-${item.seatType.toLowerCase()}`} />
+            {item.label} {formatCurrency(item.price)}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderSeatMapContent = ({ expanded = false } = {}) => (
+    <div className={expanded ? "seat-map-expanded-content" : "seat-selection-area"}>
+      {shouldShowSeatInventoryLoading && (
+        <Card className="text-center py-12 bg-gray-50! border-gray-200!">
+          <Spin />
+          <div className="mt-3 text-sm text-gray-600">Loading seat layout...</div>
+        </Card>
+      )}
+
+      {shouldShowSeatInventoryError && (
+        <Card className="text-center py-10 bg-red-50! border-red-100!">
+          <Title level={5} className="mb-2!">Seat layout unavailable</Title>
+          <Text type="secondary">{showSeatError}</Text>
+        </Card>
+      )}
+
+      {!shouldShowSeatInventoryLoading && !shouldShowSeatInventoryError && (canRenderPhysicalLayout || canRenderLegacyLayout) && (
+        <SeatLayout
+          totalSeats={resolvedTotalSeats}
+          bookedSeats={show?.bookedSeats}
+          selectedSeats={selectedSeats}
+          onSeatSelect={handleSeatSelection}
+          layoutStatus={canRenderPhysicalLayout ? SHOWSEAT_LAYOUT_STATUS.INITIALIZED : SHOWSEAT_LAYOUT_STATUS.LEGACY}
+          showSeats={showSeatsForPricing}
+          getSeatPrice={getSeatPrice}
+          showSeatTypeLegend={false}
+          expanded={expanded}
+        />
+      )}
+
+      <ScreenDisplay />
+    </div>
+  );
 
   if (loading) {
-    return <LoadingSkeleton />
+    return <LoadingSkeleton />;
   }
 
   if (!show) {
@@ -319,292 +330,225 @@ const Booking = () => {
           </Button>
         </Link>
       </div>
-    )
+    );
   }
 
   if (showError) {
-    notify("error", "Sorry, something went wrong", showError)
+    notify("error", "Sorry, something went wrong", showError);
   }
 
   return (
-    show && (
-      <main className="min-h-screen p-4 md:p-6 lg:p-12 bg-gray-50">
-        <div className="max-w-4xl mx-auto">
-          <Link to={`/movie/${show?.movie._id}/${format(new Date(), "yyyyMMdd")}`}>
-            <ArrowLeftOutlined className="h-4 w-4 mr-2" />
-            Back to Theatre
-          </Link>
+    <main className="booking-page-shell">
+      <div className="booking-page-container">
+        <Link className="booking-back-link" to={`/movie/${show?.movie?._id}/${showtimeRouteDate}`}>
+          <ArrowLeftOutlined className="h-4 w-4 mr-2" />
+          Back to Showtimes
+        </Link>
 
-          <div className="mb-6 mt-5">
-            <Card style={{ minHeight: isMobile ? "auto" : "600px" }}>
-              <div className="flex flex-col justify-between items-start mb-6">
-                <Title level={3} className="mb-1! text-xl! md:text-2xl!">
-                  {show?.movie.movieName}
-                </Title>
+        <BookingProgress current={bookingProgressStep} />
 
-                <Space orientation="vertical" size={4} className="mb-2!">
-                  <Space size="middle" wrap>
-                    <Text className="text-sm md:text-base">{show?.theatre.name}</Text>
-                    {screenDisplayName && (
-                      <Tag color="geekblue" className="text-xs! md:text-sm!">
-                        {screenDisplayName}
-                      </Tag>
-                    )}
-                    <Tag color="blue" className="flex! gap-1! text-xs! md:text-sm!">
-                      <CalendarOutlined />
-                      {formatDate(show?.date, "EEE, dd MMM, yyyy")}
-                      <ClockCircleOutlined />
-                      {formatParsedTime(show?.time)}
-                    </Tag>
-                  </Space>
-                </Space>
-              </div>
-
-              <Steps current={currentStep} className="mb-6!" size={isMobile ? "small" : "default"}>
-                <Step title={isMobile ? "Seats" : "Select Seats"} />
-                <Step title={isMobile ? "Details" : "Your Details"} />
-                <Step title="Payment" />
-              </Steps>
-
-              {currentStep === 0 && (
+        <div className="booking-workspace">
+          <section className="booking-main-column">
+            <Card className="show-context-card" variant="borderless">
+              <div className="show-context-content">
+                {show?.movie?.poster && (
+                  <img src={show.movie.poster} alt={`${show.movie.movieName} poster`} />
+                )}
                 <div>
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-                    <Title level={4} className="mb-0! text-lg! md:text-xl!">
-                      Select Number of Tickets
-                    </Title>
-                    <InputNumber
-                      className="w-24"
-                      min={1}
-                      max={5}
-                      value={ticketCount}
-                      onChange={handleTicketCount}
-                      size={isMobile ? "large" : "middle"}
-                    />
+                  <Title level={3}>{show?.movie?.movieName}</Title>
+                  <div className="show-context-meta">
+                    <Text>{show?.theatre.name}</Text>
+                    {screenDisplayName && <Tag>{screenDisplayName}</Tag>}
+                    <span className="show-context-datetime">
+                      <CalendarOutlined aria-hidden="true" />
+                      <span>{formattedShowDate}</span>
+                      <span aria-hidden="true">|</span>
+                      <ClockCircleOutlined aria-hidden="true" />
+                      <span>{formattedShowTime}</span>
+                    </span>
+                  </div>
+                </div>
+                <Link className="show-context-change" to={`/movie/${show?.movie?._id}/${showtimeRouteDate}`}>
+                  Change
+                </Link>
+              </div>
+            </Card>
+
+            {currentStep === 0 && (
+              <>
+                <Card className="seat-selection-card" variant="borderless">
+                  <div className="seat-selection-toolbar">
+                    <div>
+                      <Title level={4}>Select Seats</Title>
+                      <Text type="secondary">
+                        {selectedSeats.length === desiredTicketCount
+                          ? `You've selected ${selectedSeats.length} of ${desiredTicketCount} seats.`
+                          : `${selectedSeats.length} of ${desiredTicketCount} seats selected`}
+                      </Text>
+                    </div>
+                    {renderTicketCounter()}
                   </div>
 
-                  {isMobile && (
-                    <div className="flex gap-2 mb-4">
+                  {!isSeatMapExpanded && (
+                    <div className="seat-selection-legend-row">
+                      {renderSeatLegend()}
                       <Button
-                        icon={<EyeOutlined />}
-                        onClick={() => setShowBookingSummary(false)}
-                        type={!showBookingSummary ? "primary" : "default"}
-                        className="flex-1"
+                        aria-label="Expand seat map"
+                        icon={<FullscreenOutlined aria-hidden="true" />}
+                        onClick={() => setIsSeatMapExpanded(true)}
                       >
-                        Seat View
-                      </Button>
-                      <Button
-                        icon={<CreditCardOutlined />}
-                        onClick={() => setShowBookingSummary(true)}
-                        type={showBookingSummary ? "primary" : "default"}
-                        className="flex-1"
-                      >
-                        <Badge count={selectedSeats.length} size="small">
-                          Summary
-                        </Badge>
+                        Expand
                       </Button>
                     </div>
                   )}
 
-                  {(!isMobile || !showBookingSummary) && (
-                    <>
-                      <SeatRecommendation
-                        totalSeats={resolvedTotalSeats}
-                        bookedSeats={show?.bookedSeats}
-                        availableSeats={physicalAvailableSeats}
-                        selectedSeats={selectedSeats}
-                        onSeatSelect={handleRecommendedSeatSelection}
-                        groupSize={ticketCount}
-                        preferences={seatPreferences}
-                      />
+                  {!isSeatMapExpanded && renderSeatMapContent()}
+                </Card>
 
-                      <Divider />
-                      <div className="mb-6">
-                        <div className="seat-selection-area">
-                          {shouldShowSeatInventoryLoading && (
-                            <Card className="text-center py-12 bg-gray-50! border-gray-200!">
-                              <Spin />
-                              <div className="mt-3 text-sm text-gray-600">Loading seat layout...</div>
-                            </Card>
-                          )}
+                <SeatRecommendation
+                  totalSeats={resolvedTotalSeats}
+                  bookedSeats={show?.bookedSeats}
+                  availableSeats={physicalAvailableSeats}
+                  selectedSeats={selectedSeats}
+                  onSeatSelect={handleRecommendedSeatSelection}
+                  groupSize={recommendationGroupSize}
+                  preferences={seatPreferences}
+                  getSeatPrice={getSeatPrice}
+                />
+              </>
+            )}
 
-                          {shouldShowSeatInventoryError && (
-                            <Card className="text-center py-10 bg-red-50! border-red-100!">
-                              <Title level={5} className="mb-2!">Seat layout unavailable</Title>
-                              <Text type="secondary">{showSeatError}</Text>
-                            </Card>
-                          )}
+            {currentStep === 1 && (
+              <Card className="checkout-details-card" variant="borderless">
+                <Title level={4} className="mb-6!">
+                  Your Contact Details
+                </Title>
+                <Form form={contactForm} layout="vertical" initialValues={formInitialValues}>
+                  <Form.Item
+                    name="name"
+                    label="Full Name"
+                    rules={[{ required: true, message: "Please enter your name" }]}
+                  >
+                    <Input placeholder="Enter your full name" />
+                  </Form.Item>
 
-                          {!shouldShowSeatInventoryLoading && !shouldShowSeatInventoryError && (canRenderPhysicalLayout || canRenderLegacyLayout) && (
-                            <SeatLayout
-                              totalSeats={resolvedTotalSeats}
-                              bookedSeats={show?.bookedSeats}
-                              selectedSeats={selectedSeats}
-                              onSeatSelect={handleSeatSelection}
-                              layoutStatus={canRenderPhysicalLayout ? SHOWSEAT_LAYOUT_STATUS.INITIALIZED : SHOWSEAT_LAYOUT_STATUS.LEGACY}
-                              showSeats={canRenderPhysicalLayout ? showSeatInventory.seats : []}
-                              getSeatPrice={getSeatPrice}
-                            />
-                          )}
+                  <Form.Item
+                    name="email"
+                    label="Email Address"
+                    rules={[
+                      { required: true, message: "Please enter your email" },
+                      { type: "email", message: "Please enter a valid email" },
+                    ]}
+                  >
+                    <Input placeholder="Enter your email address" />
+                  </Form.Item>
 
-                          <ScreenDisplay />
+                  <Form.Item
+                    name="phone"
+                    label="Phone Number"
+                    rules={[
+                      { required: true, message: "Please enter your phone number" },
+                      { pattern: /^[6-9]\d{9}$/, message: "Please enter a valid 10-digit phone number" },
+                    ]}
+                  >
+                    <Input placeholder="Enter your 10-digit phone number" />
+                  </Form.Item>
 
-                          {!isMobile && (
-                            <div className="flex justify-center mt-12" style={{ minHeight: "40px" }}>
-                              <div className="flex items-center mr-6">
-                                <div className="w-4 h-4 bg-gray-200 rounded-sm mr-2" />
-                                <Text>Available</Text>
-                              </div>
+                  <Divider />
 
-                              <div className="flex items-center mr-6">
-                                <div className="w-4 h-4 bg-[#1ea83c] rounded-sm mr-2" />
-                                <Text>Selected</Text>
-                              </div>
-
-                              <div className="flex items-center mr-6">
-                                <div className="w-4 h-4 bg-gray-500 rounded-sm mr-2" />
-                                <Text>Booked</Text>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </>
-                  )}
-
-                  {isMobile && showBookingSummary && bookingSummaryContent}
-
-                  {(!isMobile || !showBookingSummary) && (
-                    <>
-                      <Divider />
-                      <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-                        <div className="text-center sm:text-left">
-                          <Text className="block text-sm md:text-base">Selected: </Text>
-                          <Text strong className="text-sm md:text-base">
-                            {selectedSeats.length > 0 ? selectedSeats.join(", ") : "None"}
-                          </Text>
-                          {selectedSeatGroups.length > 0 && (
-                            <div className="mt-2 space-y-1">
-                              {selectedSeatGroups.map((group) => (
-                                <Text key={`${group.seatType}-${group.price}`} type="secondary" className="block text-xs">
-                                  {group.seatTypeLabel} × {group.count}: {formatCurrency(group.total)}
-                                </Text>
-                              ))}
-                              <Text strong className="block text-sm">
-                                Subtotal: {formatCurrency(selectedSeatPricing.ticketAmount)}
-                              </Text>
-                            </div>
-                          )}
-                        </div>
-                        <Button
-                          type="primary"
-                          size="large"
-                          onClick={handleNextStep}
-                          disabled={selectedSeats.length !== ticketCount}
-                          className={`bg-[#f84464]! transition-colors duration-200 ${
-                            selectedSeats.length !== ticketCount
-                              ? "opacity-50 cursor-not-allowed"
-                              : "hover:bg-[#dc3558]!"
-                          } ${isMobile ? "w-full" : ""}`}
-                        >
-                          Continue
-                        </Button>
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
-
-              {currentStep === 1 && (
-                <div>
-                  <Title level={4} className="mb-6!">
-                    Your Contact Details
-                  </Title>
-                  <Form form={contactForm} layout="vertical" initialValues={formInitialValues}>
-                    <Form.Item
-                      name={"name"}
-                      label="Full Name"
-                      rules={[{ required: true, message: "Please enter your name" }]}
+                  <div className="flex justify-between">
+                    <Button size="large" onClick={handlePreviousStep}>
+                      Back
+                    </Button>
+                    <Button
+                      type="primary"
+                      size="large"
+                      onClick={handleNextStep}
+                      className="bg-[#f84464]! hover:bg-[#dc3558]!"
                     >
-                      <Input placeholder="Enter your full name" />
-                    </Form.Item>
+                      Proceed to Pay
+                    </Button>
+                  </div>
+                </Form>
+              </Card>
+            )}
 
-                    <Form.Item
-                      name={"email"}
-                      label="Email Address"
-                      rules={[
-                        { required: true, message: "Please enter your email" },
-                        { type: "email", message: "Please enter a valid email" },
-                      ]}
-                    >
-                      <Input placeholder="Enter your email address" />
-                    </Form.Item>
-
-                    <Form.Item
-                      name={"phone"}
-                      label="Phone Number"
-                      rules={[
-                        { required: true, message: "Please enter your phone number" },
-                        { pattern: /^[6-9]\d{9}$/, message: "Please enter a valid 10-digit phone number" },
-                      ]}
-                    >
-                      <Input placeholder="Enter your 10-digit phone number" />
-                    </Form.Item>
-
-                    <Divider />
-
-                    <div className="flex justify-between">
-                      <Button size="large" onClick={handlePreviousStep}>
-                        Back
-                      </Button>
-                      <Button
-                        type="primary"
-                        size="large"
-                        onClick={handleNextStep}
-                        className="bg-[#f84464]! hover:bg-[#dc3558]!"
-                      >
-                        Proceed to Pay
-                      </Button>
-                    </div>
-                  </Form>
-                </div>
-              )}
-
-              {currentStep === 2 && (
+            {currentStep === 2 && (
+              <Card className="checkout-details-card" variant="borderless">
                 <PaymentSummary
                   show={show}
                   seats={selectedSeats}
-                  showSeats={canRenderPhysicalLayout ? showSeatInventory.seats : []}
+                  showSeats={showSeatsForPricing}
                   handlePreviousStep={handlePreviousStep}
                 />
-              )}
-            </Card>
-          </div>
+              </Card>
+            )}
+          </section>
 
-          {isMobile && currentStep === 0 && (
-            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-50">
-              <div className="flex justify-between items-center max-w-4xl mx-auto">
-                <div className="text-sm">
-                  <div className="font-medium">
-                    {selectedSeats.length} of {ticketCount} seats selected
-                  </div>
-                  <div className="text-gray-600">{formatCurrency(selectedSeatPricing.ticketAmount)}</div>
+          <aside className="booking-sidebar">
+            <BookingSummaryCard
+              show={show}
+              screenName={screenDisplayName}
+              formattedDate={formattedShowDate}
+              formattedTime={formattedShowTime}
+              selectedSeats={selectedSeats}
+              seatPricing={selectedSeatPricing.seatPricing}
+              ticketAmount={selectedSeatPricing.ticketAmount}
+              ctaDisabled={selectedSeats.length === 0 || currentStep !== 0}
+              onCtaClick={handleNextStep}
+            />
+          </aside>
+        </div>
+
+        {isSeatMapExpanded && (
+          <div className="seat-map-expanded-overlay" role="dialog" aria-modal="true" aria-label="Expanded seat map">
+            <div className="seat-map-expanded-panel">
+              <div className="seat-map-expanded-header">
+                <div>
+                  <Title level={4}>Select Seats</Title>
+                  <Text type="secondary">
+                    {selectedSeats.length} of {desiredTicketCount} seats selected
+                  </Text>
                 </div>
                 <Button
-                  type="primary"
-                  size="large"
-                  onClick={handleNextStep}
-                  disabled={selectedSeats.length !== ticketCount}
-                  className="bg-[#f84464]! hover:bg-[#dc3558]! min-w-30!"
+                  aria-label="Collapse seat map"
+                  icon={<CloseOutlined aria-hidden="true" />}
+                  onClick={() => setIsSeatMapExpanded(false)}
                 >
-                  Continue
+                  Close
                 </Button>
               </div>
+              <div className="seat-map-expanded-tools">
+                {renderSeatLegend()}
+                {renderTicketCounter()}
+              </div>
+              {renderSeatMapContent({ expanded: true })}
             </div>
-          )}
-        </div>
-      </main>
-    )
-  )
-}
+          </div>
+        )}
 
-export default Booking
+        {isMobile && currentStep === 0 && (
+          <div className="booking-mobile-cta">
+            <div className="text-sm">
+              <div className="font-medium">
+                {selectedSeats.length} {selectedSeats.length === 1 ? "seat" : "seats"} selected
+              </div>
+              <div className="text-gray-600">{formatCurrency(selectedSeatPricing.ticketAmount)}</div>
+            </div>
+            <Button
+              type="primary"
+              size="large"
+              onClick={handleNextStep}
+              disabled={selectedSeats.length === 0}
+              className="bg-[#f84464]! hover:bg-[#dc3558]! min-w-30!"
+            >
+              Continue
+            </Button>
+          </div>
+        )}
+      </div>
+    </main>
+  );
+};
+
+export default Booking;

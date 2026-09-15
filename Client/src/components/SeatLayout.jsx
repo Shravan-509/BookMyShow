@@ -34,13 +34,15 @@ export const SeatLayout = ({
     layoutStatus = SHOWSEAT_LAYOUT_STATUS.LEGACY,
     showSeats = EMPTY_SHOW_SEATS,
     getSeatPrice = null,
+    showSeatTypeLegend = true,
+    expanded = false,
 }) => {
     const seatsPerRow = 15;
     const numRows = Math.ceil(totalSeats / seatsPerRow)
     const [transformOverride, setTransformOverride] = useState(null)
     const [viewportSize, setViewportSize] = useState(() => ({
         width: typeof window === "undefined" ? 960 : window.innerWidth,
-        height: 400,
+        height: expanded ? 620 : 400,
     }))
     const [isDragging, setIsDragging] = useState(false)
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
@@ -247,18 +249,18 @@ export const SeatLayout = ({
 
 
     const buildButtonClass = ({ isBooked, isSelected, seatType = "STANDARD", isPhysical = false }) => {
-        let buttonClass = `${isPhysical ? "" : "!w-8 !h-8 !m-1"} !flex !items-center !justify-center !text-xs !font-medium !rounded !transition-all !duration-200`
+        let buttonClass = `${isPhysical ? "physical-seat-button" : "!w-8 !h-8 !m-1"} !flex !items-center !justify-center !text-xs !font-medium !rounded !transition-all !duration-200`
 
         if(isBooked)
         {
-            return `${buttonClass} !bg-gray-400 !text-gray-600 !cursor-not-allowed !border-gray-400`
+            return `${buttonClass} !bg-slate-500 !text-white !cursor-not-allowed !border-slate-500`
         }
 
         if(isSelected){
             return `${buttonClass} !bg-[#1ea83c] !text-white !border-[#1ea83c] !shadow-md`
         }
 
-        buttonClass += " !bg-gray-100 !text-gray-700 hover:!bg-gray-200 hover:!border-gray-300"
+        buttonClass += " !bg-slate-100 !text-slate-700 hover:!bg-slate-200 hover:!border-slate-300"
         return `${buttonClass} ${seatTypeClasses[seatType] || seatTypeClasses.STANDARD}`
     }
 
@@ -367,9 +369,9 @@ export const SeatLayout = ({
         </div>
         <div
             ref={setContainerNode}
-            className="seat-map-viewport overflow-hidden border border-gray-200 rounded-lg bg-gray-50"
+            className={`seat-map-viewport overflow-hidden border border-gray-200 rounded-lg bg-gray-50 ${expanded ? "expanded" : ""}`}
             style={{
-            height: "400px",
+            height: expanded ? "min(68vh, 680px)" : "460px",
             width: "100%",
             position: "relative",
             cursor: isDragging ? "grabbing" : "grab",
@@ -420,7 +422,7 @@ export const SeatLayout = ({
                         </div>
                     ))
                 }
-                {isPhysicalMode && (
+                {isPhysicalMode && showSeatTypeLegend && (
                     <div className="flex flex-wrap justify-center gap-3 mt-4 text-xs text-gray-600">
                         {seatTypeLegend.map((item) => (
                             <div key={item.type} className="flex items-center gap-1">

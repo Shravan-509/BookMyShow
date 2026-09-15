@@ -1078,6 +1078,571 @@ table th {
   padding: 8px 0 0 0 !important;
 }
 
+.booking-page-shell {
+  min-height: 100vh;
+  padding: 24px 16px 40px;
+  background: #f7f8fb;
+}
+
+.booking-page-container {
+  width: min(1480px, 100%);
+  margin: 0 auto;
+}
+
+.booking-back-link {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 10px;
+  color: #334155;
+  font-weight: 700;
+}
+
+.booking-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 20px;
+  align-items: start;
+  margin-top: 18px;
+}
+
+.booking-main-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.show-context-card.ant-card,
+.seat-selection-card.ant-card,
+.selected-seat-card.ant-card,
+.checkout-details-card.ant-card,
+.booking-summary-card.ant-card,
+.seat-recommendation-card.ant-card {
+  border-radius: 8px;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.045);
+}
+
+.show-context-content {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+}
+
+.show-context-content img {
+  width: 72px;
+  height: 96px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.show-context-content .ant-typography {
+  margin: 0 0 8px;
+}
+
+.show-context-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.show-context-datetime {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  padding-left: 12px;
+  border-left: 1px solid #e2e8f0;
+  color: #0f172a;
+  white-space: nowrap;
+}
+
+.show-context-meta .ant-tag {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  margin: 0;
+  border-radius: 6px;
+}
+
+.show-context-change {
+  color: #f84464;
+  font-weight: 800;
+}
+
+.seat-selection-toolbar {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.seat-selection-toolbar .ant-typography {
+  margin: 0 0 4px;
+}
+
+.ticket-count-control {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.ticket-count-stepper {
+  display: inline-grid;
+  grid-template-columns: 40px 48px 40px;
+  overflow: hidden;
+  border: 1px solid #d5dde8;
+  border-radius: 7px;
+  background: #fff;
+}
+
+.ticket-count-stepper .ant-btn {
+  width: 40px;
+  height: 36px;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.ticket-count-stepper span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid #d5dde8;
+  border-left: 1px solid #d5dde8;
+  color: #0f172a;
+  font-weight: 800;
+}
+
+.seat-selection-legend-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.seat-selection-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  align-items: center;
+  justify-content: flex-start;
+  color: #475569;
+  font-size: 12px;
+}
+
+.seat-legend-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: center;
+}
+
+.seat-legend-divider {
+  width: 1px;
+  height: 20px;
+  background: #dbe3ed;
+}
+
+.seat-selection-legend span {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.legend-seat {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  border: 1px solid #cbd5e1;
+  border-radius: 3px;
+  background: #f1f5f9;
+}
+
+.legend-seat.selected {
+  border-color: #1ea83c;
+  background: #1ea83c;
+}
+
+.legend-seat.booked {
+  border-color: #6b7280;
+  background: #6b7280;
+}
+
+.legend-seat.type-standard {
+  background: #f3f4f6;
+}
+
+.legend-seat.type-premium {
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+
+.legend-seat.type-recliner {
+  border-color: #fbbf24;
+  background: #fffbeb;
+}
+
+.screen-direction-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 18px;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.seat-map-expanded-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  overflow: auto;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.52);
+}
+
+.seat-map-expanded-panel {
+  min-height: calc(100vh - 48px);
+  padding: 20px;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
+}
+
+.seat-map-expanded-header,
+.seat-map-expanded-tools {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.seat-map-expanded-header .ant-typography {
+  margin: 0;
+}
+
+.seat-map-expanded-content {
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.selected-seat-card .ant-card-body {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.selected-seat-card .ant-typography {
+  margin: 0;
+}
+
+.selected-seat-groups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-top: 6px;
+}
+
+.booking-inline-cta.ant-btn,
+.booking-summary-cta.ant-btn {
+  border-color: #f84464;
+  background: #f84464;
+  font-weight: 800;
+}
+
+.booking-inline-cta.ant-btn:not(:disabled):hover,
+.booking-summary-cta.ant-btn:not(:disabled):hover {
+  border-color: #dc3558;
+  background: #dc3558;
+}
+
+.booking-sidebar {
+  position: sticky;
+  top: 18px;
+  max-height: calc(100vh - 36px);
+  overflow: auto;
+}
+
+.booking-summary-card .ant-card-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.booking-summary-title.ant-typography {
+  margin: 0 0 16px;
+}
+
+.booking-summary-movie {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.booking-summary-movie img {
+  width: 70px;
+  height: 94px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.booking-summary-small {
+  display: block;
+  margin-top: 3px;
+  font-size: 12px;
+}
+
+.booking-summary-details {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.booking-summary-details > div,
+.booking-summary-selected,
+.booking-summary-pricing {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.booking-summary-details strong,
+.booking-summary-details .ant-typography {
+  display: block;
+}
+
+.booking-summary-row {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.booking-summary-row > :last-child {
+  text-align: right;
+}
+
+.booking-summary-seat-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.booking-summary-seat-groups > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: #f8fafc;
+}
+
+.booking-summary-total {
+  padding-top: 8px;
+  border-top: 1px solid #e2e8f0;
+  color: #f84464;
+}
+
+.booking-summary-cta.ant-btn {
+  width: 100%;
+  height: 48px;
+  margin-top: 18px;
+}
+
+.booking-summary-note {
+  margin-top: 12px;
+  text-align: center;
+  font-size: 12px;
+}
+
+.seat-recommendation-card.ant-card {
+  border: 1px solid #e2e8f0;
+}
+
+.seat-recommendation-header {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+  color: #0f172a;
+}
+
+.seat-recommendation-header .ant-typography {
+  margin: 0;
+}
+
+.seat-recommendation-grid.ant-space {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 100%;
+}
+
+.seat-recommendation-grid .ant-space-item {
+  min-width: 0;
+}
+
+.seat-recommendation-option {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.seat-recommendation-option.selected {
+  border-color: #f84464;
+  box-shadow: 0 0 0 1px rgba(248, 68, 100, 0.15);
+}
+
+.seat-recommendation-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.seat-recommendation-title-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.seat-recommendation-title-row .ant-tag {
+  margin: 0;
+}
+
+.seat-recommendation-action.ant-btn-primary {
+  border-color: #f84464;
+  background: #f84464;
+}
+
+.physical-seat-button.ant-btn {
+  border-radius: 4px;
+  box-shadow: inset 0 -1px 0 rgba(15, 23, 42, 0.08);
+  font-size: 10px;
+  line-height: 1;
+}
+
+.booking-mobile-cta {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-top: 1px solid #e2e8f0;
+  background: #fff;
+  box-shadow: 0 -8px 24px rgba(15, 23, 42, 0.08);
+}
+
+@media (max-width: 1100px) {
+  .booking-workspace {
+    grid-template-columns: minmax(0, 1fr) 300px;
+  }
+}
+
+@media (max-width: 920px) {
+  .booking-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .booking-sidebar {
+    position: static;
+    max-height: none;
+    order: -1;
+  }
+
+  .booking-summary-cta.ant-btn {
+    display: none;
+  }
+
+  .seat-selection-legend-row,
+  .seat-map-expanded-tools {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 640px) {
+  .booking-page-shell {
+    padding: 16px 12px 92px;
+  }
+
+  .show-context-content {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .show-context-content img {
+    width: 56px;
+    height: 78px;
+  }
+
+  .show-context-change {
+    grid-column: 1 / -1;
+  }
+
+  .seat-selection-toolbar,
+  .selected-seat-card .ant-card-body {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .show-context-datetime {
+    flex-wrap: wrap;
+    padding-left: 0;
+    border-left: 0;
+    white-space: normal;
+  }
+
+  .ticket-count-control {
+    justify-content: space-between;
+  }
+
+  .seat-selection-legend {
+    justify-content: flex-start;
+  }
+
+  .seat-legend-divider {
+    width: 100%;
+    height: 1px;
+  }
+
+  .seat-map-expanded-overlay {
+    padding: 10px;
+  }
+
+  .seat-map-expanded-panel {
+    min-height: calc(100vh - 20px);
+    padding: 12px;
+  }
+
+  .seat-map-expanded-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .seat-recommendation-grid.ant-space {
+    grid-template-columns: 1fr;
+  }
+
+  .booking-inline-cta.ant-btn {
+    width: 100%;
+  }
+}
+
 /* Enhanced custom navigation menu styles */
 .custom-nav-menu {
   background: #1f2533;
