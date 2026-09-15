@@ -370,6 +370,8 @@ export const SeatLayout = ({
         <div
             ref={setContainerNode}
             className={`seat-map-viewport overflow-hidden border border-gray-200 rounded-lg bg-gray-50 ${expanded ? "expanded" : ""}`}
+            role="region"
+            aria-label={isPhysicalMode ? "Interactive physical seat map" : "Legacy seat map"}
             style={{
             height: expanded ? "min(68vh, 680px)" : "460px",
             width: "100%",

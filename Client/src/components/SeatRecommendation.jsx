@@ -242,6 +242,7 @@ const SeatRecommendation = ({
                             size="small"
                             onClick={() => handleQuickSelect(rec.seats, index)}
                             className="seat-recommendation-action"
+                            aria-label={`${isSelected ? "Selected" : "Select"} recommended seats ${rec.seats.map((s) => s.seatId).join(", ")}`}
                         >
                             {isSelected ? "Selected" : "Select"}
                         </Button>

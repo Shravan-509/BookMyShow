@@ -521,16 +521,44 @@ const PaymentSummary = React.memo(({show, seats, showSeats = [], handlePreviousS
         * therefore we do not send another duplicate toast here.
         */
 
-        const timer = setTimeout(() => {
-            navigate("/my-profile/purchase-history")
-        }, 1500)
+        const confirmedBookingId = bookingData?.bookingId || bookingData?._id
 
-        return () => {
-            clearTimeout(timer)
+        if (!confirmedBookingId)
+        {
+            navigate("/my-profile/purchase-history")
+            return
         }
+
+        navigate(`/booking-confirmation/${confirmedBookingId}`, {
+            state: {
+                booking: bookingData,
+                bookingContext: {
+                    show,
+                    seats,
+                    seatPricing: selectedSeatPricing.seatPricing,
+                    ticketAmount,
+                    convenienceFee,
+                    totalAmount,
+                    feeBreakdown,
+                    screenDisplayName,
+                    formattedShowDate,
+                    formattedShowTime,
+                },
+            },
+        })
     }, [
         paymentStage,
         bookingData,
+        show,
+        seats,
+        selectedSeatPricing.seatPricing,
+        ticketAmount,
+        convenienceFee,
+        totalAmount,
+        feeBreakdown,
+        screenDisplayName,
+        formattedShowDate,
+        formattedShowTime,
         navigate,
     ])
 
@@ -594,10 +622,12 @@ const PaymentSummary = React.memo(({show, seats, showSeats = [], handlePreviousS
                 processingMessage = "Payment received. Confirming your booking...";
             }
             return (
-                <div className='text-center py-6'>
-                    <Spin indicator={<LoadingOutlined style={{fontSize: 32}} spin />} />
-                    <div className='mt-3 text-gray-600 text-base'>{ processingMessage }</div>
-                    <div className="mt-1 text-gray-500 text-sm">Please do not refresh or close this page.</div>
+                <div className="checkout-status-inline" aria-live="polite">
+                    <Spin indicator={<LoadingOutlined style={{fontSize: 20}} spin />} />
+                    <div>
+                        <Text strong>{ processingMessage }</Text>
+                        <Text type="secondary">Please do not refresh or close this page.</Text>
+                    </div>
                 </div>
             )
         }
@@ -605,24 +635,24 @@ const PaymentSummary = React.memo(({show, seats, showSeats = [], handlePreviousS
         if(paymentStatus === "success")
         {
             return (
-                <div className='text-center py-6'>
-                    <CheckCircleOutlined style={{fontSize: 32, color: '#52c41a'}} />
-                    <div className='mt-3 text-green-600 text-base font-medium'>
-                         Booking Confirmed!
+                <div className="checkout-status-inline success" aria-live="polite">
+                    <CheckCircleOutlined />
+                    <div>
+                        <Text strong>Booking Confirmed!</Text>
+                        <Text type="secondary">Opening your booking confirmation.</Text>
                     </div>
-                    <div className='mt-2 text-gray-500 text-sm'>You will be redirected to your booking history shortly.</div>
                 </div>
             )
         }
 
         if (paymentStatus === "failed") {
             return (
-                <div className='text-center py-6'>
-                    <CloseCircleOutlined style={{fontSize: 32, color: '#ff4d4f'}} />
-                    <div className='mt-3 text-red-600 text-base font-medium'>
-                        Payment / Booking Failed
+                <div className="checkout-status-inline failed" aria-live="polite">
+                    <CloseCircleOutlined />
+                    <div>
+                        <Text strong>Payment / Booking Failed</Text>
+                        <Text type="secondary">Please review the error and try again or contact support if the issue persists.</Text>
                     </div>
-                    <div className='mt-2 text-gray-500 text-sm'>Please review the error and try again or contact support if the issue persists.</div>
                 </div>
             );
         }
@@ -668,20 +698,12 @@ const PaymentSummary = React.memo(({show, seats, showSeats = [], handlePreviousS
             aria-label="Checkout"
         >
             <section className="checkout-main-column">
-                <div className="checkout-heading">
+                <Card className="checkout-flow-card" variant="borderless">
+                  <div className="checkout-heading">
                     <Title level={3}>Complete Your Booking</Title>
                     <Text type="secondary">Review your details and continue to Razorpay secure checkout.</Text>
-                </div>
+                  </div>
 
-                {renderErrorAlert()}
-
-                {(paymentStatus === "processing" || paymentStatus === "success" || paymentStatus === "failed") && (
-                    <Card className="checkout-status-card" variant="borderless" aria-live="polite">
-                        {renderPaymentStatus()}
-                    </Card>
-                )}
-
-                <Card className="checkout-flow-card" variant="borderless">
                   <section className="checkout-flow-section">
                     <div className="checkout-section-heading">
                         <Title level={4}>Contact Details</Title>
@@ -727,6 +749,12 @@ const PaymentSummary = React.memo(({show, seats, showSeats = [], handlePreviousS
                             </Paragraph>
                         </div>
                     </div>
+                    {(paymentStatus === "processing" || paymentStatus === "success" || paymentStatus === "failed") && (
+                        <div className="checkout-status-region">
+                            {renderPaymentStatus()}
+                        </div>
+                    )}
+                    {renderErrorAlert()}
                     <Divider />
                     <div className="checkout-trust-row">
                         <SafetyCertificateOutlined aria-hidden="true" />
@@ -741,7 +769,7 @@ const PaymentSummary = React.memo(({show, seats, showSeats = [], handlePreviousS
                         <a href="#" aria-label="Read Terms and Conditions">Terms & Conditions</a>{" "}
                         and{" "}
                         <a href="#" aria-label="Read Cancellation Policy">Cancellation Policy</a>.
-                        A confirmation will be sent to your email and phone number.
+                        A ticket confirmation will be sent to your registered email when delivery succeeds.
                     </Paragraph>
                   </div>
 

@@ -103,6 +103,7 @@ describe("PaymentSummary checkout flow", () => {
     expect(screen.queryByText(/Integrated GST/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/IGST/i)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /pay ₹953.10 with razorpay/i })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /pay .* with razorpay/i })).toHaveLength(1);
     expect(screen.queryByText(/held|countdown|lock expires|reserved until/i)).not.toBeInTheDocument();
   });
 
@@ -130,6 +131,9 @@ describe("PaymentSummary checkout flow", () => {
 
     await user.click(screen.getByRole("button", { name: /pay ₹535.40 with razorpay/i }));
 
+    expect(screen.getByText("Validating selected seats...")).toBeInTheDocument();
+    expect(document.querySelector(".checkout-status-card")).not.toBeInTheDocument();
+
     expect(store.dispatch).toHaveBeenCalledWith(expect.objectContaining({
       type: "booking/validateSeatBookingRequest",
       payload: { showId: "show-1", seats: ["A1", "A2"] },
@@ -144,6 +148,8 @@ describe("PaymentSummary checkout flow", () => {
     act(() => {
       store.dispatch(validateSeatBookingSuccess({ success: true, data: {} }));
     });
+
+    expect(await screen.findByText("Creating secure payment order...")).toBeInTheDocument();
 
     await waitFor(() => {
       expect(store.dispatch).toHaveBeenCalledWith(expect.objectContaining({
@@ -168,7 +174,7 @@ describe("PaymentSummary checkout flow", () => {
     expect(screen.getByText("A1, A2")).toBeInTheDocument();
   });
 
-  test("successful booking navigates to purchase history", async () => {
+  test("successful booking navigates to booking confirmation with booking context", async () => {
     const { store } = renderWithProviders(
       <PaymentSummary show={show} seats={["A1", "A2"]} showSeats={showSeats} handlePreviousStep={vi.fn()} />,
       { preloadedState: authState },
@@ -198,13 +204,43 @@ describe("PaymentSummary checkout flow", () => {
       expect(window.Razorpay).toHaveBeenCalled();
     });
 
+    expect(navigateMock).not.toHaveBeenCalledWith(
+      expect.stringMatching(/^\/booking-confirmation\//),
+      expect.anything(),
+    );
+
     act(() => {
-      store.dispatch(bookSeatsSuccess({ bookingId: "BMS1234" }));
+      store.dispatch(bookSeatsSuccess({
+        bookingId: "BMS1234",
+        seats: ["A1", "A2"],
+        ticketAmount: 500,
+        seatPricing: [
+          { seatNumber: "A1", seatType: "STANDARD", price: 200 },
+          { seatNumber: "A2", seatType: "PREMIUM", price: 300 },
+        ],
+        convenienceFee: 35.4,
+        amount: 535.4,
+      }));
     });
 
     await waitFor(() => {
-      expect(navigateMock).toHaveBeenCalledWith("/my-profile/purchase-history");
-    }, { timeout: 2500 });
+      expect(navigateMock).toHaveBeenCalledWith(
+        "/booking-confirmation/BMS1234",
+        expect.objectContaining({
+          state: expect.objectContaining({
+            booking: expect.objectContaining({ bookingId: "BMS1234" }),
+            bookingContext: expect.objectContaining({
+              show,
+              seats: ["A1", "A2"],
+              ticketAmount: 500,
+              convenienceFee: 35.4,
+              totalAmount: 535.4,
+              screenDisplayName: "Screen 2",
+            }),
+          }),
+        }),
+      );
+    });
   });
 
   test("booking failure after payment displays support-oriented error", async () => {
@@ -245,5 +281,9 @@ describe("PaymentSummary checkout flow", () => {
 
     expect(await screen.findByText(/booking failed after payment/i)).toBeInTheDocument();
     expect(screen.getByText(/pay_1/)).toBeInTheDocument();
+    expect(navigateMock).not.toHaveBeenCalledWith(
+      expect.stringMatching(/^\/booking-confirmation\//),
+      expect.anything(),
+    );
   });
 });

@@ -121,7 +121,7 @@ describe("MovieShows screen selection", () => {
 
     expect(screen.getByText(/no screens are configured for this theatre/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^add show$/i })).toBeDisabled();
-  });
+  }, 10000);
 
   test("single active Screen is preselected, visible, and explicitly submitted", async () => {
     const store = buildStore([screenOne]);

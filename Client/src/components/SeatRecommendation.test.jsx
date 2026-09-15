@@ -28,7 +28,7 @@ describe("SeatRecommendation physical inventory mode", () => {
     expect(screen.getByText(/B11, B12/)).toBeInTheDocument();
     expect(screen.queryByText(/B8, B11/)).not.toBeInTheDocument();
 
-    await user.click(screen.getAllByRole("button", { name: "Select" })[0]);
+    await user.click(screen.getByRole("button", { name: /select recommended seats b11, b12/i }));
 
     expect(onSeatSelect).toHaveBeenCalledWith(expect.arrayContaining([
       expect.objectContaining({ seatId: "B11" }),

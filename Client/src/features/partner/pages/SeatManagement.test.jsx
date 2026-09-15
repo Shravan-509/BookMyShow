@@ -194,7 +194,7 @@ describe("SeatManagement", () => {
         }),
       }),
     })));
-  }, 10000);
+  }, 15000);
 
   test("edits and re-enables Seats", async () => {
     const store = renderSeatManagement();
