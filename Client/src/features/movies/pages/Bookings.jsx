@@ -17,8 +17,10 @@ import { notify } from "../../../utils/notificationUtils"
 import { useBooking } from "../../../hooks/useBooking"
 import {formatDate, formatParsedTime, formatTime} from "../../../utils/dateFormatter"
 import { isAfter, parse } from "date-fns"
+import { useLocation } from "react-router-dom"
 import { getBookingScreenDisplayName } from "../../../utils/screenDisplay"
 import {
+  formatCurrency,
   getBookingPaidTotal,
   getBookingSeatPricing,
   getBookingTicketAmount,
@@ -35,9 +37,17 @@ const getStatusColor = (status) => {
   return "blue"
 }
 
+const PLACEHOLDER_POSTER = "/placeholder.svg"
+
+const hasMeaningfulPaymentMethod = (paymentMethod) => {
+  const value = String(paymentMethod || "").trim()
+  return Boolean(value) && value.toUpperCase() !== "N/A"
+}
+
 // Memoized Booking Card to prevent unnecessary re-renders per item
 const BookingCard = React.memo(function BookingCard({ booking, isMobile, onViewBookingInfo, formatCurrency }) {
-  const seatCount = useMemo(() => booking.seats.length, [booking.seats])
+  const seats = useMemo(() => (Array.isArray(booking.seats) ? booking.seats : []), [booking.seats])
+  const seatCount = seats.length
   const seatPricing = useMemo(() => getBookingSeatPricing(booking), [booking])
   const seatPricingGroups = useMemo(() => groupSeatPricing(seatPricing), [seatPricing])
   const seatSummary = useMemo(() => (
@@ -47,6 +57,13 @@ const BookingCard = React.memo(function BookingCard({ booking, isMobile, onViewB
   const convenienceFee = booking.convenienceFee
   const grandTotal = useMemo(() => getBookingPaidTotal(booking), [booking])
   const screenDisplayName = getBookingScreenDisplayName(booking)
+  const paymentMethod = String(booking.paymentMethod || "").trim()
+  const shouldShowPaymentMethod = hasMeaningfulPaymentMethod(paymentMethod)
+  const handlePosterError = useCallback((event) => {
+    if (!event.currentTarget.src.includes(PLACEHOLDER_POSTER)) {
+      event.currentTarget.src = PLACEHOLDER_POSTER
+    }
+  }, [])
 
   return (
     <div className="mb-6">
@@ -80,7 +97,8 @@ const BookingCard = React.memo(function BookingCard({ booking, isMobile, onViewB
           <Flex wrap="wrap" gap={24} align="stretch">
             <img
               alt="Movie Poster"
-              src={booking.poster || "/placeholder.svg"}
+              src={booking.poster || PLACEHOLDER_POSTER}
+              onError={handlePosterError}
               className="rounded-lg!"
               style={{ height: 200, width: 130, objectFit: "cover" }}
             />
@@ -107,7 +125,7 @@ const BookingCard = React.memo(function BookingCard({ booking, isMobile, onViewB
                   <div className="flex items-center gap-2">
                     <img src={armChairUrl || "/placeholder.svg"} alt="Seat Icon" />
                     <span>
-                      {seatSummary || booking.seats.join(", ")}
+                      {seatSummary || seats.join(", ")}
                     </span>
                   </div>
                 </Text>
@@ -132,7 +150,6 @@ const BookingCard = React.memo(function BookingCard({ booking, isMobile, onViewB
                 <Row justify="space-between">
                   <Col>
                     <Text>Convenience Fee</Text>
-                    <div className="text-xs text-gray-500">Incl. of Tax</div>
                   </Col>
                   <Col>{formatCurrency(convenienceFee)}</Col>
                 </Row>
@@ -162,7 +179,8 @@ const BookingCard = React.memo(function BookingCard({ booking, isMobile, onViewB
             <div className="flex justify-center">
               <img
                 alt="Movie Poster"
-                src={booking.poster || "/placeholder.svg?height=160&width=104&query=movie poster"}
+                src={booking.poster || PLACEHOLDER_POSTER}
+                onError={handlePosterError}
                 className="rounded-lg!"
                 style={{ height: 160, width: 104, objectFit: "cover" }}
               />
@@ -198,7 +216,7 @@ const BookingCard = React.memo(function BookingCard({ booking, isMobile, onViewB
               <div className="flex items-center gap-2 justify-center mb-2">
                 <img src={armChairUrl || "/placeholder.svg"} alt="Seat Icon" className="w-4 h-4" />
                 <Text strong className="text-sm">
-                  {seatSummary || booking.seats.join(", ")}
+                  {seatSummary || seats.join(", ")}
                 </Text>
               </div>
               <Text type="secondary" className="text-sm">
@@ -256,9 +274,6 @@ const BookingCard = React.memo(function BookingCard({ booking, isMobile, onViewB
                       <div className="flex justify-between">
                         <div>
                           <Text className="text-sm">Convenience Fee</Text>
-                          <div className="text-xs text-gray-500">
-                            Incl. of Tax
-                          </div>
                         </div>
 
                         <Text className="text-sm">
@@ -280,10 +295,12 @@ const BookingCard = React.memo(function BookingCard({ booking, isMobile, onViewB
                 </Text>
               </div>
 
-              <div className="text-center">
-                <Text className="text-xs text-gray-500 block">PAYMENT METHOD</Text>
-                <Text className="text-sm font-medium">{booking.paymentMethod || "Online Payment"}</Text>
-              </div>
+              {shouldShowPaymentMethod && (
+                <div className="text-center">
+                  <Text className="text-xs text-gray-500 block">PAYMENT METHOD</Text>
+                  <Text className="text-sm font-medium">{paymentMethod}</Text>
+                </div>
+              )}
 
               <div className="text-center">
                 <Text className="text-xs text-gray-500 block">BOOKING ID</Text>
@@ -312,10 +329,12 @@ const BookingCard = React.memo(function BookingCard({ booking, isMobile, onViewB
               </div>
             </div>
 
-            <div style={{ margin: "0px 50px 0px 0px" }}>
-              <Text style={{ fontSize: "10px", fontWeight: 400, color: "rgb(102, 102, 102)" }}>PAYMENT METHOD</Text>
-              <div style={{ fontSize: "12px", fontWeight: 400, color: "rgb(51, 51, 51)" }}>{booking.paymentMethod || "N/A"}</div>
-            </div>
+            {shouldShowPaymentMethod && (
+              <div style={{ margin: "0px 50px 0px 0px" }}>
+                <Text style={{ fontSize: "10px", fontWeight: 400, color: "rgb(102, 102, 102)" }}>PAYMENT METHOD</Text>
+                <div style={{ fontSize: "12px", fontWeight: 400, color: "rgb(51, 51, 51)" }}>{paymentMethod}</div>
+              </div>
+            )}
 
             <div style={{ margin: "0px 50px 0px 0px" }}>
               <Text style={{ fontSize: "10px", fontWeight: 400, color: "rgb(102, 102, 102)" }}>BOOKING ID</Text>
@@ -329,6 +348,7 @@ const BookingCard = React.memo(function BookingCard({ booking, isMobile, onViewB
 
 const OrderHistory = () => {
   const { user } = useAuth()
+  const location = useLocation()
   const [isMobile, setIsMobile] = useState(false)
   const [selectedBooking, setSelectedBooking] = useState(null)
   const [showQRModal, setShowQRModal] = useState(false)
@@ -336,13 +356,13 @@ const OrderHistory = () => {
 
   const { userBookings: bookings, loading, error, getUserBookings } = useBooking()
 
-  const userId = user?.id
+  const userId = user?.id || user?._id
 
   useEffect(() => {
     if (userId) {
       getUserBookings(userId)
     }
-  }, [userId, getUserBookings])
+  }, [userId, getUserBookings, location.key])
 
   useEffect(() => {
     if (bookings.length === 0) return
@@ -387,8 +407,6 @@ const OrderHistory = () => {
     return () => media.removeListener(apply)
   }, [])
 
-  const formatCurrency = useCallback((amount) => `₹${Number(amount || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`, [])
-
   const handleViewBookingInfo = useCallback((booking) => {
     setSelectedBooking(booking)
     setShowQRModal(true)
@@ -402,7 +420,7 @@ const OrderHistory = () => {
     selectedBookingSeatPricing
       .map((seat) => `${seat.seatNumber} ${seat.seatTypeLabel} (${formatCurrency(seat.price)})`)
       .join(", ")
-  ), [formatCurrency, selectedBookingSeatPricing])
+  ), [selectedBookingSeatPricing])
 
   if (loading) {
     return (

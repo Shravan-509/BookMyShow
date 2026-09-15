@@ -51,6 +51,38 @@ describe("bookingSlice", () => {
     expect(state.error).toBe("Payment failed");
   });
 
+  test("keeps purchase history canonical instead of prepending raw successful bookings", () => {
+    const canonicalHistory = [{
+      bookingId: "BMS0001",
+      movieTitle: "Existing Movie",
+      poster: "poster.jpg",
+    }];
+    const rawSuccessfulBooking = {
+      _id: "raw-booking-id",
+      bookingId: "BMS1234",
+      show: "show-id",
+      seats: ["A1"],
+    };
+    const preloadedState = {
+      loading: true,
+      error: null,
+      validationResult: null,
+      bookingData: null,
+      userBookings: canonicalHistory,
+      allBookings: [],
+      theatreBookings: [],
+      revenueData: null,
+      razorpayOrder: null,
+      isPaymentProcessing: false,
+      paymentError: null,
+    };
+
+    const state = bookingReducer(preloadedState, bookSeatsSuccess(rawSuccessfulBooking));
+
+    expect(state.bookingData).toEqual(rawSuccessfulBooking);
+    expect(state.userBookings).toEqual(canonicalHistory);
+  });
+
   test("handles Razorpay order request, success, and failure", () => {
     let state = bookingReducer(undefined, createRazorpayOrderRequest());
     expect(state.isPaymentProcessing).toBe(true);

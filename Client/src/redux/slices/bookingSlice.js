@@ -45,24 +45,7 @@ const bookingSlice = createSlice({
         bookSeatsSuccess: (state, action) => {
             state.loading = false
             state.error = null
-
-            const newBooking = action.payload
-            state.bookingData = newBooking
-
-            if(newBooking)
-            {
-                const alreadyExists = state.userBookings?.some(
-                    (booking) => booking._id === newBooking._id
-                )
-
-                if(!alreadyExists)
-                {
-                    state.userBookings = [
-                        newBooking,
-                        ...(state.userBookings || [])
-                    ]
-                }
-            }
+            state.bookingData = action.payload
         },
         bookSeatsFailure: (state, action) => {
             state.loading = false
