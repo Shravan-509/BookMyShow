@@ -1084,6 +1084,11 @@ table th {
   background: #f7f8fb;
 }
 
+.booking-page-shell.checkout-mode {
+  min-height: auto;
+  padding-bottom: 24px;
+}
+
 .booking-page-container {
   width: min(1480px, 100%);
   margin: 0 auto;
@@ -1105,6 +1110,11 @@ table th {
   margin-top: 18px;
 }
 
+.booking-workspace.checkout-workspace {
+  grid-template-columns: minmax(0, 1fr);
+  margin-top: 12px;
+}
+
 .booking-main-column {
   display: flex;
   flex-direction: column;
@@ -1122,16 +1132,20 @@ table th {
   box-shadow: 0 8px 22px rgba(15, 23, 42, 0.045);
 }
 
+.show-context-card .ant-card-body {
+  padding: 16px 18px;
+}
+
 .show-context-content {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 16px;
+  gap: 14px;
   align-items: center;
 }
 
 .show-context-content img {
-  width: 72px;
-  height: 96px;
+  width: 64px;
+  height: 84px;
   object-fit: cover;
   border-radius: 6px;
 }
@@ -1143,7 +1157,7 @@ table th {
 .show-context-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 7px 10px;
   align-items: center;
 }
 
@@ -1374,10 +1388,11 @@ table th {
 .booking-summary-card .ant-card-body {
   display: flex;
   flex-direction: column;
+  padding: 18px;
 }
 
 .booking-summary-title.ant-typography {
-  margin: 0 0 16px;
+  margin: 0 0 14px;
 }
 
 .booking-summary-movie {
@@ -1387,8 +1402,8 @@ table th {
 }
 
 .booking-summary-movie img {
-  width: 70px;
-  height: 94px;
+  width: 62px;
+  height: 84px;
   object-fit: cover;
   border-radius: 6px;
 }
@@ -1402,7 +1417,7 @@ table th {
 .booking-summary-details {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .booking-summary-details > div,
@@ -1435,13 +1450,33 @@ table th {
   gap: 6px;
 }
 
-.booking-summary-seat-groups > div {
+.booking-summary-fee-breakdown {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 0 2px 10px;
+  border-left: 2px solid #e2e8f0;
+}
+
+.booking-summary-seat-groups > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
   gap: 12px;
-  padding: 8px 10px;
+  padding: 7px 9px;
   border-radius: 6px;
   background: #f8fafc;
+}
+
+.booking-summary-seat-groups > div > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.booking-summary-seat-groups > div > span:last-child {
+  align-items: flex-end;
+  white-space: nowrap;
 }
 
 .booking-summary-total {
@@ -1452,14 +1487,161 @@ table th {
 
 .booking-summary-cta.ant-btn {
   width: 100%;
-  height: 48px;
-  margin-top: 18px;
+  height: 46px;
+  margin-top: 14px;
 }
 
 .booking-summary-note {
   margin-top: 12px;
   text-align: center;
   font-size: 12px;
+}
+
+.checkout-experience {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 400px;
+  gap: 18px;
+  align-items: start;
+  max-width: 1260px;
+}
+
+.checkout-main-column {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.checkout-heading .ant-typography {
+  margin: 0;
+}
+
+.checkout-heading h3.ant-typography {
+  margin-bottom: 2px;
+}
+
+.checkout-flow-card.ant-card,
+.checkout-section-card.ant-card,
+.checkout-status-card.ant-card {
+  border-radius: 8px;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.045);
+}
+
+.checkout-flow-card .ant-card-body {
+  padding: 18px;
+}
+
+.checkout-flow-section {
+  min-width: 0;
+}
+
+.checkout-section-heading {
+  margin-bottom: 12px;
+}
+
+.checkout-section-heading .ant-typography {
+  margin: 0;
+}
+
+.checkout-contact-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.checkout-contact-grid > div {
+  display: flex;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.checkout-contact-grid .anticon {
+  margin-top: 3px;
+  color: #f84464;
+}
+
+.checkout-contact-grid span {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.checkout-contact-grid strong,
+.checkout-contact-grid .ant-typography {
+  overflow-wrap: anywhere;
+}
+
+.checkout-payment-method {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.checkout-payment-method .ant-typography {
+  margin: 0;
+}
+
+.checkout-payment-method .ant-typography-secondary {
+  display: block;
+  margin-top: 4px;
+}
+
+.checkout-payment-icon {
+  display: flex;
+  width: 42px;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: #fff1f4;
+  color: #f84464;
+  font-size: 22px;
+}
+
+.checkout-trust-row,
+.checkout-policy-note {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.checkout-trust-row .anticon,
+.checkout-policy-note .anticon {
+  margin-top: 3px;
+  color: #64748b;
+}
+
+.checkout-policy-note {
+  margin-top: 16px;
+  padding: 11px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.checkout-policy-note .ant-typography {
+  margin: 0;
+  font-size: 13px;
+}
+
+.checkout-policy-note a {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.checkout-edit-seats.ant-btn {
+  align-self: flex-start;
+  margin-top: 14px;
+}
+
+.checkout-summary-column {
+  position: sticky;
+  top: 16px;
 }
 
 .seat-recommendation-card.ant-card {
@@ -1565,8 +1747,22 @@ table th {
     order: -1;
   }
 
+  .checkout-experience {
+    grid-template-columns: 1fr;
+  }
+
+  .checkout-summary-column {
+    position: static;
+    max-height: none;
+    order: -1;
+  }
+
   .booking-summary-cta.ant-btn {
     display: none;
+  }
+
+  .checkout-summary-column .booking-summary-cta.ant-btn {
+    display: inline-flex;
   }
 
   .seat-selection-legend-row,
@@ -1609,6 +1805,14 @@ table th {
 
   .ticket-count-control {
     justify-content: space-between;
+  }
+
+  .checkout-contact-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .checkout-payment-method {
+    grid-template-columns: 1fr;
   }
 
   .seat-selection-legend {

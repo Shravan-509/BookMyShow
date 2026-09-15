@@ -1,16 +1,16 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import { Alert, Button, Card, Collapse, Divider, Radio, Space, Spin, Typography } from 'antd'
+import { Alert, Button, Card, Divider, Spin, Typography } from 'antd'
 import { 
-    BankOutlined, 
+    ArrowLeftOutlined,
     CheckCircleOutlined, 
     CloseCircleOutlined, 
-    CreditCardOutlined, 
-    DownCircleOutlined, 
-    ExclamationCircleOutlined, 
+    CreditCardOutlined,
     InfoCircleOutlined, 
     LoadingOutlined, 
-    MobileOutlined, 
-    WalletOutlined 
+    MailOutlined,
+    PhoneOutlined,
+    SafetyCertificateOutlined,
+    UserOutlined,
 } from '@ant-design/icons';
 import { 
     selectValidationResult, validateSeatBookingRequest,
@@ -27,8 +27,8 @@ import { getScreenDisplayName } from '../../../utils/screenDisplay';
 import {
     buildSelectedSeatPricing,
     formatCurrency,
-    groupSeatPricing,
 } from '../../../utils/ticketPricing';
+import BookingSummaryCard from '../../../components/booking/BookingSummaryCard';
 const { Title ,Text, Paragraph } = Typography;
 
 const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID;
@@ -66,7 +66,6 @@ const PaymentSummary = React.memo(({show, seats, showSeats = [], handlePreviousS
     */
     const [paymentStage, setPaymentStage] = useState("idle")
 
-    const [paymentMethod, setPaymentMethod] = useState("UPI")
     const [deviceType, setDeviceType] = useState('desktop')
     const [error, setError] = useState(null)
     const [retryCount, setRetryCount] = useState(0)
@@ -93,11 +92,6 @@ const PaymentSummary = React.memo(({show, seats, showSeats = [], handlePreviousS
     const selectedSeatPricing = useMemo(
         () => buildSelectedSeatPricing(show, showSeats, seats),
         [show, showSeats, seats]
-    )
-
-    const seatPricingGroups = useMemo(
-        () => groupSeatPricing(selectedSeatPricing.seatPricing),
-        [selectedSeatPricing.seatPricing]
     )
 
     const ticketAmount = selectedSeatPricing.ticketAmount
@@ -159,10 +153,15 @@ const PaymentSummary = React.memo(({show, seats, showSeats = [], handlePreviousS
 
     // Computed responsive values
     const isMobile = deviceType === 'mobile'
-    const isTablet = deviceType === 'tablet'
 
     const paymentInProgress = paymentStatus === "processing" || isPaymentProcessing
     const screenDisplayName = getScreenDisplayName(show?.screen)
+    const formattedShowDate = formatDate(show?.date, "EEE, dd MMM, yyyy")
+    const formattedShowTime = formatParsedTime(show?.time)
+    const feeBreakdown = useMemo(() => [
+        { label: "Base Convenience Fee", amount: baseAmount },
+        { label: "GST @18%", amount: gst },
+    ], [baseAmount, gst])
 
     /*
     * ============================================================
@@ -662,341 +661,122 @@ const PaymentSummary = React.memo(({show, seats, showSeats = [], handlePreviousS
         );
     }, [error, retryCount, paymentStage, handleRazorPay]);
 
-    const paymentMethods = useMemo(() => [
-        {
-            key: "UPI",
-            icon: <MobileOutlined className="text-lg" />,
-            title: "UPI",
-            description: "Google Pay, PhonePe, Paytm & more",
-            popular: true,
-            disabled: false,
-        },
-        {
-            key: "CARD",
-            icon: <CreditCardOutlined className="text-lg" />,
-            title: "Credit/Debit Card",
-            description: "Pay securely with your card",
-            popular: false,
-            disabled: false,
-        },
-        {
-            key: "NET BANKING",
-            icon: <BankOutlined className="text-lg" />,
-            title: "Net Banking",
-            description: "All major banks supported",
-            popular: false,
-            disabled: false,
-        },
-        {
-            key: "WALLET",
-            icon: <WalletOutlined className="text-lg" />,
-            title: "Wallet",
-            description: "Amazon Pay, Paytm & more",
-            popular: false,
-            disabled: false,
-        },
-    ], []);
-
     return (
         <div 
-            className={`payment-summary ${isMobile ? "mobile-payment" : ""} ${isTablet ? "tablet-payment" : ""}`}
+            className={`checkout-experience ${isMobile ? "mobile-payment" : ""}`}
             role="main"
-            aria-label="Payment Summary"
+            aria-label="Checkout"
         >
-            <Title level={4} className="mb-4! text-lg! md:text-xl!">
-                Payment Summary
-            </Title>
+            <section className="checkout-main-column">
+                <div className="checkout-heading">
+                    <Title level={3}>Complete Your Booking</Title>
+                    <Text type="secondary">Review your details and continue to Razorpay secure checkout.</Text>
+                </div>
 
-            {/* Error Alert */}
-            {renderErrorAlert()}
+                {renderErrorAlert()}
 
-            {/* Payment Status */}
-            {
-                (paymentStatus === "processing" || paymentStatus === "success" || paymentStatus === "failed") && (
-                    <Card className="mb-6! border-blue-200! bg-blue-50!">
+                {(paymentStatus === "processing" || paymentStatus === "success" || paymentStatus === "failed") && (
+                    <Card className="checkout-status-card" variant="borderless" aria-live="polite">
                         {renderPaymentStatus()}
                     </Card>
-                )
-            }
-            <Card className="mb-4! shadow-sm!">
-                <div className='mb-4'>
-                    <Title level={5} className="mb-2! text-base! md:text-lg!">
-                        {show.movie.movieName}
-                    </Title>
-                    <Space orientation="vertical" size={2} className="mb-0!">
-                        <Text type="secondary" className="text-sm! md:text-base!">
-                            {show.theatre.name}
-                        </Text>
-                        {screenDisplayName && (
-                            <Text type="secondary" className="text-sm! md:text-base!">
-                                {screenDisplayName}
-                            </Text>
-                        )}
-                        <Text type="secondary" className="text-sm! md:text-base!">
-                            Seats - {seats.join(', ')} ({seats.length} Tickets)
-                        </Text>
-                        <Text type="secondary" className="text-sm! md:text-base!">
-                            {formatDate(show?.date, "EEE, dd MMM, yyyy")} | {" "}
-                            {formatParsedTime(show?.time)}
-                        </Text>
-                    </Space>
-                </div>
-            </Card>
+                )}
 
-            <Card className="mb-4! shadow-sm!">
-                <div className="space-y-3 mb-4">
-                    <div className="flex justify-between items-center">
-                        <Text className="text-sm! md:text-base! text-gray-800!">
-                            Ticket Amount
-                        </Text>
-                        <Text className="text-sm! md:text-base! font-medium! text-gray-900!">
-                            {formatCurrency(ticketAmount)}
-                        </Text>
+                <Card className="checkout-flow-card" variant="borderless">
+                  <section className="checkout-flow-section">
+                    <div className="checkout-section-heading">
+                        <Title level={4}>Contact Details</Title>
+                        <Text type="secondary">Used only to prefill the Razorpay checkout window.</Text>
                     </div>
-                    {seatPricingGroups.length > 0 && (
-                        <div className="space-y-1">
-                            {seatPricingGroups.map((group) => (
-                                <div key={`${group.seatType}-${group.price}`} className="flex justify-between items-center text-sm">
-                                    <Text type="secondary" className="text-xs! md:text-sm!">
-                                        {group.seatTypeLabel} ({group.count} × {formatCurrency(group.price)})
-                                    </Text>
-                                    <Text type="secondary" className="text-xs! md:text-sm!">
-                                        {formatCurrency(group.total)}
-                                    </Text>
-                                </div>
-                            ))}
+                    <div className="checkout-contact-grid">
+                        <div>
+                            <UserOutlined aria-hidden="true" />
+                            <span>
+                                <Text type="secondary">Name</Text>
+                                <Text strong>{user?.name || "Not provided"}</Text>
+                            </span>
                         </div>
-                    )}
-
-                    <Collapse
-                        bordered={false}
-                        ghost
-                        expandIconPlacement="start"
-                        className="custom-collapse bg-transparent! p-0!"
-                        expandIcon={({ isActive }) => (
-                            <DownCircleOutlined
-                            rotate={isActive ? -180 : 0}
-                            className="text-gray-500!"
-                            />
-                        )}
-                        items={[
-                            {
-                            key: "1",
-                            label: (
-                                <div className="flex justify-between w-full">
-                                <Text className="text-sm! md:text-base! text-gray-800!">
-                                    Convenience Fee
-                                </Text>
-
-                                <Text className="text-sm! md:text-base! font-medium! text-gray-900!">
-                                    {formatCurrency(convenienceFee)}
-                                </Text>
-                                </div>
-                            ),
-                            children: (
-                                <div className="space-y-2 pl-0 pt-2 border-t border-gray-100">
-                                <div className="flex! justify-between!">
-                                    <Text
-                                    type="secondary"
-                                    className="text-xs! md:text-sm!"
-                                    >
-                                    Base Amount
-                                    </Text>
-
-                                    <Text
-                                    type="secondary"
-                                    className="text-xs! md:text-sm!"
-                                    >
-                                    {formatCurrency(baseAmount)}
-                                    </Text>
-                                </div>
-
-                                <div className="flex justify-between">
-                                    <Text
-                                    type="secondary"
-                                    className="text-xs! md:text-sm!"
-                                    >
-                                    Integrated GST (IGST) @18%
-                                    </Text>
-
-                                    <Text
-                                    type="secondary"
-                                    className="text-xs! md:text-sm!"
-                                    >
-                                    {formatCurrency(gst)}
-                                    </Text>
-                                </div>
-                                </div>
-                            ),
-                            className: "border-0!",
-                            },
-                        ]}
-                    />
-
-                </div>
-
-                <Divider className="my-4!" />
-
-                <div className='flex justify-between items-center'>
-                    <Title level={5} className="mb-0! text-base! md:text-lg!">
-                        Amount Payable
-                    </Title>
-                    <Title level={5} className="mb-0! text-lg! md:text-xl! text-[#f84464]!">
-                        {formatCurrency(totalAmount)}
-                    </Title>
-                </div>
-            </Card>
-
-            <Card className="mb-4! shadow-sm!">
-                <Title level={5} className="mb-4! text-base! md:text-lg!">
-                    Select Payment Method
-                </Title>
-                <Radio.Group 
-                    value={paymentMethod} 
-                    className="w-full!" 
-                    onChange={(e) => setPaymentMethod(e.target.value)}
-                    aria-label="Payment method selection"
-                >
-                    <div 
-                        className={`grid gap-3 ${
-                            isMobile ? "grid-cols-1" : 
-                            isTablet ? "grid-cols-2" : 
-                            "grid-cols-2"
-                        }`}
-                    >
-                        {paymentMethods.map((method) => (
-                            <Radio
-                                key={method.key}
-                                value={method.key}
-                                disabled={method.disabled || paymentInProgress}
-                                className="border! p-3! md:p-4! rounded-lg! hover:border-[#f84464]! transition-colors w-full! m-0!"
-                                aria-describedby={`${method.key}-description`}
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className="text-[#f84464]">
-                                        {method.icon}
-                                    </div>
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-2">
-                                        <Text strong className="text-sm! md:text-base!">
-                                            {method.title}
-                                        </Text>
-                                        {method.popular && (
-                                            <span 
-                                                className="bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full"
-                                                aria-label="Popular payment method"
-                                            >
-                                                Popular
-                                            </span>
-                                        )}
-                                        </div>
-                                        <Text 
-                                            type="secondary" 
-                                            className="text-xs! md:text-sm! block mt-1"
-                                            id={`${method.key}-description`}
-                                        >
-                                            {method.description}
-                                        </Text>
-                                    </div>
-                                </div>
-                            </Radio>
-                        ))}
+                        <div>
+                            <MailOutlined aria-hidden="true" />
+                            <span>
+                                <Text type="secondary">Email</Text>
+                                <Text strong>{user?.email || "Not provided"}</Text>
+                            </span>
+                        </div>
+                        <div>
+                            <PhoneOutlined aria-hidden="true" />
+                            <span>
+                                <Text type="secondary">Phone</Text>
+                                <Text strong>{user?.phone || "Not provided"}</Text>
+                            </span>
+                        </div>
                     </div>
-                </Radio.Group>
-            </Card>
+                  </section>
 
-            <div className="bg-gray-50 p-3 md:p-4 rounded-lg mb-6">
-                <div className="flex items-start gap-2">
-                    <InfoCircleOutlined className="text-gray-500! shrink-0! mt-1!" />
-                    <Paragraph type="secondary" className="text-xs! md:text-sm! mb-0!">
+                  <Divider />
+
+                  <section className="checkout-flow-section">
+                    <div className="checkout-payment-method">
+                        <div className="checkout-payment-icon">
+                            <CreditCardOutlined aria-hidden="true" />
+                        </div>
+                        <div>
+                            <Title level={4}>Payment Method</Title>
+                            <Text strong>Razorpay Secure Checkout</Text>
+                            <Paragraph type="secondary">
+                                Pay securely using UPI, cards, wallets and other supported methods in Razorpay.
+                            </Paragraph>
+                        </div>
+                    </div>
+                    <Divider />
+                    <div className="checkout-trust-row">
+                        <SafetyCertificateOutlined aria-hidden="true" />
+                        <Text type="secondary">Secure payment powered by Razorpay.</Text>
+                    </div>
+                  </section>
+
+                  <div className="checkout-policy-note">
+                    <InfoCircleOutlined aria-hidden="true" />
+                    <Paragraph type="secondary">
                         By proceeding, you agree to our{" "}
-                        <a 
-                            href="#" 
-                            className="text-blue-600! hover:text-blue-800! underline!"
-                            aria-label="Read Terms and Conditions"
-                        >
-                            Terms & Conditions
-                        </a>{" "}
+                        <a href="#" aria-label="Read Terms and Conditions">Terms & Conditions</a>{" "}
                         and{" "}
-                        <a 
-                            href="#" 
-                            className="text-blue-600! hover:text-blue-800! underline!"
-                            aria-label="Read Cancellation Policy"
-                        >
-                            Cancellation Policy
-                        </a>
-                        . A confirmation will be sent to your email and phone number.
+                        <a href="#" aria-label="Read Cancellation Policy">Cancellation Policy</a>.
+                        A confirmation will be sent to your email and phone number.
                     </Paragraph>
-                </div>
-            </div>
+                  </div>
 
-            <div className={`flex gap-3 ${
-                    isMobile ? "flex-col" : 
-                    isTablet ? "flex-row justify-between" : 
-                    "flex-row justify-between"
-                }`}
-            >
-                <Button 
-                    size="large" 
+                  <Button
+                    size="large"
                     onClick={handlePreviousStep}
                     disabled={paymentInProgress}
-                    className={`${isMobile ? "order-2" : ""} min-h-12! w-full! ${isMobile ? "w-full!" : "w-auto!"}`}
-                    aria-label="Go back to seat selection"
+                    className="checkout-edit-seats"
+                    aria-label="Edit selected seats"
+                    icon={<ArrowLeftOutlined aria-hidden="true" />}
                 >
-                    Back
-                </Button>
-                <Button 
-                    type="primary"
-                    size="large" 
-                    loading={paymentInProgress}
-                    disabled={paymentInProgress}
-                    onClick= {handleRazorPay}
-                    className={`bg-[#f84464]! hover:bg-[#dc3558]! ${isMobile ? "order-1" : ""} min-h-12! ${
-                        isMobile ? "text-base! font-semibold! w-full!" : "w-auto!"
-                    }`}
-                    aria-label={`Pay ${formatCurrency(totalAmount)} using ${paymentMethod}`}
-                >
-                    {paymentInProgress ? "Processing..." : `Pay ${formatCurrency(totalAmount)}`}
-                </Button>
-            </div>
+                    Edit Seats
+                  </Button>
+                </Card>
+            </section>
 
-            {/* Mobile Sticky Footer */}
-            {isMobile && !paymentInProgress && (
-                <div 
-                    className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-50 shadow-lg"
-                    role="complementary"
-                    aria-label="Mobile payment summary"
-                >
-                    <div className="max-w-4xl mx-auto">
-                        <div className="flex justify-between items-center mb-3">
-                            <div>
-                                <div className="text-sm font-medium">Total Amount</div>
-                                <div className="text-lg font-bold text-[#f84464]">{formatCurrency(totalAmount)}</div>
-                            </div>
-                            <div className="text-right">
-                                <div className="text-xs text-gray-600">{seats.length} tickets</div>
-                                <div className="text-xs text-gray-600">
-                                    {paymentMethods.find((m) => m.key === paymentMethod)?.title}
-                                </div>
-                            </div>
-                        </div>
-                        <Button
-                            type="primary"
-                            size="large"
-                            loading={paymentInProgress}
-                            disabled={paymentInProgress}
-                            onClick={handleRazorPay}
-                            className="bg-[#f84464]! hover:bg-[#dc3558]! w-full min-h-12! text-base! font-semibold!"
-                            aria-label={`Pay ${formatCurrency(totalAmount)} using ${paymentMethod}`}
-                        >
-                            {paymentInProgress ? "Processing..." : `Pay Now ${formatCurrency(totalAmount)}`}
-                        </Button>
-                    </div>
-                </div>
-            )}
-
-            {/* Mobile bottom spacing */}
-            {isMobile && <div className="h-32" />}
+            <aside className="checkout-summary-column">
+                <BookingSummaryCard
+                    show={show}
+                    screenName={screenDisplayName}
+                    formattedDate={formattedShowDate}
+                    formattedTime={formattedShowTime}
+                    selectedSeats={seats}
+                    seatPricing={selectedSeatPricing.seatPricing}
+                    ticketAmount={ticketAmount}
+                    convenienceFee={convenienceFee}
+                    totalAmount={totalAmount}
+                    feeBreakdown={feeBreakdown}
+                    ctaLabel={paymentInProgress ? "Processing..." : `Pay ${formatCurrency(totalAmount)}`}
+                    ctaAriaLabel={`Pay ${formatCurrency(totalAmount)} with Razorpay`}
+                    ctaDisabled={paymentInProgress}
+                    ctaLoading={paymentInProgress}
+                    onCtaClick={handleRazorPay}
+                />
+            </aside>
         </div>
     )
 });

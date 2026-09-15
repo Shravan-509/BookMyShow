@@ -14,8 +14,11 @@ const BookingSummaryCard = ({
   ticketAmount = 0,
   convenienceFee = null,
   totalAmount = null,
+  feeBreakdown = [],
   ctaLabel = "Continue to Checkout",
   ctaDisabled = true,
+  ctaLoading = false,
+  ctaAriaLabel = "",
   onCtaClick,
 }) => {
   const movie = show?.movie || {};
@@ -83,8 +86,14 @@ const BookingSummaryCard = ({
           <div className="booking-summary-seat-groups">
             {groupedSeats.map((group) => (
               <div key={`${group.seatType}-${group.price}`}>
-                <Text>{group.seatTypeLabel}</Text>
-                <Text type="secondary">{group.seats.join(", ")}</Text>
+                <span>
+                  <Text>{group.seatTypeLabel}</Text>
+                  <Text type="secondary">{group.seats.join(", ")}</Text>
+                </span>
+                <span>
+                  <Text type="secondary">{group.count} × {formatCurrency(group.price)}</Text>
+                  <Text strong>{formatCurrency(group.total)}</Text>
+                </span>
               </div>
             ))}
           </div>
@@ -104,6 +113,16 @@ const BookingSummaryCard = ({
             {typeof convenienceFee === "number" ? formatCurrency(convenienceFee) : "Calculated at checkout"}
           </Text>
         </div>
+        {feeBreakdown.length > 0 && (
+          <div className="booking-summary-fee-breakdown">
+            {feeBreakdown.map((item) => (
+              <div className="booking-summary-row" key={item.label}>
+                <Text type="secondary">{item.label}</Text>
+                <Text type="secondary">{formatCurrency(item.amount)}</Text>
+              </div>
+            ))}
+          </div>
+        )}
         <div className="booking-summary-row booking-summary-total">
           <Text strong>Total Amount</Text>
           <Text strong>
@@ -117,6 +136,8 @@ const BookingSummaryCard = ({
         size="large"
         className="booking-summary-cta"
         disabled={ctaDisabled}
+        loading={ctaLoading}
+        aria-label={ctaAriaLabel || ctaLabel}
         onClick={onCtaClick}
       >
         {ctaLabel}

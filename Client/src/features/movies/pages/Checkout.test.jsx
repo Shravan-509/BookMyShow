@@ -29,6 +29,7 @@ const show = {
   ticketPricing: {
     STANDARD: 200,
     PREMIUM: 300,
+    RECLINER: 400,
   },
   movie: { _id: "movie-1", movieName: "Dune" },
   theatre: { name: "PVR Forum" },
@@ -40,6 +41,7 @@ const show = {
 const showSeats = [
   { seatNumber: "A1", seatType: "STANDARD" },
   { seatNumber: "A2", seatType: "PREMIUM" },
+  { seatNumber: "A3", seatType: "RECLINER" },
 ];
 
 const authState = {
@@ -76,19 +78,44 @@ describe("PaymentSummary checkout flow", () => {
     });
   });
 
-  test("displays deterministic checkout pricing and convenience fee", () => {
+  test("renders redesigned checkout context, progress-ready summary, and mixed pricing", () => {
     renderWithProviders(
-      <PaymentSummary show={show} seats={["A1", "A2"]} showSeats={showSeats} handlePreviousStep={vi.fn()} />,
+      <PaymentSummary show={show} seats={["A1", "A2", "A3"]} showSeats={showSeats} handlePreviousStep={vi.fn()} />,
       { preloadedState: authState },
     );
 
-    expect(screen.getByText("Ticket Amount")).toBeInTheDocument();
-    expect(screen.getByText("Standard (1 × ₹200.00)")).toBeInTheDocument();
-    expect(screen.getByText("Premium (1 × ₹300.00)")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Complete Your Booking" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Contact Details" })).toBeInTheDocument();
+    expect(screen.getByText("Razorpay Secure Checkout")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Your Booking" })).toBeInTheDocument();
+    expect(screen.getByText("PVR Forum")).toBeInTheDocument();
     expect(screen.getByText("Screen 2")).toBeInTheDocument();
-    expect(screen.getAllByText("₹500.00").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("₹35.40").length).toBeGreaterThan(0);
-    expect(screen.getByRole("button", { name: /pay ₹535.40 using upi/i })).toBeInTheDocument();
+    expect(screen.getByText(/Mon, 17 Aug, 2026/).closest(".booking-summary-details")).toHaveTextContent("06:00 PM");
+    expect(screen.getByText("A1, A2, A3")).toBeInTheDocument();
+    expect(screen.getByText("Standard")).toBeInTheDocument();
+    expect(screen.getByText("Premium")).toBeInTheDocument();
+    expect(screen.getByText("Recliner")).toBeInTheDocument();
+    expect(screen.getByText("3 Tickets")).toBeInTheDocument();
+    expect(screen.getAllByText("₹900.00").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("₹53.10").length).toBeGreaterThan(0);
+    expect(screen.getByText("Base Convenience Fee")).toBeInTheDocument();
+    expect(screen.getByText("GST @18%")).toBeInTheDocument();
+    expect(screen.queryByText(/Integrated GST/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/IGST/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /pay ₹953.10 with razorpay/i })).toBeInTheDocument();
+    expect(screen.queryByText(/held|countdown|lock expires|reserved until/i)).not.toBeInTheDocument();
+  });
+
+  test("legacy no-screen checkout renders safely with flat ticket pricing", () => {
+    renderWithProviders(
+      <PaymentSummary show={{ ...show, screen: null }} seats={["B1"]} showSeats={[]} handlePreviousStep={vi.fn()} />,
+      { preloadedState: authState },
+    );
+
+    expect(screen.queryByText("Screen 2")).not.toBeInTheDocument();
+    expect(screen.getAllByText("B1").length).toBeGreaterThan(0);
+    expect(screen.getByText("1 Ticket")).toBeInTheDocument();
+    expect(screen.getAllByText("₹200.00").length).toBeGreaterThan(0);
   });
 
   test("requests seat validation and Razorpay order with expected payload", async () => {
@@ -101,11 +128,17 @@ describe("PaymentSummary checkout flow", () => {
     );
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole("button", { name: /pay ₹535.40 using upi/i }));
+    await user.click(screen.getByRole("button", { name: /pay ₹535.40 with razorpay/i }));
 
     expect(store.dispatch).toHaveBeenCalledWith(expect.objectContaining({
       type: "booking/validateSeatBookingRequest",
       payload: { showId: "show-1", seats: ["A1", "A2"] },
+    }));
+    expect(store.dispatch).not.toHaveBeenCalledWith(expect.objectContaining({
+      type: "booking/createRazorpayOrderRequest",
+      payload: expect.objectContaining({
+        ticketAmount: expect.anything(),
+      }),
     }));
 
     act(() => {
@@ -120,6 +153,21 @@ describe("PaymentSummary checkout flow", () => {
     });
   });
 
+  test("Edit Seats returns to seat selection without changing selected seats", async () => {
+    const handlePreviousStep = vi.fn();
+    const user = userEvent.setup();
+
+    renderWithProviders(
+      <PaymentSummary show={show} seats={["A1", "A2"]} showSeats={showSeats} handlePreviousStep={handlePreviousStep} />,
+      { preloadedState: authState },
+    );
+
+    await user.click(screen.getByRole("button", { name: "Edit selected seats" }));
+
+    expect(handlePreviousStep).toHaveBeenCalledTimes(1);
+    expect(screen.getByText("A1, A2")).toBeInTheDocument();
+  });
+
   test("successful booking navigates to purchase history", async () => {
     const { store } = renderWithProviders(
       <PaymentSummary show={show} seats={["A1", "A2"]} showSeats={showSeats} handlePreviousStep={vi.fn()} />,
@@ -127,7 +175,7 @@ describe("PaymentSummary checkout flow", () => {
     );
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole("button", { name: /pay ₹535.40 using upi/i }));
+    await user.click(screen.getByRole("button", { name: /pay ₹535.40 with razorpay/i }));
 
     act(() => {
       store.dispatch(validateSeatBookingSuccess({ success: true, data: {} }));
@@ -166,7 +214,7 @@ describe("PaymentSummary checkout flow", () => {
     );
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole("button", { name: /pay ₹535.40 using upi/i }));
+    await user.click(screen.getByRole("button", { name: /pay ₹535.40 with razorpay/i }));
 
     act(() => {
       store.dispatch(validateSeatBookingSuccess({ success: true, data: {} }));

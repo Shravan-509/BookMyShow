@@ -10,14 +10,13 @@ import {
   MinusOutlined,
   PlusOutlined,
 } from "@ant-design/icons";
-import { Button, Card, Divider, Form, Input, Skeleton, Spin, Tag, Typography } from "antd";
+import { Button, Card, Skeleton, Spin, Tag, Typography } from "antd";
 import { useDispatch, useSelector } from "react-redux";
 import BookingProgress from "../../../components/booking/BookingProgress";
 import BookingSummaryCard from "../../../components/booking/BookingSummaryCard";
 import { SeatLayout } from "../../../components/SeatLayout";
 import SeatRecommendation from "../../../components/SeatRecommendation";
 import { SHOWSEAT_LAYOUT_STATUS, SHOWSEAT_STATUS } from "../../../components/seatLayoutUtils";
-import { useAuth } from "../../../hooks/useAuth";
 import PaymentSummary from "./Checkout";
 import {
   getShowByIdRequest,
@@ -81,10 +80,8 @@ const ScreenDisplay = React.memo(() => (
 ScreenDisplay.displayName = "ScreenDisplay";
 
 const Booking = () => {
-  const { user } = useAuth();
   const params = useParams();
   const dispatch = useDispatch();
-  const [contactForm] = Form.useForm();
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedSeats, setSelectedSeats] = useState([]);
   const [desiredTicketCount, setDesiredTicketCount] = useState(2);
@@ -144,15 +141,6 @@ const Booking = () => {
     }))
   ), [getSeatPrice]);
 
-  const formInitialValues = useMemo(
-    () => ({
-      name: user?.name,
-      email: user?.email,
-      phone: user?.phone,
-    }),
-    [user?.name, user?.email, user?.phone],
-  );
-
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
@@ -194,20 +182,8 @@ const Booking = () => {
       return;
     }
 
-    if (currentStep === 1) {
-      contactForm
-        .validateFields()
-        .then(() => {
-          setCurrentStep((prev) => prev + 1);
-        })
-        .catch((info) => {
-          notify("warning", `Validate failed : ${info}`);
-        });
-      return;
-    }
-
     setCurrentStep((prev) => prev + 1);
-  }, [contactForm, currentStep, selectedSeats.length]);
+  }, [currentStep, selectedSeats.length]);
 
   const incrementTicketCount = useCallback(() => {
     setDesiredTicketCount((prev) => Math.min(MAX_SELECTABLE_SEATS, prev + 1));
@@ -338,7 +314,7 @@ const Booking = () => {
   }
 
   return (
-    <main className="booking-page-shell">
+    <main className={`booking-page-shell ${currentStep === 1 ? "checkout-mode" : ""}`}>
       <div className="booking-page-container">
         <Link className="booking-back-link" to={`/movie/${show?.movie?._id}/${showtimeRouteDate}`}>
           <ArrowLeftOutlined className="h-4 w-4 mr-2" />
@@ -347,7 +323,7 @@ const Booking = () => {
 
         <BookingProgress current={bookingProgressStep} />
 
-        <div className="booking-workspace">
+        <div className={`booking-workspace ${currentStep === 1 ? "checkout-workspace" : ""}`}>
           <section className="booking-main-column">
             <Card className="show-context-card" variant="borderless">
               <div className="show-context-content">
@@ -419,72 +395,18 @@ const Booking = () => {
             )}
 
             {currentStep === 1 && (
-              <Card className="checkout-details-card" variant="borderless">
-                <Title level={4} className="mb-6!">
-                  Your Contact Details
-                </Title>
-                <Form form={contactForm} layout="vertical" initialValues={formInitialValues}>
-                  <Form.Item
-                    name="name"
-                    label="Full Name"
-                    rules={[{ required: true, message: "Please enter your name" }]}
-                  >
-                    <Input placeholder="Enter your full name" />
-                  </Form.Item>
-
-                  <Form.Item
-                    name="email"
-                    label="Email Address"
-                    rules={[
-                      { required: true, message: "Please enter your email" },
-                      { type: "email", message: "Please enter a valid email" },
-                    ]}
-                  >
-                    <Input placeholder="Enter your email address" />
-                  </Form.Item>
-
-                  <Form.Item
-                    name="phone"
-                    label="Phone Number"
-                    rules={[
-                      { required: true, message: "Please enter your phone number" },
-                      { pattern: /^[6-9]\d{9}$/, message: "Please enter a valid 10-digit phone number" },
-                    ]}
-                  >
-                    <Input placeholder="Enter your 10-digit phone number" />
-                  </Form.Item>
-
-                  <Divider />
-
-                  <div className="flex justify-between">
-                    <Button size="large" onClick={handlePreviousStep}>
-                      Back
-                    </Button>
-                    <Button
-                      type="primary"
-                      size="large"
-                      onClick={handleNextStep}
-                      className="bg-[#f84464]! hover:bg-[#dc3558]!"
-                    >
-                      Proceed to Pay
-                    </Button>
-                  </div>
-                </Form>
-              </Card>
-            )}
-
-            {currentStep === 2 && (
-              <Card className="checkout-details-card" variant="borderless">
+              <div className="checkout-details-card">
                 <PaymentSummary
                   show={show}
                   seats={selectedSeats}
                   showSeats={showSeatsForPricing}
                   handlePreviousStep={handlePreviousStep}
                 />
-              </Card>
+              </div>
             )}
           </section>
 
+          {currentStep === 0 && (
           <aside className="booking-sidebar">
             <BookingSummaryCard
               show={show}
@@ -498,6 +420,7 @@ const Booking = () => {
               onCtaClick={handleNextStep}
             />
           </aside>
+          )}
         </div>
 
         {isSeatMapExpanded && (

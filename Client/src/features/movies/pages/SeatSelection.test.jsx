@@ -73,11 +73,12 @@ vi.mock("../../../components/SeatLayout", () => ({
 }));
 
 vi.mock("./Checkout", () => ({
-  default: ({ seats, show, showSeats = [] }) => (
+  default: ({ seats, show, showSeats = [], handlePreviousStep }) => (
     <div>
       <div data-testid="checkout-seats">Checkout seats: {seats.join(",")}</div>
       <div data-testid="checkout-show-seats">{showSeats.map((seat) => seat.seatNumber).join(",")}</div>
       {show?.screen?.name && <div data-testid="checkout-screen">{show.screen.name}</div>}
+      <button type="button" onClick={handlePreviousStep}>Edit Seats</button>
     </div>
   ),
 }));
@@ -372,10 +373,16 @@ describe("SeatSelection ShowSeat integration", () => {
     expect(screen.getAllByRole("button", { name: "Continue to Checkout" })).toHaveLength(1);
 
     await user.click(screen.getAllByRole("button", { name: "Continue to Checkout" })[0]);
-    await user.click(screen.getByRole("button", { name: /proceed to pay/i }));
 
+    expect(screen.getByText("Showtime").closest(".booking-progress-step")).toHaveClass("complete");
+    expect(screen.getByText("Seats").closest(".booking-progress-step")).toHaveClass("complete");
+    expect(screen.getByText("Checkout").closest(".booking-progress-step")).toHaveClass("active");
+    expect(screen.getByText("Confirmation").closest(".booking-progress-step")).toHaveClass("upcoming");
     expect(await screen.findByTestId("checkout-seats")).toHaveTextContent("Checkout seats: A1,A2");
     expect(screen.getByTestId("checkout-show-seats")).toHaveTextContent("A1,A2");
     expect(screen.getByTestId("checkout-screen")).toHaveTextContent("Screen 1");
+
+    await user.click(screen.getByRole("button", { name: "Edit Seats" }));
+    expect(screen.getByTestId("selected-seat-labels")).toHaveTextContent("A1,A2");
   });
 });
