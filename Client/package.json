@@ -20,7 +20,7 @@
     "@reduxjs/toolkit": "^2.11.2",
     "@tailwindcss/vite": "^4.3.3",
     "antd": "^6.6.2",
-    "axios": "^1.16.0",
+    "axios": "^1.20.0",
     "date-fns": "^4.1.0",
     "js-cookie": "^3.0.7",
     "react": "^19.2.8",
