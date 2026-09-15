@@ -18,10 +18,17 @@ const BookingProgress = ({ current = "showtime", steps = DEFAULT_STEPS }) => {
       {steps.map((step, index) => {
         const status =
           index < currentIndex ? "complete" : index === currentIndex ? "active" : "upcoming";
+        const statusLabel =
+          status === "complete" ? "complete" : status === "active" ? "current" : "upcoming";
 
         return (
-          <div className={`booking-progress-step ${status}`} key={step.key}>
-            <span className="booking-progress-marker">
+          <div
+            className={`booking-progress-step ${status}`}
+            key={step.key}
+            aria-current={status === "active" ? "step" : undefined}
+            aria-label={`Step ${index + 1}: ${step.title}, ${statusLabel}`}
+          >
+            <span className="booking-progress-marker" aria-hidden="true">
               {status === "complete" ? <CheckOutlined aria-hidden="true" /> : index + 1}
             </span>
             <span className="booking-progress-copy">

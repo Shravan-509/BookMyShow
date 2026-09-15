@@ -20,14 +20,20 @@ const BookingSummaryCard = ({
   ctaLoading = false,
   ctaAriaLabel = "",
   onCtaClick,
+  showCta = true,
+  showContextDetails = true,
+  note = "Seats are confirmed after successful payment.",
 }) => {
   const movie = show?.movie || {};
   const theatre = show?.theatre || {};
   const groupedSeats = groupSeatPricing(seatPricing);
   const hasSeats = selectedSeats.length > 0;
+  const hasContextDetails = showContextDetails && (
+    theatre.name || screenName || formattedDate || formattedTime
+  );
 
   return (
-    <Card className="booking-summary-card" variant="borderless">
+    <Card className="booking-summary-card" variant="borderless" aria-label="Booking summary">
       <Title level={4} className="booking-summary-title">
         Your Booking
       </Title>
@@ -46,34 +52,38 @@ const BookingSummaryCard = ({
         </div>
       </div>
 
-      <Divider />
+      {hasContextDetails && (
+        <>
+          <Divider />
 
-      <div className="booking-summary-details">
-        {theatre.name && (
-          <div>
-            <Text type="secondary">Theatre</Text>
-            <Text strong>{theatre.name}</Text>
+          <div className="booking-summary-details">
+            {theatre.name && (
+              <div>
+                <Text type="secondary">Theatre</Text>
+                <Text strong>{theatre.name}</Text>
+              </div>
+            )}
+            {screenName && (
+              <div>
+                <Text type="secondary">Screen</Text>
+                <Text strong>
+                  <VideoCameraOutlined aria-hidden="true" /> {screenName}
+                </Text>
+              </div>
+            )}
+            {(formattedDate || formattedTime) && (
+              <div>
+                <Text type="secondary">Date & Time</Text>
+                <Text strong>
+                  {formattedDate && <CalendarOutlined aria-hidden="true" />} {formattedDate}
+                  {formattedDate && formattedTime ? " | " : ""}
+                  {formattedTime && <ClockCircleOutlined aria-hidden="true" />} {formattedTime}
+                </Text>
+              </div>
+            )}
           </div>
-        )}
-        {screenName && (
-          <div>
-            <Text type="secondary">Screen</Text>
-            <Text strong>
-              <VideoCameraOutlined aria-hidden="true" /> {screenName}
-            </Text>
-          </div>
-        )}
-        {(formattedDate || formattedTime) && (
-          <div>
-            <Text type="secondary">Date & Time</Text>
-            <Text strong>
-              {formattedDate && <CalendarOutlined aria-hidden="true" />} {formattedDate}
-              {formattedDate && formattedTime ? " | " : ""}
-              {formattedTime && <ClockCircleOutlined aria-hidden="true" />} {formattedTime}
-            </Text>
-          </div>
-        )}
-      </div>
+        </>
+      )}
 
       <Divider />
 
@@ -131,21 +141,25 @@ const BookingSummaryCard = ({
         </div>
       </div>
 
-      <Button
-        type="primary"
-        size="large"
-        className="booking-summary-cta"
-        disabled={ctaDisabled}
-        loading={ctaLoading}
-        aria-label={ctaAriaLabel || ctaLabel}
-        onClick={onCtaClick}
-      >
-        {ctaLabel}
-      </Button>
+      {showCta && (
+        <Button
+          type="primary"
+          size="large"
+          className="booking-summary-cta"
+          disabled={ctaDisabled}
+          loading={ctaLoading}
+          aria-label={ctaAriaLabel || ctaLabel}
+          onClick={onCtaClick}
+        >
+          {ctaLabel}
+        </Button>
+      )}
 
-      <Text type="secondary" className="booking-summary-note">
-        Seats are confirmed after successful payment.
-      </Text>
+      {note && (
+        <Text type="secondary" className="booking-summary-note">
+          {note}
+        </Text>
+      )}
     </Card>
   );
 };

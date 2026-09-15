@@ -20,6 +20,10 @@ vi.mock("./features/movies/pages/SeatSelection", () => ({
   default: () => <div>Seat Selection Page</div>,
 }));
 
+vi.mock("./features/movies/pages/BookingConfirmation", () => ({
+  default: () => <div>Booking Confirmation Page</div>,
+}));
+
 vi.mock("./features/movies/pages/Bookings", () => ({
   default: () => <div>Bookings Page</div>,
 }));
@@ -66,5 +70,31 @@ describe("App routing", () => {
 
     expect(await screen.findByText("Auth Tabs")).toBeInTheDocument();
     expect(screen.queryByText("Seat Selection Page")).not.toBeInTheDocument();
+  });
+
+  test("renders protected booking confirmation route for authenticated users", async () => {
+    const { store } = renderWithProviders(<App />, {
+      route: "/booking-confirmation/BMS1234",
+      preloadedState: {
+        auth: {
+          user: { id: "user-1", role: "user" },
+          token: "token",
+          isAuthenticated: true,
+          loading: false,
+          checkingAuth: false,
+          error: null,
+        },
+      },
+    });
+
+    act(() => {
+      store.dispatch(authStatusChecked({
+        isAuthenticated: true,
+        user: { id: "user-1", role: "user" },
+        token: "token",
+      }));
+    });
+
+    expect(await screen.findByText("Booking Confirmation Page")).toBeInTheDocument();
   });
 });

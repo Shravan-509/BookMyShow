@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, test, vi } from "vitest";
 import BookingSummaryCard from "./BookingSummaryCard";
@@ -72,5 +72,31 @@ describe("BookingSummaryCard", () => {
     await user.click(screen.getByRole("button", { name: "Continue to Checkout" }));
 
     expect(onCtaClick).toHaveBeenCalledTimes(1);
+  });
+
+  test("can render confirmation summary without a CTA", () => {
+    render(
+      <BookingSummaryCard
+        show={show}
+        screenName="Screen 1"
+        formattedDate="Mon, 17 Aug, 2026"
+        formattedTime="06:00 PM"
+        selectedSeats={["A1", "A2"]}
+        ticketAmount={575}
+        showCta={false}
+        showContextDetails={false}
+        note="Enjoy the show."
+      />,
+    );
+
+    const summary = screen.getByLabelText("Booking summary");
+    expect(within(summary).getByRole("heading", { name: "Your Booking" })).toBeInTheDocument();
+    expect(within(summary).queryByText("Theatre")).not.toBeInTheDocument();
+    expect(within(summary).queryByText("Screen")).not.toBeInTheDocument();
+    expect(within(summary).queryByText("Date & Time")).not.toBeInTheDocument();
+    expect(within(summary).queryByText("INOX")).not.toBeInTheDocument();
+    expect(within(summary).queryByText(/Screen 1/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Continue to Checkout" })).not.toBeInTheDocument();
+    expect(screen.getByText("Enjoy the show.")).toBeInTheDocument();
   });
 });

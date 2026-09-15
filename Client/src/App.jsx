@@ -14,6 +14,7 @@ const Partner = lazy(() => import(/* webpackChunkName: "partner" */ './features/
 const AuthTabs = lazy(() => import(/* webpackChunkName: "auth" */ './features/auth/pages/AuthTabs'));
 const MovieDetails = lazy(() => import(/* webpackChunkName: "movie-details" */ './features/movies/pages/MovieDetails'));
 const Booking = lazy(() => import(/* webpackChunkName: "booking" */ './features/movies/pages/SeatSelection'));
+const BookingConfirmation = lazy(() => import(/* webpackChunkName: "booking-confirmation" */ './features/movies/pages/BookingConfirmation'));
 const OrderHistory = lazy(() => import(/* webpackChunkName: "order-history" */ './features/movies/pages/Bookings'));
 const ResetPassword = lazy(() => import(/* webpackChunkName: "reset-password" */ './features/auth/pages/ResetPassword'));
 
@@ -157,6 +158,16 @@ function App() {
               </UserRoute>
             </ProtectedRoute>
           } 
+        />
+        <Route
+          path="/booking-confirmation/:bookingId"
+          element={
+            <ProtectedRoute>
+              <UserRoute>
+                <BookingConfirmation />
+              </UserRoute>
+            </ProtectedRoute>
+          }
         />
         <Route 
           path="/my-profile/purchase-history" 
