@@ -5,6 +5,10 @@ const showSeatRepository = require("../repositories/showSeatRepository");
 const Show = require("../models/showSchema");
 const ShowSeat = require("../models/showSeatSchema");
 const AppError = require("../utils/AppError");
+const {
+    calculateShowSeatLockExpiresAt,
+    generateShowSeatLockToken,
+} = require("../utils/showSeatLock");
 
 const { SHOW_SEAT_STATUS } = ShowSeat;
 
@@ -48,6 +52,20 @@ const ensureValidObjectId = (id, code = "INVALID_SHOW_ID") => {
     if (!id || !mongoose.Types.ObjectId.isValid(id)) {
         throw new AppError("Invalid show identifier", 400, code);
     }
+};
+
+const ensureUserId = (userId) => {
+    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+        throw new AppError("Authenticated user is required", 401, "AUTHENTICATION_REQUIRED");
+    }
+};
+
+const ensureLockToken = (lockToken) => {
+    if (typeof lockToken !== "string" || !lockToken.trim()) {
+        throw new AppError("Lock token is required", 400, "LOCK_TOKEN_REQUIRED");
+    }
+
+    return lockToken.trim();
 };
 
 const rowLabelToNumber = (row) => {
@@ -190,6 +208,187 @@ const getNormalizedBookedSeats = (show) => (
 
 const getShowSeatCapacity = (show) => Number(show?.screen?.capacity ?? show?.totalSeats ?? 0);
 
+const loadShowSeatBackedShow = async (showId, options = {}) => {
+    ensureValidObjectId(showId);
+
+    const show = await Show.findById(showId)
+        .select("_id screen totalSeats")
+        .populate("screen", "name screenNumber capacity theatre isActive");
+
+    if (!show) {
+        throw new AppError("Show not found", 404, "SHOW_NOT_FOUND");
+    }
+
+    if (!show.screen) {
+        throw new AppError(
+            "ShowSeat inventory is not ready for this show",
+            409,
+            "SHOWSEAT_INVENTORY_NOT_READY"
+        );
+    }
+
+    const capacity = getShowSeatCapacity(show);
+    const showSeatCount = await showSeatRepository.countByShow(show._id, options);
+
+    if (showSeatCount !== capacity) {
+        throw new AppError(
+            "ShowSeat inventory is not ready for this show",
+            409,
+            "SHOWSEAT_INVENTORY_NOT_READY"
+        );
+    }
+
+    return { show, capacity };
+};
+
+const getShowSeatsBySelection = async (showId, seatNumbers, options = {}) => {
+    const showSeats = await showSeatRepository.findByShowAndSeatNumbers(showId, seatNumbers, options);
+    const showSeatsByLabel = indexSeatsByLabel(showSeats);
+    const missingSeats = seatNumbers.filter((seatNumber) => !showSeatsByLabel.has(seatNumber));
+
+    if (missingSeats.length > 0 || showSeats.length !== seatNumbers.length) {
+        const error = new AppError("Selected seats are not available for this show", 409, "SEAT_UNAVAILABLE");
+        error.details = { unavailableSeats: missingSeats };
+        throw error;
+    }
+
+    return { showSeats, showSeatsByLabel };
+};
+
+const sameObjectId = (left, right) => asIdString(left) === asIdString(right);
+
+const isActiveLock = (showSeat, now = new Date()) => (
+    showSeat?.status === SHOW_SEAT_STATUS.LOCKED
+    && showSeat.lockExpiresAt
+    && new Date(showSeat.lockExpiresAt).getTime() > new Date(now).getTime()
+);
+
+const isOwnedLock = (showSeat, userId, lockToken) => (
+    showSeat?.status === SHOW_SEAT_STATUS.LOCKED
+    && sameObjectId(showSeat.lockOwner, userId)
+    && showSeat.lockToken === lockToken
+);
+
+const createLockConflict = (message, code, unavailableSeats = []) => {
+    const error = new AppError(message, code === "SEAT_LOCK_NOT_OWNED" ? 403 : 409, code);
+    error.details = { unavailableSeats };
+    return error;
+};
+
+const assertSeatsAreLockable = (showSeatsByLabel, seatNumbers, now) => {
+    const bookedSeats = seatNumbers.filter((seatNumber) => (
+        showSeatsByLabel.get(seatNumber)?.status === SHOW_SEAT_STATUS.BOOKED
+    ));
+
+    if (bookedSeats.length > 0) {
+        throw createLockConflict("Some seats were already booked. Please choose different seats.", "SEAT_ALREADY_BOOKED", bookedSeats);
+    }
+
+    const activelyLockedSeats = seatNumbers.filter((seatNumber) => {
+        const showSeat = showSeatsByLabel.get(seatNumber);
+        return showSeat?.status === SHOW_SEAT_STATUS.LOCKED && !isExpiredLock(showSeat, now);
+    });
+
+    if (activelyLockedSeats.length > 0) {
+        throw createLockConflict("Some seats are temporarily unavailable. Please choose different seats.", "SEAT_ALREADY_LOCKED", activelyLockedSeats);
+    }
+};
+
+const assertOwnedActiveLock = (showSeatsByLabel, seatNumbers, userId, lockToken, now) => {
+    const bookedSeats = [];
+    const expiredSeats = [];
+    const notOwnedSeats = [];
+
+    seatNumbers.forEach((seatNumber) => {
+        const showSeat = showSeatsByLabel.get(seatNumber);
+
+        if (showSeat?.status === SHOW_SEAT_STATUS.BOOKED) {
+            bookedSeats.push(seatNumber);
+            return;
+        }
+
+        if (!isOwnedLock(showSeat, userId, lockToken)) {
+            notOwnedSeats.push(seatNumber);
+            return;
+        }
+
+        if (!isActiveLock(showSeat, now)) {
+            expiredSeats.push(seatNumber);
+        }
+    });
+
+    if (bookedSeats.length > 0) {
+        throw createLockConflict("Some seats were already booked. Please choose different seats.", "SEAT_ALREADY_BOOKED", bookedSeats);
+    }
+
+    if (notOwnedSeats.length > 0) {
+        throw createLockConflict("Seat lock is not owned by the authenticated user", "SEAT_LOCK_NOT_OWNED", notOwnedSeats);
+    }
+
+    if (expiredSeats.length > 0) {
+        throw createLockConflict("Seat lock has expired", "SEAT_LOCK_EXPIRED", expiredSeats);
+    }
+};
+
+const assertReleaseAllowed = (showSeatsByLabel, seatNumbers, userId, lockToken) => {
+    const bookedSeats = [];
+    const foreignLockedSeats = [];
+    const ownLockedSeats = [];
+
+    seatNumbers.forEach((seatNumber) => {
+        const showSeat = showSeatsByLabel.get(seatNumber);
+
+        if (showSeat?.status === SHOW_SEAT_STATUS.BOOKED) {
+            bookedSeats.push(seatNumber);
+            return;
+        }
+
+        if (showSeat?.status === SHOW_SEAT_STATUS.LOCKED) {
+            if (isOwnedLock(showSeat, userId, lockToken)) {
+                ownLockedSeats.push(seatNumber);
+                return;
+            }
+
+            foreignLockedSeats.push(seatNumber);
+        }
+    });
+
+    if (bookedSeats.length > 0) {
+        throw createLockConflict("Booked seats cannot be released", "SEAT_ALREADY_BOOKED", bookedSeats);
+    }
+
+    if (foreignLockedSeats.length > 0) {
+        throw createLockConflict("Seat lock is not owned by the authenticated user", "SEAT_LOCK_NOT_OWNED", foreignLockedSeats);
+    }
+
+    return ownLockedSeats;
+};
+
+const buildLockResponse = ({ showId, seats, lockToken, lockExpiresAt, released = undefined }) => {
+    const data = {
+        showId: asIdString(showId),
+        seats,
+        lockToken,
+        lockExpiresAt: lockExpiresAt ? new Date(lockExpiresAt).toISOString() : null,
+    };
+
+    if (released !== undefined) {
+        data.released = released;
+    }
+
+    return data;
+};
+
+const translateRepositoryLockError = (error, code = "SEAT_LOCK_CONFLICT") => {
+    if (error?.code === "SEAT_LOCK_CONFLICT") {
+        const conflict = new AppError("Unable to lock every requested seat", 409, code);
+        conflict.details = error.details;
+        return conflict;
+    }
+
+    return error;
+};
+
 const resolveBookingSeatValidationMode = async (show, options = {}) => {
     if (!show?.screen) {
         return {
@@ -277,6 +476,96 @@ const validateBookingSeatSelection = async (show, seats, options = {}) => {
         unavailableSeats: [],
         allBookedSeats: bookedSeatLabels,
     };
+};
+
+const acquireSeatLock = async ({ showId, seats, userId }) => {
+    ensureUserId(userId);
+    const normalizedSeats = normalizeSeatSelection(seats);
+    const { show } = await loadShowSeatBackedShow(showId);
+    const now = new Date();
+    const lockExpiresAt = calculateShowSeatLockExpiresAt(now);
+    const lockToken = generateShowSeatLockToken();
+    const { showSeatsByLabel } = await getShowSeatsBySelection(show._id, normalizedSeats);
+
+    assertSeatsAreLockable(showSeatsByLabel, normalizedSeats, now);
+
+    try {
+        await showSeatRepository.acquireLocks({
+            showId: show._id,
+            seatNumbers: normalizedSeats,
+            userId,
+            lockToken,
+            now,
+            lockExpiresAt,
+        });
+    } catch (error) {
+        throw translateRepositoryLockError(error);
+    }
+
+    return buildLockResponse({
+        showId: show._id,
+        seats: normalizedSeats,
+        lockToken,
+        lockExpiresAt,
+    });
+};
+
+const refreshSeatLock = async ({ showId, seats, userId, lockToken }) => {
+    ensureUserId(userId);
+    const normalizedLockToken = ensureLockToken(lockToken);
+    const normalizedSeats = normalizeSeatSelection(seats);
+    const { show } = await loadShowSeatBackedShow(showId);
+    const now = new Date();
+    const lockExpiresAt = calculateShowSeatLockExpiresAt(now);
+    const { showSeatsByLabel } = await getShowSeatsBySelection(show._id, normalizedSeats);
+
+    assertOwnedActiveLock(showSeatsByLabel, normalizedSeats, userId, normalizedLockToken, now);
+
+    try {
+        await showSeatRepository.refreshLocks({
+            showId: show._id,
+            seatNumbers: normalizedSeats,
+            userId,
+            lockToken: normalizedLockToken,
+            now,
+            lockExpiresAt,
+        });
+    } catch (error) {
+        throw translateRepositoryLockError(error, "SEAT_LOCK_NOT_OWNED");
+    }
+
+    return buildLockResponse({
+        showId: show._id,
+        seats: normalizedSeats,
+        lockToken: normalizedLockToken,
+        lockExpiresAt,
+    });
+};
+
+const releaseSeatLock = async ({ showId, seats, userId, lockToken }) => {
+    ensureUserId(userId);
+    const normalizedLockToken = ensureLockToken(lockToken);
+    const normalizedSeats = normalizeSeatSelection(seats);
+    const { show } = await loadShowSeatBackedShow(showId);
+    const { showSeatsByLabel } = await getShowSeatsBySelection(show._id, normalizedSeats);
+    const ownLockedSeats = assertReleaseAllowed(showSeatsByLabel, normalizedSeats, userId, normalizedLockToken);
+
+    if (ownLockedSeats.length > 0) {
+        await showSeatRepository.releaseLocks({
+            showId: show._id,
+            seatNumbers: normalizedSeats,
+            userId,
+            lockToken: normalizedLockToken,
+        });
+    }
+
+    return buildLockResponse({
+        showId: show._id,
+        seats: normalizedSeats,
+        lockToken: normalizedLockToken,
+        lockExpiresAt: null,
+        released: ownLockedSeats.length > 0,
+    });
 };
 
 const markSeatsBookedForBooking = async ({ showId, seatNumbers, bookingId, bookedAt }, options = {}) => {
@@ -580,10 +869,13 @@ module.exports = {
     SHOW_SEAT_LAYOUT_STATUS,
     auditShowSeatInitialization,
     buildShowSeatPayloads,
+    acquireSeatLock,
     getShowSeatAvailability,
     initializeShowSeats,
     markSeatsBookedForBooking,
     normalizeSeatLabel,
     normalizeSeatSelection,
+    refreshSeatLock,
+    releaseSeatLock,
     validateBookingSeatSelection,
 };

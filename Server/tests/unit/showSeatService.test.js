@@ -3,6 +3,8 @@ const SCREEN_ID = "64b7f4f3f4f3f4f3f4f3f402";
 const SEAT_A1_ID = "64b7f4f3f4f3f4f3f4f3f403";
 const SEAT_A2_ID = "64b7f4f3f4f3f4f3f4f3f404";
 const SEAT_B1_ID = "64b7f4f3f4f3f4f3f4f3f405";
+const USER_ID = "64b7f4f3f4f3f4f3f4f3f406";
+const OTHER_USER_ID = "64b7f4f3f4f3f4f3f4f3f407";
 
 const showFindByIdQuery = (value) => ({
     select: jest.fn().mockReturnThis(),
@@ -23,8 +25,12 @@ const loadService = () => {
     };
     const showSeatRepository = {
         countByShow: jest.fn(),
+        acquireLocks: jest.fn(),
+        findByShowAndSeatNumbers: jest.fn(),
         findAvailabilityByShow: jest.fn(),
         insertMany: jest.fn(),
+        refreshLocks: jest.fn(),
+        releaseLocks: jest.fn(),
     };
 
     jest.doMock("../../models/showSchema", () => Show);
@@ -99,6 +105,11 @@ const showSeat = (overrides = {}) => ({
     ...overrides,
 });
 
+const lockableShowSeatDocs = (overrides = {}) => [
+    showSeat({ _id: "showseat-a1", seatNumber: "A1", row: "A", column: 1, ...overrides.A1 }),
+    showSeat({ _id: "showseat-a2", seat: SEAT_A2_ID, seatNumber: "A2", row: "A", column: 2, ...overrides.A2 }),
+];
+
 const setupReadyAudit = ({ service, screenRepository, seatRepository, showSeatRepository }, overrides = {}) => {
     screenRepository.findById.mockResolvedValue(overrides.screen || screen());
     seatRepository.findByScreen.mockResolvedValue(overrides.seats || completeSeats());
@@ -106,6 +117,10 @@ const setupReadyAudit = ({ service, screenRepository, seatRepository, showSeatRe
 };
 
 describe("showSeatService", () => {
+    afterEach(() => {
+        jest.useRealTimers();
+    });
+
     test("classifies complete Screen inventory as READY", async () => {
         const context = loadService();
         const { service } = context;
@@ -634,5 +649,273 @@ describe("showSeatService", () => {
         expect(Show.findById).toHaveBeenCalledTimes(1);
         expect(showSeatRepository.findAvailabilityByShow).toHaveBeenCalledTimes(1);
         expect(showSeatRepository.insertMany).not.toHaveBeenCalled();
+    });
+
+    test("acquires one seat lock with server-generated token and expiry", async () => {
+        const { service, Show, showSeatRepository } = loadService();
+        Show.findById.mockReturnValue(showFindByIdQuery(populatedShow()));
+        showSeatRepository.countByShow.mockResolvedValue(3);
+        showSeatRepository.findByShowAndSeatNumbers.mockResolvedValue(lockableShowSeatDocs().slice(0, 1));
+        showSeatRepository.acquireLocks.mockResolvedValue({ verified: true });
+
+        const result = await service.acquireSeatLock({
+            showId: SHOW_ID,
+            seats: [" a1 "],
+            userId: USER_ID,
+        });
+
+        const acquireCall = showSeatRepository.acquireLocks.mock.calls[0][0];
+
+        expect(result).toEqual({
+            showId: SHOW_ID,
+            seats: ["A1"],
+            lockToken: expect.stringMatching(/^[a-f0-9]{64}$/),
+            lockExpiresAt: acquireCall.lockExpiresAt.toISOString(),
+        });
+        expect(acquireCall.lockExpiresAt.getTime() - acquireCall.now.getTime()).toBe(7 * 60 * 1000);
+        expect(showSeatRepository.acquireLocks).toHaveBeenCalledWith({
+            showId: SHOW_ID,
+            seatNumbers: ["A1"],
+            userId: USER_ID,
+            lockToken: result.lockToken,
+            now: acquireCall.now,
+            lockExpiresAt: acquireCall.lockExpiresAt,
+        });
+    });
+
+    test("acquires multiple seat locks without exposing ownership metadata", async () => {
+        const { service, Show, showSeatRepository } = loadService();
+        Show.findById.mockReturnValue(showFindByIdQuery(populatedShow()));
+        showSeatRepository.countByShow.mockResolvedValue(3);
+        showSeatRepository.findByShowAndSeatNumbers.mockResolvedValue(lockableShowSeatDocs());
+        showSeatRepository.acquireLocks.mockResolvedValue({ verified: true });
+
+        const result = await service.acquireSeatLock({
+            showId: SHOW_ID,
+            seats: ["A1", "A2"],
+            userId: USER_ID,
+        });
+
+        expect(result.seats).toEqual(["A1", "A2"]);
+        expect(result).not.toHaveProperty("lockOwner");
+        expect(result).not.toHaveProperty("lockedAt");
+    });
+
+    test("rejects duplicate or invalid acquire seat input", async () => {
+        const { service, Show } = loadService();
+
+        await expect(service.acquireSeatLock({
+            showId: SHOW_ID,
+            seats: ["A1", " a1 "],
+            userId: USER_ID,
+        })).rejects.toMatchObject({ statusCode: 400, code: "DUPLICATE_SEAT_SELECTION" });
+
+        await expect(service.acquireSeatLock({
+            showId: SHOW_ID,
+            seats: [""],
+            userId: USER_ID,
+        })).rejects.toMatchObject({ statusCode: 400, code: "INVALID_SEAT_SELECTION" });
+        expect(Show.findById).not.toHaveBeenCalled();
+    });
+
+    test("rejects malformed show id and missing Show during acquire", async () => {
+        const { service, Show } = loadService();
+
+        await expect(service.acquireSeatLock({
+            showId: "bad-id",
+            seats: ["A1"],
+            userId: USER_ID,
+        })).rejects.toMatchObject({ statusCode: 400, code: "INVALID_SHOW_ID" });
+
+        Show.findById.mockReturnValue(showFindByIdQuery(null));
+        await expect(service.acquireSeatLock({
+            showId: SHOW_ID,
+            seats: ["A1"],
+            userId: USER_ID,
+        })).rejects.toMatchObject({ statusCode: 404, code: "SHOW_NOT_FOUND" });
+    });
+
+    test("rejects legacy or incomplete inventory during acquire", async () => {
+        const { service, Show, showSeatRepository } = loadService();
+        Show.findById.mockReturnValueOnce(showFindByIdQuery(populatedShow({ screen: null })));
+
+        await expect(service.acquireSeatLock({
+            showId: SHOW_ID,
+            seats: ["A1"],
+            userId: USER_ID,
+        })).rejects.toMatchObject({ statusCode: 409, code: "SHOWSEAT_INVENTORY_NOT_READY" });
+
+        Show.findById.mockReturnValue(showFindByIdQuery(populatedShow()));
+        showSeatRepository.countByShow.mockResolvedValue(2);
+        await expect(service.acquireSeatLock({
+            showId: SHOW_ID,
+            seats: ["A1"],
+            userId: USER_ID,
+        })).rejects.toMatchObject({ statusCode: 409, code: "SHOWSEAT_INVENTORY_NOT_READY" });
+    });
+
+    test("rejects missing, booked, and active locked seats during acquire", async () => {
+        const { service, Show, showSeatRepository } = loadService();
+        Show.findById.mockReturnValue(showFindByIdQuery(populatedShow()));
+        showSeatRepository.countByShow.mockResolvedValue(3);
+        showSeatRepository.findByShowAndSeatNumbers
+            .mockResolvedValueOnce([])
+            .mockResolvedValueOnce(lockableShowSeatDocs({ A1: { status: "BOOKED" } }).slice(0, 1))
+            .mockResolvedValueOnce(lockableShowSeatDocs({
+                A1: { status: "LOCKED", lockExpiresAt: new Date("2999-01-01T10:07:00.000Z") },
+            }).slice(0, 1));
+
+        await expect(service.acquireSeatLock({
+            showId: SHOW_ID,
+            seats: ["A1"],
+            userId: USER_ID,
+        })).rejects.toMatchObject({ statusCode: 409, code: "SEAT_UNAVAILABLE" });
+
+        await expect(service.acquireSeatLock({
+            showId: SHOW_ID,
+            seats: ["A1"],
+            userId: USER_ID,
+        })).rejects.toMatchObject({ statusCode: 409, code: "SEAT_ALREADY_BOOKED" });
+
+        await expect(service.acquireSeatLock({
+            showId: SHOW_ID,
+            seats: ["A1"],
+            userId: USER_ID,
+        })).rejects.toMatchObject({ statusCode: 409, code: "SEAT_ALREADY_LOCKED" });
+    });
+
+    test("allows expired locks to be reclaimed during acquire and maps repository conflicts", async () => {
+        const { service, Show, showSeatRepository } = loadService();
+        Show.findById.mockReturnValue(showFindByIdQuery(populatedShow()));
+        showSeatRepository.countByShow.mockResolvedValue(3);
+        showSeatRepository.findByShowAndSeatNumbers.mockResolvedValue(lockableShowSeatDocs({
+            A1: { status: "LOCKED", lockExpiresAt: new Date("2000-01-01T10:07:00.000Z") },
+        }).slice(0, 1));
+        showSeatRepository.acquireLocks.mockRejectedValue({ code: "SEAT_LOCK_CONFLICT", details: { missingSeatNumbers: ["A1"] } });
+
+        await expect(service.acquireSeatLock({
+            showId: SHOW_ID,
+            seats: ["A1"],
+            userId: USER_ID,
+        })).rejects.toMatchObject({ statusCode: 409, code: "SEAT_LOCK_CONFLICT" });
+    });
+
+    test("refreshes an owned active lock and retains the same token", async () => {
+        const { service, Show, showSeatRepository } = loadService();
+        Show.findById.mockReturnValue(showFindByIdQuery(populatedShow()));
+        showSeatRepository.countByShow.mockResolvedValue(3);
+        showSeatRepository.findByShowAndSeatNumbers.mockResolvedValue(lockableShowSeatDocs({
+            A1: {
+                status: "LOCKED",
+                lockOwner: USER_ID,
+                lockToken: "token-1",
+                lockExpiresAt: new Date("2999-09-16T10:05:00.000Z"),
+            },
+        }).slice(0, 1));
+        showSeatRepository.refreshLocks.mockResolvedValue({ verified: true });
+
+        const result = await service.refreshSeatLock({
+            showId: SHOW_ID,
+            seats: ["A1"],
+            userId: USER_ID,
+            lockToken: "token-1",
+        });
+
+        const refreshCall = showSeatRepository.refreshLocks.mock.calls[0][0];
+
+        expect(result).toEqual({
+            showId: SHOW_ID,
+            seats: ["A1"],
+            lockToken: "token-1",
+            lockExpiresAt: refreshCall.lockExpiresAt.toISOString(),
+        });
+        expect(refreshCall.lockExpiresAt.getTime() - refreshCall.now.getTime()).toBe(7 * 60 * 1000);
+        expect(showSeatRepository.refreshLocks).toHaveBeenCalledWith(expect.objectContaining({
+            userId: USER_ID,
+            lockToken: "token-1",
+            lockExpiresAt: refreshCall.lockExpiresAt,
+        }));
+    });
+
+    test("rejects refresh for wrong user, wrong token, expired lock, and booked seat", async () => {
+        const { service, Show, showSeatRepository } = loadService();
+        Show.findById.mockReturnValue(showFindByIdQuery(populatedShow()));
+        showSeatRepository.countByShow.mockResolvedValue(3);
+        showSeatRepository.findByShowAndSeatNumbers
+            .mockResolvedValueOnce(lockableShowSeatDocs({
+                A1: { status: "LOCKED", lockOwner: OTHER_USER_ID, lockToken: "token-1", lockExpiresAt: new Date("2999-01-01T10:07:00.000Z") },
+            }).slice(0, 1))
+            .mockResolvedValueOnce(lockableShowSeatDocs({
+                A1: { status: "LOCKED", lockOwner: USER_ID, lockToken: "other-token", lockExpiresAt: new Date("2999-01-01T10:07:00.000Z") },
+            }).slice(0, 1))
+            .mockResolvedValueOnce(lockableShowSeatDocs({
+                A1: { status: "LOCKED", lockOwner: USER_ID, lockToken: "token-1", lockExpiresAt: new Date("2000-01-01T10:07:00.000Z") },
+            }).slice(0, 1))
+            .mockResolvedValueOnce(lockableShowSeatDocs({ A1: { status: "BOOKED" } }).slice(0, 1));
+
+        await expect(service.refreshSeatLock({ showId: SHOW_ID, seats: ["A1"], userId: USER_ID, lockToken: "token-1" }))
+            .rejects.toMatchObject({ statusCode: 403, code: "SEAT_LOCK_NOT_OWNED" });
+        await expect(service.refreshSeatLock({ showId: SHOW_ID, seats: ["A1"], userId: USER_ID, lockToken: "token-1" }))
+            .rejects.toMatchObject({ statusCode: 403, code: "SEAT_LOCK_NOT_OWNED" });
+        await expect(service.refreshSeatLock({ showId: SHOW_ID, seats: ["A1"], userId: USER_ID, lockToken: "token-1" }))
+            .rejects.toMatchObject({ statusCode: 409, code: "SEAT_LOCK_EXPIRED" });
+        await expect(service.refreshSeatLock({ showId: SHOW_ID, seats: ["A1"], userId: USER_ID, lockToken: "token-1" }))
+            .rejects.toMatchObject({ statusCode: 409, code: "SEAT_ALREADY_BOOKED" });
+        expect(showSeatRepository.refreshLocks).not.toHaveBeenCalled();
+    });
+
+    test("releases owned locks and clears via repository", async () => {
+        const { service, Show, showSeatRepository } = loadService();
+        Show.findById.mockReturnValue(showFindByIdQuery(populatedShow()));
+        showSeatRepository.countByShow.mockResolvedValue(3);
+        showSeatRepository.findByShowAndSeatNumbers.mockResolvedValue(lockableShowSeatDocs({
+            A1: { status: "LOCKED", lockOwner: USER_ID, lockToken: "token-1" },
+        }).slice(0, 1));
+        showSeatRepository.releaseLocks.mockResolvedValue({ modifiedCount: 1 });
+
+        const result = await service.releaseSeatLock({
+            showId: SHOW_ID,
+            seats: ["A1"],
+            userId: USER_ID,
+            lockToken: "token-1",
+        });
+
+        expect(result).toEqual({
+            showId: SHOW_ID,
+            seats: ["A1"],
+            lockToken: "token-1",
+            lockExpiresAt: null,
+            released: true,
+        });
+        expect(showSeatRepository.releaseLocks).toHaveBeenCalledWith({
+            showId: SHOW_ID,
+            seatNumbers: ["A1"],
+            userId: USER_ID,
+            lockToken: "token-1",
+        });
+    });
+
+    test("release is a safe no-op for already released seats but rejects wrong owner, wrong token, and booked seats", async () => {
+        const { service, Show, showSeatRepository } = loadService();
+        Show.findById.mockReturnValue(showFindByIdQuery(populatedShow()));
+        showSeatRepository.countByShow.mockResolvedValue(3);
+        showSeatRepository.findByShowAndSeatNumbers
+            .mockResolvedValueOnce(lockableShowSeatDocs().slice(0, 1))
+            .mockResolvedValueOnce(lockableShowSeatDocs({
+                A1: { status: "LOCKED", lockOwner: OTHER_USER_ID, lockToken: "token-1" },
+            }).slice(0, 1))
+            .mockResolvedValueOnce(lockableShowSeatDocs({
+                A1: { status: "LOCKED", lockOwner: USER_ID, lockToken: "other-token" },
+            }).slice(0, 1))
+            .mockResolvedValueOnce(lockableShowSeatDocs({ A1: { status: "BOOKED" } }).slice(0, 1));
+
+        await expect(service.releaseSeatLock({ showId: SHOW_ID, seats: ["A1"], userId: USER_ID, lockToken: "token-1" }))
+            .resolves.toMatchObject({ released: false });
+        await expect(service.releaseSeatLock({ showId: SHOW_ID, seats: ["A1"], userId: USER_ID, lockToken: "token-1" }))
+            .rejects.toMatchObject({ statusCode: 403, code: "SEAT_LOCK_NOT_OWNED" });
+        await expect(service.releaseSeatLock({ showId: SHOW_ID, seats: ["A1"], userId: USER_ID, lockToken: "token-1" }))
+            .rejects.toMatchObject({ statusCode: 403, code: "SEAT_LOCK_NOT_OWNED" });
+        await expect(service.releaseSeatLock({ showId: SHOW_ID, seats: ["A1"], userId: USER_ID, lockToken: "token-1" }))
+            .rejects.toMatchObject({ statusCode: 409, code: "SEAT_ALREADY_BOOKED" });
     });
 });
