@@ -5,6 +5,7 @@ const { SEAT_TYPES } = Seat;
 
 const SHOW_SEAT_STATUS = Object.freeze({
     AVAILABLE: "AVAILABLE",
+    LOCKED: "LOCKED",
     BOOKED: "BOOKED",
 });
 
@@ -18,6 +19,14 @@ const positiveIntegerValidator = {
 const trimUppercase = (value) => (
     typeof value === "string" ? value.trim().toUpperCase() : value
 );
+
+const requiredWhenLocked = function requiredWhenLocked(value) {
+    if (this.status !== SHOW_SEAT_STATUS.LOCKED) {
+        return true;
+    }
+
+    return value !== null && value !== undefined && value !== "";
+};
 
 const showSeatSchema = new mongoose.Schema(
     {
@@ -70,6 +79,40 @@ const showSeatSchema = new mongoose.Schema(
             ref: "bookings",
             default: null,
         },
+        lockOwner: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "users",
+            default: null,
+            validate: {
+                validator: requiredWhenLocked,
+                message: "lockOwner is required when ShowSeat is LOCKED",
+            },
+        },
+        lockToken: {
+            type: String,
+            trim: true,
+            default: null,
+            validate: {
+                validator: requiredWhenLocked,
+                message: "lockToken is required when ShowSeat is LOCKED",
+            },
+        },
+        lockedAt: {
+            type: Date,
+            default: null,
+            validate: {
+                validator: requiredWhenLocked,
+                message: "lockedAt is required when ShowSeat is LOCKED",
+            },
+        },
+        lockExpiresAt: {
+            type: Date,
+            default: null,
+            validate: {
+                validator: requiredWhenLocked,
+                message: "lockExpiresAt is required when ShowSeat is LOCKED",
+            },
+        },
     },
     { timestamps: true }
 );
@@ -77,6 +120,9 @@ const showSeatSchema = new mongoose.Schema(
 showSeatSchema.index({ show: 1, seat: 1 }, { unique: true });
 showSeatSchema.index({ show: 1, status: 1 });
 showSeatSchema.index({ show: 1, seatNumber: 1 });
+showSeatSchema.index({ show: 1, seatNumber: 1, status: 1 });
+showSeatSchema.index({ show: 1, lockOwner: 1, lockToken: 1 });
+showSeatSchema.index({ status: 1, lockExpiresAt: 1 });
 
 const ShowSeat = mongoose.model("ShowSeat", showSeatSchema);
 module.exports = ShowSeat;

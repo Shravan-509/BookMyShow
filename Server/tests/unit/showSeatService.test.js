@@ -481,6 +481,61 @@ describe("showSeatService", () => {
         expect(result.seats[0]).not.toHaveProperty("updatedAt");
     });
 
+    test("returns active LOCKED seats as unavailable without exposing lock metadata", async () => {
+        const { service, Show, showSeatRepository } = loadService();
+        Show.findById.mockReturnValue(showFindByIdQuery(populatedShow()));
+        showSeatRepository.findAvailabilityByShow.mockResolvedValue([
+            showSeat({
+                _id: "showseat-a1",
+                seatNumber: "A1",
+                row: "A",
+                column: 1,
+                status: "LOCKED",
+                lockOwner: "user-1",
+                lockToken: "secret-token",
+                lockedAt: new Date("2999-01-01T10:00:00.000Z"),
+                lockExpiresAt: new Date("2999-01-01T10:07:00.000Z"),
+            }),
+            showSeat({ _id: "showseat-a2", seat: SEAT_A2_ID, seatNumber: "A2", row: "A", column: 2 }),
+            showSeat({ _id: "showseat-b1", seat: SEAT_B1_ID, seatNumber: "B1", row: "B", column: 1 }),
+        ]);
+
+        const result = await service.getShowSeatAvailability(SHOW_ID);
+
+        expect(result.seats[0]).toMatchObject({
+            seatNumber: "A1",
+            status: "BOOKED",
+        });
+        expect(result.seats[0]).not.toHaveProperty("lockOwner");
+        expect(result.seats[0]).not.toHaveProperty("lockToken");
+        expect(result.seats[0]).not.toHaveProperty("lockedAt");
+        expect(result.seats[0]).not.toHaveProperty("lockExpiresAt");
+    });
+
+    test("returns expired LOCKED seats as effectively available", async () => {
+        const { service, Show, showSeatRepository } = loadService();
+        Show.findById.mockReturnValue(showFindByIdQuery(populatedShow()));
+        showSeatRepository.findAvailabilityByShow.mockResolvedValue([
+            showSeat({
+                _id: "showseat-a1",
+                seatNumber: "A1",
+                row: "A",
+                column: 1,
+                status: "LOCKED",
+                lockExpiresAt: new Date("2000-01-01T10:07:00.000Z"),
+            }),
+            showSeat({ _id: "showseat-a2", seat: SEAT_A2_ID, seatNumber: "A2", row: "A", column: 2 }),
+            showSeat({ _id: "showseat-b1", seat: SEAT_B1_ID, seatNumber: "B1", row: "B", column: 1 }),
+        ]);
+
+        const result = await service.getShowSeatAvailability(SHOW_ID);
+
+        expect(result.seats[0]).toMatchObject({
+            seatNumber: "A1",
+            status: "AVAILABLE",
+        });
+    });
+
     test("sorts availability by spreadsheet-style row order, column, and seatNumber", async () => {
         const { service, Show, showSeatRepository } = loadService();
         Show.findById.mockReturnValue(showFindByIdQuery(populatedShow({

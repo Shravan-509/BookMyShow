@@ -77,6 +77,22 @@ const createBaseResult = (show) => ({
     warnings: [],
 });
 
+const isExpiredLock = (showSeat, now = new Date()) => (
+    showSeat?.status === SHOW_SEAT_STATUS.LOCKED
+    && showSeat.lockExpiresAt
+    && new Date(showSeat.lockExpiresAt).getTime() <= new Date(now).getTime()
+);
+
+const getEffectiveShowSeatStatus = (showSeat, now = new Date()) => {
+    if (isExpiredLock(showSeat, now)) {
+        return SHOW_SEAT_STATUS.AVAILABLE;
+    }
+
+    return SHOW_SEAT_RESPONSE_STATUSES.has(showSeat?.status)
+        ? showSeat.status
+        : SHOW_SEAT_STATUS.AVAILABLE;
+};
+
 const sortSeats = (seats) => [...seats].sort((left, right) => {
     const leftRowOrder = rowLabelToNumber(left.row);
     const rightRowOrder = rowLabelToNumber(right.row);
@@ -93,17 +109,21 @@ const sortSeats = (seats) => [...seats].sort((left, right) => {
     return String(left.seatNumber).localeCompare(String(right.seatNumber));
 });
 
-const sanitizeShowSeatForAvailability = (showSeat) => ({
-    showSeatId: asIdString(showSeat),
-    seatId: asIdString(showSeat.seat),
-    seatNumber: showSeat.seatNumber,
-    row: showSeat.row,
-    column: showSeat.column,
-    seatType: showSeat.seatType,
-    status: SHOW_SEAT_RESPONSE_STATUSES.has(showSeat.status)
-        ? showSeat.status
-        : SHOW_SEAT_STATUS.AVAILABLE,
-});
+const sanitizeShowSeatForAvailability = (showSeat, now = new Date()) => {
+    const effectiveStatus = getEffectiveShowSeatStatus(showSeat, now);
+
+    return {
+        showSeatId: asIdString(showSeat),
+        seatId: asIdString(showSeat.seat),
+        seatNumber: showSeat.seatNumber,
+        row: showSeat.row,
+        column: showSeat.column,
+        seatType: showSeat.seatType,
+        status: effectiveStatus === SHOW_SEAT_STATUS.LOCKED
+            ? SHOW_SEAT_STATUS.BOOKED
+            : effectiveStatus,
+    };
+};
 
 const getScreenLabel = (screen) => {
     if (!screen) {
@@ -235,8 +255,9 @@ const validateBookingSeatSelection = async (show, seats, options = {}) => {
         });
     }
 
+    const now = new Date();
     const showSeatUnavailableSeats = normalizedSeats.filter((seat) => (
-        showSeatsByLabel.get(seat)?.status !== SHOW_SEAT_STATUS.AVAILABLE
+        getEffectiveShowSeatStatus(showSeatsByLabel.get(seat), now) !== SHOW_SEAT_STATUS.AVAILABLE
     ));
     const unavailableSeats = [...new Set([...legacyUnavailableSeats, ...showSeatUnavailableSeats])];
 
@@ -531,7 +552,8 @@ const getShowSeatAvailability = async (showId) => {
     }
 
     const capacity = Number(show.screen.capacity ?? show.totalSeats ?? 0);
-    const showSeats = await showSeatRepository.findAvailabilityByShow(show._id);
+    const now = new Date();
+    const showSeats = await showSeatRepository.findAvailabilityByShow(show._id, { now });
 
     if (showSeats.length !== capacity) {
         throw new AppError(
@@ -548,7 +570,7 @@ const getShowSeatAvailability = async (showId) => {
         screenNumber: show.screen.screenNumber ?? null,
         capacity,
         layoutStatus: SHOW_SEAT_LAYOUT_STATUS.INITIALIZED,
-        seats: sortSeats(showSeats).map(sanitizeShowSeatForAvailability),
+        seats: sortSeats(showSeats).map((showSeat) => sanitizeShowSeatForAvailability(showSeat, now)),
     };
 };
 
