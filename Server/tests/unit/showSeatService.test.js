@@ -29,6 +29,7 @@ const loadService = () => {
         findByShowAndSeatNumbers: jest.fn(),
         findAvailabilityByShow: jest.fn(),
         insertMany: jest.fn(),
+        markOwnedLocksBooked: jest.fn(),
         refreshLocks: jest.fn(),
         releaseLocks: jest.fn(),
     };
@@ -917,5 +918,79 @@ describe("showSeatService", () => {
             .rejects.toMatchObject({ statusCode: 403, code: "SEAT_LOCK_NOT_OWNED" });
         await expect(service.releaseSeatLock({ showId: SHOW_ID, seats: ["A1"], userId: USER_ID, lockToken: "token-1" }))
             .rejects.toMatchObject({ statusCode: 409, code: "SEAT_ALREADY_BOOKED" });
+    });
+
+    test("validates initialized booking selection only with an active owned lock", async () => {
+        const { service, showSeatRepository } = loadService();
+        const activeLock = lockableShowSeatDocs({
+            A1: {
+                status: "LOCKED",
+                lockOwner: USER_ID,
+                lockToken: "token-1",
+                lockExpiresAt: new Date("2999-01-01T10:07:00.000Z"),
+            },
+        }).slice(0, 1);
+
+        showSeatRepository.countByShow.mockResolvedValue(3);
+        showSeatRepository.findByShowAndSeatNumbers.mockResolvedValue(activeLock);
+
+        const result = await service.validateLockedBookingSeatSelection(
+            populatedShow(),
+            [" a1 "],
+            { userId: USER_ID, lockToken: "token-1" }
+        );
+
+        expect(result.mode).toBe(service.BOOKING_SEAT_VALIDATION_MODE.INITIALIZED);
+        expect(result.seats).toEqual(["A1"]);
+        expect(result.showSeats).toBe(activeLock);
+    });
+
+    test("maps expired initialized booking lock after captured payment to stable recovery code", async () => {
+        const { service, showSeatRepository } = loadService();
+        showSeatRepository.countByShow.mockResolvedValue(3);
+        showSeatRepository.findByShowAndSeatNumbers.mockResolvedValue(lockableShowSeatDocs({
+            A1: {
+                status: "LOCKED",
+                lockOwner: USER_ID,
+                lockToken: "token-1",
+                lockExpiresAt: new Date("2000-01-01T10:07:00.000Z"),
+            },
+        }).slice(0, 1));
+
+        await expect(service.validateLockedBookingSeatSelection(
+            populatedShow(),
+            ["A1"],
+            { userId: USER_ID, lockToken: "token-1", paymentCaptured: true }
+        )).rejects.toMatchObject({
+            statusCode: 409,
+            code: "PAYMENT_CAPTURED_SEAT_LOCK_EXPIRED",
+        });
+    });
+
+    test("marks active owned locks as booked for a persisted booking", async () => {
+        const { service, showSeatRepository } = loadService();
+        const bookedAt = new Date("2026-09-16T10:01:00.000Z");
+        const now = new Date("2026-09-16T10:00:00.000Z");
+        showSeatRepository.markOwnedLocksBooked.mockResolvedValue({ modifiedCount: 1 });
+
+        await service.markLockedSeatsBookedForBooking({
+            showId: SHOW_ID,
+            seatNumbers: [" a1 "],
+            userId: USER_ID,
+            lockToken: "token-1",
+            bookingId: "booking-1",
+            bookedAt,
+            now,
+        }, { session: "session-1" });
+
+        expect(showSeatRepository.markOwnedLocksBooked).toHaveBeenCalledWith({
+            showId: SHOW_ID,
+            seatNumbers: ["A1"],
+            userId: USER_ID,
+            lockToken: "token-1",
+            bookingId: "booking-1",
+            bookedAt,
+            now,
+        }, { session: "session-1" });
     });
 });

@@ -432,4 +432,43 @@ describe("showSeatRepository", () => {
             { session: "session-1" }
         );
     });
+
+    test("marks only active owned locks as booked and clears lock metadata", async () => {
+        const { repository, ShowSeat } = loadRepository();
+        const now = new Date("2026-09-16T10:00:00.000Z");
+        const bookedAt = new Date("2026-09-16T10:01:00.000Z");
+
+        await repository.markOwnedLocksBooked({
+            showId: "show-1",
+            seatNumbers: [" a1 ", "A2"],
+            userId: "user-1",
+            lockToken: "token-1",
+            bookingId: "booking-1",
+            bookedAt,
+            now,
+        }, { session: "session-1" });
+
+        expect(ShowSeat.updateMany).toHaveBeenCalledWith(
+            {
+                show: "show-1",
+                seatNumber: { $in: ["A1", "A2"] },
+                status: "LOCKED",
+                lockOwner: "user-1",
+                lockToken: "token-1",
+                lockExpiresAt: { $gt: now },
+            },
+            {
+                $set: {
+                    status: "BOOKED",
+                    booking: "booking-1",
+                    bookedAt,
+                    lockOwner: null,
+                    lockToken: null,
+                    lockedAt: null,
+                    lockExpiresAt: null,
+                },
+            },
+            { session: "session-1" }
+        );
+    });
 });

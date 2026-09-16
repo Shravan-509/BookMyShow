@@ -175,11 +175,19 @@ const sendOperationalError = (res, error) => {
     return res.status(error.statusCode || 500).json(body);
 };
 
-const sendSeatConflict = (res, error) => res.status(error.statusCode || 409).send({
-    success: false,
-    message: error.message,
-    data: error.details,
-});
+const sendSeatConflict = (res, error) => {
+    const body = {
+        success: false,
+        message: error.message,
+        data: error.details,
+    };
+
+    if (error.code) {
+        body.code = error.code;
+    }
+
+    return res.status(error.statusCode || 409).send(body);
+};
 
 const createBookingDocument = ({
     showId,
@@ -353,7 +361,7 @@ const validateSeats = async (req, res, next) => {
 
 const createOrder = async (req, res, next) => {
     try {
-        const { showId, seats } = req.body;
+        const { showId, seats, lockToken } = req.body;
         const feePerTicket = Number(req.body.feePerTicket);
 
         if(!mongoose.Types.ObjectId.isValid(showId))
@@ -392,7 +400,14 @@ const createOrder = async (req, res, next) => {
             })
         }
 
-        const seatValidation = await showSeatService.validateBookingSeatSelection(show, normalizedSeats)
+        const seatValidation = await showSeatService.validateLockedBookingSeatSelection(
+            show,
+            normalizedSeats,
+            {
+                userId: req.userId,
+                lockToken,
+            }
+        )
 
         const pricing = calculateBookingPricing({
             show,
@@ -458,6 +473,7 @@ const bookSeat = async (req, res, next) => {
             gstPercent,
             paymentMethod,
             receipt,
+            lockToken,
         } = req.body;
         
             if(!transactionId || !orderId || !signature)
@@ -534,7 +550,15 @@ const bookSeat = async (req, res, next) => {
                 })
             }
 
-            const bookingSeatValidation = await showSeatService.validateBookingSeatSelection(show, normalizedSeats)
+            const bookingSeatValidation = await showSeatService.validateLockedBookingSeatSelection(
+                show,
+                normalizedSeats,
+                {
+                    userId: req.userId,
+                    lockToken,
+                    paymentCaptured: true,
+                }
+            )
             const pricing = calculateBookingPricing({
                 show,
                 seats: normalizedSeats,
@@ -579,7 +603,16 @@ const bookSeat = async (req, res, next) => {
                 {
                     await session.withTransaction(async () => {
                         const transactionalShow = await loadShowForBooking(showId, { session })
-                        await showSeatService.validateBookingSeatSelection(transactionalShow, normalizedSeats, { session })
+                        await showSeatService.validateLockedBookingSeatSelection(
+                            transactionalShow,
+                            normalizedSeats,
+                            {
+                                userId: req.userId,
+                                lockToken,
+                                paymentCaptured: true,
+                                session,
+                            }
+                        )
 
                         reservedShow = await Show.findOneAndUpdate(
                             { _id: showId, bookedSeats: { $nin: normalizedSeats } },
@@ -607,9 +640,11 @@ const bookSeat = async (req, res, next) => {
                         })
 
                         await newBooking.save({ session })
-                        await showSeatService.markSeatsBookedForBooking({
+                        await showSeatService.markLockedSeatsBookedForBooking({
                             showId,
                             seatNumbers: normalizedSeats,
+                            userId: req.userId,
+                            lockToken,
                             bookingId: newBooking._id,
                             bookedAt: newBooking.createdAt || new Date(),
                         }, { session })

@@ -389,6 +389,39 @@ const translateRepositoryLockError = (error, code = "SEAT_LOCK_CONFLICT") => {
     return error;
 };
 
+const translatePostPaymentLockError = (error) => {
+    if (!error?.code) {
+        return error;
+    }
+
+    if (error.code === "SEAT_LOCK_EXPIRED") {
+        const expired = new AppError(
+            "Payment was captured, but the seat lock expired before booking could be completed. Please contact support.",
+            409,
+            "PAYMENT_CAPTURED_SEAT_LOCK_EXPIRED"
+        );
+        expired.details = error.details;
+        return expired;
+    }
+
+    if (
+        error.code === "SEAT_LOCK_NOT_OWNED"
+        || error.code === "SEAT_ALREADY_BOOKED"
+        || error.code === "SHOWSEAT_SEAT_NOT_FOUND"
+        || error.code === "SEAT_LOCK_CONFLICT"
+    ) {
+        const invalid = new AppError(
+            "Payment was captured, but the selected seat lock is no longer valid. Please contact support.",
+            409,
+            "PAYMENT_CAPTURED_SEAT_LOCK_INVALID"
+        );
+        invalid.details = error.details;
+        return invalid;
+    }
+
+    return error;
+};
+
 const resolveBookingSeatValidationMode = async (show, options = {}) => {
     if (!show?.screen) {
         return {
@@ -412,6 +445,48 @@ const resolveBookingSeatValidationMode = async (show, options = {}) => {
         mode: BOOKING_SEAT_VALIDATION_MODE.INITIALIZED,
         capacity,
     };
+};
+
+const validateLockedBookingSeatSelection = async (show, seats, options = {}) => {
+    const {
+        userId,
+        lockToken,
+        paymentCaptured = false,
+        now: suppliedNow,
+        ...queryOptions
+    } = options;
+    const normalizedSeats = normalizeSeatSelection(seats);
+    const validationMode = await resolveBookingSeatValidationMode(show, queryOptions);
+
+    if (validationMode.mode === BOOKING_SEAT_VALIDATION_MODE.LEGACY) {
+        return validateBookingSeatSelection(show, normalizedSeats, queryOptions);
+    }
+
+    ensureUserId(userId);
+    const normalizedLockToken = ensureLockToken(lockToken);
+    const now = suppliedNow || new Date();
+    const bookedSeatLabels = getNormalizedBookedSeats(show);
+
+    try {
+        const { showSeats, showSeatsByLabel } = await getShowSeatsBySelection(
+            show._id,
+            normalizedSeats,
+            queryOptions
+        );
+
+        assertOwnedActiveLock(showSeatsByLabel, normalizedSeats, userId, normalizedLockToken, now);
+
+        return {
+            mode: validationMode.mode,
+            seats: normalizedSeats,
+            showSeats,
+            availableSeats: normalizedSeats,
+            unavailableSeats: [],
+            allBookedSeats: bookedSeatLabels,
+        };
+    } catch (error) {
+        throw paymentCaptured ? translatePostPaymentLockError(error) : error;
+    }
 };
 
 const validateBookingSeatSelection = async (show, seats, options = {}) => {
@@ -584,6 +659,43 @@ const markSeatsBookedForBooking = async ({ showId, seatNumbers, bookingId, booke
             availableSeats: [],
             allBookedSeats: [],
         });
+    }
+
+    return result;
+};
+
+const markLockedSeatsBookedForBooking = async ({
+    showId,
+    seatNumbers,
+    userId,
+    lockToken,
+    bookingId,
+    bookedAt,
+    now = new Date(),
+}, options = {}) => {
+    ensureUserId(userId);
+    const normalizedLockToken = ensureLockToken(lockToken);
+    const normalizedSeatNumbers = normalizeSeatSelection(seatNumbers);
+    const result = await showSeatRepository.markOwnedLocksBooked({
+        showId,
+        seatNumbers: normalizedSeatNumbers,
+        userId,
+        lockToken: normalizedLockToken,
+        bookingId,
+        bookedAt,
+        now,
+    }, options);
+
+    const modifiedCount = result.modifiedCount ?? result.nModified ?? 0;
+
+    if (modifiedCount !== normalizedSeatNumbers.length) {
+        const error = new AppError(
+            "Payment was captured, but the selected seat lock is no longer valid. Please contact support.",
+            409,
+            "PAYMENT_CAPTURED_SEAT_LOCK_INVALID"
+        );
+        error.details = { unavailableSeats: normalizedSeatNumbers };
+        throw error;
     }
 
     return result;
@@ -872,10 +984,12 @@ module.exports = {
     acquireSeatLock,
     getShowSeatAvailability,
     initializeShowSeats,
+    markLockedSeatsBookedForBooking,
     markSeatsBookedForBooking,
     normalizeSeatLabel,
     normalizeSeatSelection,
     refreshSeatLock,
     releaseSeatLock,
+    validateLockedBookingSeatSelection,
     validateBookingSeatSelection,
 };

@@ -75,6 +75,39 @@ const markSeatsBooked = ({ showId, seatNumbers, bookingId, bookedAt }, options =
     )
 );
 
+const markOwnedLocksBooked = ({
+    showId,
+    seatNumbers,
+    userId,
+    lockToken,
+    bookingId,
+    bookedAt,
+    now,
+}, options = {}) => (
+    ShowSeat.updateMany(
+        {
+            show: showId,
+            seatNumber: { $in: normalizeSeatNumbers(seatNumbers) },
+            status: SHOW_SEAT_STATUS.LOCKED,
+            lockOwner: userId,
+            lockToken,
+            lockExpiresAt: { $gt: now },
+        },
+        {
+            $set: {
+                status: SHOW_SEAT_STATUS.BOOKED,
+                booking: bookingId,
+                bookedAt,
+                lockOwner: null,
+                lockToken: null,
+                lockedAt: null,
+                lockExpiresAt: null,
+            },
+        },
+        options
+    )
+);
+
 const insertMany = (showSeats, options = {}) => (
     ShowSeat.insertMany(showSeats, { ordered: true, ...options })
 );
@@ -322,6 +355,7 @@ module.exports = {
     findByShowAndSeat,
     findByShowAndSeatNumbers,
     findOwnedActiveLocks,
+    markOwnedLocksBooked,
     markSeatsBooked,
     refreshLocks,
     releaseLocks,

@@ -8,6 +8,8 @@ const SHOW_ID = new mongoose.Types.ObjectId().toString();
 const THEATRE_ID = new mongoose.Types.ObjectId().toString();
 const SCREEN_ID = new mongoose.Types.ObjectId().toString();
 const OTHER_USER_ID = new mongoose.Types.ObjectId().toString();
+const LOCK_TOKEN = "lock-token-1";
+const FUTURE_LOCK_EXPIRY = new Date("2099-01-01T00:00:00.000Z");
 
 const createSignature = (orderId, transactionId) => crypto
   .createHmac("sha256", TEST_SECRET)
@@ -83,6 +85,7 @@ const loadController = () => {
     countByShow: jest.fn().mockResolvedValue(0),
     findByShowAndSeat: jest.fn(),
     findByShowAndSeatNumbers: jest.fn().mockResolvedValue([]),
+    markOwnedLocksBooked: jest.fn().mockResolvedValue({ modifiedCount: 0 }),
     markSeatsBooked: jest.fn().mockResolvedValue({ modifiedCount: 0 }),
     insertMany: jest.fn(),
     deleteByShow: jest.fn(),
@@ -147,10 +150,21 @@ const showSeatDocs = (overrides = {}) => ([
   { _id: "show-seat-a2", seatNumber: "A2", seatType: overrides.A2Type || "STANDARD", status: overrides.A2 || "AVAILABLE" },
 ]);
 
+const lockedShowSeatDocs = (overrides = {}) => showSeatDocs({
+  ...overrides,
+  A1: overrides.A1 || "LOCKED",
+  A2: overrides.A2 || "LOCKED",
+}).map((showSeat) => ({
+  ...showSeat,
+  lockOwner: overrides.lockOwner || USER_ID,
+  lockToken: overrides.lockToken || LOCK_TOKEN,
+  lockExpiresAt: overrides.lockExpiresAt || FUTURE_LOCK_EXPIRY,
+}));
+
 const mixedShowSeatDocs = () => ([
-  { _id: "show-seat-a1", seatNumber: "A1", seatType: "STANDARD", status: "AVAILABLE" },
-  { _id: "show-seat-j5", seatNumber: "J5", seatType: "PREMIUM", status: "AVAILABLE" },
-  { _id: "show-seat-r2", seatNumber: "R2", seatType: "RECLINER", status: "AVAILABLE" },
+  { _id: "show-seat-a1", seatNumber: "A1", seatType: "STANDARD", status: "LOCKED", lockOwner: USER_ID, lockToken: LOCK_TOKEN, lockExpiresAt: FUTURE_LOCK_EXPIRY },
+  { _id: "show-seat-j5", seatNumber: "J5", seatType: "PREMIUM", status: "LOCKED", lockOwner: USER_ID, lockToken: LOCK_TOKEN, lockExpiresAt: FUTURE_LOCK_EXPIRY },
+  { _id: "show-seat-r2", seatNumber: "R2", seatType: "RECLINER", status: "LOCKED", lockOwner: USER_ID, lockToken: LOCK_TOKEN, lockExpiresAt: FUTURE_LOCK_EXPIRY },
 ]);
 
 const validRazorpayOrder = (amount = 44720, feePerTicket = 20) => ({
@@ -275,11 +289,11 @@ describe("BookingController pricing and Razorpay order creation", () => {
     expect(razorpayInstance.orders.create).not.toHaveBeenCalled();
   });
 
-  test("rejects initialized ShowSeat conflicts before Razorpay order creation", async () => {
+  test("rejects missing initialized ShowSeat lock before Razorpay order creation", async () => {
     const { controller, razorpayInstance, Show, showSeatRepository } = loadController();
     Show.findById.mockResolvedValue(initializedShow());
     showSeatRepository.countByShow.mockResolvedValue(2);
-    showSeatRepository.findByShowAndSeatNumbers.mockResolvedValue(showSeatDocs({ A2: "BOOKED" }));
+    showSeatRepository.findByShowAndSeatNumbers.mockResolvedValue(lockedShowSeatDocs());
     const res = createMockResponse();
 
     await controller.createOrder(
@@ -288,8 +302,72 @@ describe("BookingController pricing and Razorpay order creation", () => {
       jest.fn(),
     );
 
-    expect(res.status).toHaveBeenCalledWith(409);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      success: false,
+      code: "LOCK_TOKEN_REQUIRED",
+    }));
     expect(razorpayInstance.orders.create).not.toHaveBeenCalled();
+  });
+
+  test("rejects lock ownership mismatch before Razorpay order creation", async () => {
+    const { controller, razorpayInstance, Show, showSeatRepository } = loadController();
+    Show.findById.mockResolvedValue(initializedShow());
+    showSeatRepository.countByShow.mockResolvedValue(2);
+    showSeatRepository.findByShowAndSeatNumbers.mockResolvedValue(lockedShowSeatDocs({
+      lockToken: "different-lock-token",
+    }));
+    const res = createMockResponse();
+
+    await controller.createOrder(
+      {
+        userId: USER_ID,
+        body: {
+          showId: SHOW_ID,
+          seats: ["A1", "A2"],
+          feePerTicket: 20,
+          lockToken: LOCK_TOKEN,
+        },
+      },
+      res,
+      jest.fn(),
+    );
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.send).toHaveBeenCalledWith(expect.objectContaining({
+      success: false,
+      code: "SEAT_LOCK_NOT_OWNED",
+    }));
+    expect(razorpayInstance.orders.create).not.toHaveBeenCalled();
+  });
+
+  test("does not write raw lock token into Razorpay order notes", async () => {
+    const { controller, razorpayInstance, Show, showSeatRepository } = loadController();
+    Show.findById.mockResolvedValue(initializedShow());
+    showSeatRepository.countByShow.mockResolvedValue(2);
+    showSeatRepository.findByShowAndSeatNumbers.mockResolvedValue(lockedShowSeatDocs());
+    razorpayInstance.orders.create.mockResolvedValue({ id: "order_1", amount: 44720 });
+    const res = createMockResponse();
+
+    await controller.createOrder(
+      {
+        userId: USER_ID,
+        body: {
+          showId: SHOW_ID,
+          seats: ["A1", "A2"],
+          feePerTicket: 20,
+          lockToken: LOCK_TOKEN,
+        },
+      },
+      res,
+      jest.fn(),
+    );
+
+    expect(razorpayInstance.orders.create).toHaveBeenCalledWith(expect.objectContaining({
+      notes: expect.not.objectContaining({
+        lockToken: LOCK_TOKEN,
+      }),
+    }));
   });
 
   test.each([
@@ -311,7 +389,7 @@ describe("BookingController pricing and Razorpay order creation", () => {
       },
     }));
     showSeatRepository.countByShow.mockResolvedValue(2);
-    showSeatRepository.findByShowAndSeatNumbers.mockResolvedValue(showSeatDocs(seatOverrides));
+    showSeatRepository.findByShowAndSeatNumbers.mockResolvedValue(lockedShowSeatDocs(seatOverrides));
     razorpayInstance.orders.create.mockResolvedValue({ id: "order_1", amount: expectedPaise });
     const res = createMockResponse();
 
@@ -322,6 +400,7 @@ describe("BookingController pricing and Razorpay order creation", () => {
           showId: SHOW_ID,
           seats: ["A1", "A2"],
           feePerTicket: 20,
+          lockToken: LOCK_TOKEN,
           price: 1,
           amount: 1,
         },
@@ -367,6 +446,7 @@ describe("BookingController pricing and Razorpay order creation", () => {
           showId: SHOW_ID,
           seats: ["A1", "J5", "R2"],
           feePerTicket: 20,
+          lockToken: LOCK_TOKEN,
           seatPricing: [{ seatNumber: "A1", seatType: "STANDARD", price: 1 }],
         },
       },
@@ -400,7 +480,7 @@ describe("BookingController pricing and Razorpay order creation", () => {
       },
     }));
     showSeatRepository.countByShow.mockResolvedValue(2);
-    showSeatRepository.findByShowAndSeatNumbers.mockResolvedValue(showSeatDocs({
+    showSeatRepository.findByShowAndSeatNumbers.mockResolvedValue(lockedShowSeatDocs({
       A1Type: "PREMIUM",
       A2Type: "RECLINER",
     }));
@@ -408,7 +488,7 @@ describe("BookingController pricing and Razorpay order creation", () => {
     const res = createMockResponse();
 
     await controller.createOrder(
-      { userId: USER_ID, body: { showId: SHOW_ID, seats: ["A1", "A2"], feePerTicket: 20 } },
+      { userId: USER_ID, body: { showId: SHOW_ID, seats: ["A1", "A2"], feePerTicket: 20, lockToken: LOCK_TOKEN } },
       res,
       jest.fn(),
     );
@@ -532,9 +612,9 @@ describe("BookingController booking persistence and payment validation", () => {
   test("books initialized ShowSeats transactionally after payment validation", async () => {
     const ctx = arrangeValidBooking({ showDocument: initializedShow() });
     ctx.showSeatRepository.countByShow.mockResolvedValue(2);
-    ctx.showSeatRepository.findByShowAndSeatNumbers.mockResolvedValue(showSeatDocs());
-    ctx.showSeatRepository.markSeatsBooked.mockResolvedValue({ modifiedCount: 2 });
-    const req = { userId: USER_ID, body: bookingPayload({ seats: [" a1 ", "A2"] }) };
+    ctx.showSeatRepository.findByShowAndSeatNumbers.mockResolvedValue(lockedShowSeatDocs());
+    ctx.showSeatRepository.markOwnedLocksBooked.mockResolvedValue({ modifiedCount: 2 });
+    const req = { userId: USER_ID, body: bookingPayload({ seats: [" a1 ", "A2"], lockToken: LOCK_TOKEN }) };
     const res = createMockResponse();
 
     await ctx.controller.bookSeat(req, res, jest.fn());
@@ -546,14 +626,18 @@ describe("BookingController booking persistence and payment validation", () => {
       { $push: { bookedSeats: { $each: ["A1", "A2"] } } },
       { returnDocument: "after", session: ctx.session },
     );
-    expect(ctx.showSeatRepository.markSeatsBooked).toHaveBeenCalledWith(
+    expect(ctx.showSeatRepository.markOwnedLocksBooked).toHaveBeenCalledWith(
       expect.objectContaining({
         showId: SHOW_ID,
         seatNumbers: ["A1", "A2"],
+        userId: USER_ID,
+        lockToken: LOCK_TOKEN,
         bookingId: expect.anything(),
+        now: expect.any(Date),
       }),
       { session: ctx.session },
     );
+    expect(ctx.showSeatRepository.markSeatsBooked).not.toHaveBeenCalled();
     expect(ctx.Show.findByIdAndUpdate).not.toHaveBeenCalled();
     expect(res.send).toHaveBeenCalledWith(expect.objectContaining({
       success: true,
@@ -572,15 +656,16 @@ describe("BookingController booking persistence and payment validation", () => {
       }),
     });
     ctx.showSeatRepository.countByShow.mockResolvedValue(2);
-    ctx.showSeatRepository.findByShowAndSeatNumbers.mockResolvedValue(showSeatDocs({
+    ctx.showSeatRepository.findByShowAndSeatNumbers.mockResolvedValue(lockedShowSeatDocs({
       A1Type: "STANDARD",
       A2Type: "PREMIUM",
     }));
-    ctx.showSeatRepository.markSeatsBooked.mockResolvedValue({ modifiedCount: 2 });
+    ctx.showSeatRepository.markOwnedLocksBooked.mockResolvedValue({ modifiedCount: 2 });
     const req = {
       userId: USER_ID,
       body: bookingPayload({
         seats: ["A1", "A2"],
+        lockToken: LOCK_TOKEN,
         amount: 1,
         convenienceFee: 1,
         seatPricing: [{ seatNumber: "A1", seatType: "STANDARD", price: 1 }],
@@ -605,10 +690,12 @@ describe("BookingController booking persistence and payment validation", () => {
       { $push: { bookedSeats: { $each: ["A1", "A2"] } } },
       { returnDocument: "after", session: ctx.session },
     );
-    expect(ctx.showSeatRepository.markSeatsBooked).toHaveBeenCalledWith(
+    expect(ctx.showSeatRepository.markOwnedLocksBooked).toHaveBeenCalledWith(
       expect.objectContaining({
         showId: SHOW_ID,
         seatNumbers: ["A1", "A2"],
+        userId: USER_ID,
+        lockToken: LOCK_TOKEN,
       }),
       { session: ctx.session },
     );
@@ -624,10 +711,10 @@ describe("BookingController booking persistence and payment validation", () => {
       }),
     });
     ctx.showSeatRepository.countByShow.mockResolvedValue(2);
-    ctx.showSeatRepository.findByShowAndSeatNumbers.mockResolvedValue(showSeatDocs());
+    ctx.showSeatRepository.findByShowAndSeatNumbers.mockResolvedValue(lockedShowSeatDocs());
     const res = createMockResponse();
 
-    await ctx.controller.bookSeat({ userId: USER_ID, body: bookingPayload() }, res, jest.fn());
+    await ctx.controller.bookSeat({ userId: USER_ID, body: bookingPayload({ lockToken: LOCK_TOKEN }) }, res, jest.fn());
 
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith({
@@ -636,7 +723,7 @@ describe("BookingController booking persistence and payment validation", () => {
     });
     expect(ctx.Booking).not.toHaveBeenCalled();
     expect(ctx.Show.findOneAndUpdate).not.toHaveBeenCalled();
-    expect(ctx.showSeatRepository.markSeatsBooked).not.toHaveBeenCalled();
+    expect(ctx.showSeatRepository.markOwnedLocksBooked).not.toHaveBeenCalled();
   });
 
   test("payment amount mismatch is rejected before booking or seat writes persist", async () => {
@@ -650,18 +737,18 @@ describe("BookingController booking persistence and payment validation", () => {
       }),
     });
     ctx.showSeatRepository.countByShow.mockResolvedValue(2);
-    ctx.showSeatRepository.findByShowAndSeatNumbers.mockResolvedValue(showSeatDocs({
+    ctx.showSeatRepository.findByShowAndSeatNumbers.mockResolvedValue(lockedShowSeatDocs({
       A1Type: "STANDARD",
       A2Type: "PREMIUM",
     }));
     const res = createMockResponse();
 
-    await ctx.controller.bookSeat({ userId: USER_ID, body: bookingPayload() }, res, jest.fn());
+    await ctx.controller.bookSeat({ userId: USER_ID, body: bookingPayload({ lockToken: LOCK_TOKEN }) }, res, jest.fn());
 
     expect(res.status).toHaveBeenCalledWith(400);
     expect(ctx.Booking).not.toHaveBeenCalled();
     expect(ctx.Show.findOneAndUpdate).not.toHaveBeenCalled();
-    expect(ctx.showSeatRepository.markSeatsBooked).not.toHaveBeenCalled();
+    expect(ctx.showSeatRepository.markOwnedLocksBooked).not.toHaveBeenCalled();
   });
 
   test("legacy Show booking still succeeds with flat ticketAmount snapshot", async () => {
@@ -686,19 +773,43 @@ describe("BookingController booking persistence and payment validation", () => {
   test("rejects concurrent initialized ShowSeat booking conflicts without legacy rollback", async () => {
     const ctx = arrangeValidBooking({ showDocument: initializedShow() });
     ctx.showSeatRepository.countByShow.mockResolvedValue(2);
-    ctx.showSeatRepository.findByShowAndSeatNumbers.mockResolvedValue(showSeatDocs());
-    ctx.showSeatRepository.markSeatsBooked.mockResolvedValue({ modifiedCount: 1 });
+    ctx.showSeatRepository.findByShowAndSeatNumbers.mockResolvedValue(lockedShowSeatDocs());
+    ctx.showSeatRepository.markOwnedLocksBooked.mockResolvedValue({ modifiedCount: 1 });
     const res = createMockResponse();
 
-    await ctx.controller.bookSeat({ userId: USER_ID, body: bookingPayload() }, res, jest.fn());
+    await ctx.controller.bookSeat({ userId: USER_ID, body: bookingPayload({ lockToken: LOCK_TOKEN }) }, res, jest.fn());
 
     expect(ctx.session.withTransaction).toHaveBeenCalledTimes(1);
     expect(ctx.Show.findByIdAndUpdate).not.toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(409);
     expect(res.send).toHaveBeenCalledWith(expect.objectContaining({
       success: false,
-      message: "Some seats were already booked. Please choose different seats.",
+      code: "PAYMENT_CAPTURED_SEAT_LOCK_INVALID",
     }));
+  });
+
+  test("rejects captured payment when initialized ShowSeat lock expired before booking persistence", async () => {
+    const ctx = arrangeValidBooking({ showDocument: initializedShow() });
+    ctx.showSeatRepository.countByShow.mockResolvedValue(2);
+    ctx.showSeatRepository.findByShowAndSeatNumbers.mockResolvedValue(lockedShowSeatDocs({
+      lockExpiresAt: new Date("2000-01-01T00:00:00.000Z"),
+    }));
+    const res = createMockResponse();
+
+    await ctx.controller.bookSeat(
+      { userId: USER_ID, body: bookingPayload({ lockToken: LOCK_TOKEN }) },
+      res,
+      jest.fn(),
+    );
+
+    expect(res.status).toHaveBeenCalledWith(409);
+    expect(res.send).toHaveBeenCalledWith(expect.objectContaining({
+      success: false,
+      code: "PAYMENT_CAPTURED_SEAT_LOCK_EXPIRED",
+    }));
+    expect(ctx.Booking).not.toHaveBeenCalled();
+    expect(ctx.Show.findOneAndUpdate).not.toHaveBeenCalled();
+    expect(ctx.showSeatRepository.markOwnedLocksBooked).not.toHaveBeenCalled();
   });
 
   test("rejects initialized booking when ShowSeat inventory is incomplete", async () => {
@@ -706,7 +817,7 @@ describe("BookingController booking persistence and payment validation", () => {
     ctx.showSeatRepository.countByShow.mockResolvedValue(2);
     const res = createMockResponse();
 
-    await ctx.controller.bookSeat({ userId: USER_ID, body: bookingPayload() }, res, jest.fn());
+    await ctx.controller.bookSeat({ userId: USER_ID, body: bookingPayload({ lockToken: LOCK_TOKEN }) }, res, jest.fn());
 
     expect(ctx.mongooseMock.startSession).not.toHaveBeenCalled();
     expect(ctx.Show.findOneAndUpdate).not.toHaveBeenCalled();
