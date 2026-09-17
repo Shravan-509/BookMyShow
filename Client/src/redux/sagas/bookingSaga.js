@@ -39,7 +39,7 @@ function* validateSeatBookingSaga(action) {
     }
 }
 
-function* bookSeatsSaga(action) {
+export function* bookSeatsSaga(action) {
     try{
         
         const response = yield call(BookingAPI.bookSeats, action.payload);
@@ -150,14 +150,16 @@ function* getRevenueDataSaga(action) {
   }
 }
 
-function* createRazorpayOrderSaga(action){
+export function* createRazorpayOrderSaga(action){
   try {
     const response = yield call(BookingAPI.createRazorPayOrder, action.payload)
     if (response.success) 
     {
       yield put(createRazorpayOrderSuccess(response.data))
       // Store payment data for use after Razorpay payment callback
-      sessionStorage.setItem("pendingBookingData", JSON.stringify(action.payload))
+      const persistableBookingData = { ...action.payload };
+      delete persistableBookingData.lockToken;
+      sessionStorage.setItem("pendingBookingData", JSON.stringify(persistableBookingData))
     } 
     else 
     {

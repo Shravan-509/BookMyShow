@@ -1,5 +1,12 @@
 import { axiosInstance } from "."
 
+const withoutEmptyLockToken = (payload = {}) => {
+  const { lockToken, ...bookingPayload } = payload;
+  return typeof lockToken === "string" && lockToken.trim()
+    ? { ...bookingPayload, lockToken }
+    : bookingPayload;
+};
+
 export class BookingAPI {
   static async validateSeats(payload) {
       const response = await axiosInstance.post("/bookings/validateSeats", payload)
@@ -7,7 +14,7 @@ export class BookingAPI {
     }
 
   static async bookSeats(payload) {
-      const response = await axiosInstance.post("/bookings/bookSeat", payload)
+      const response = await axiosInstance.post("/bookings/bookSeat", withoutEmptyLockToken(payload))
       return response?.data
     }
 
@@ -17,7 +24,7 @@ export class BookingAPI {
     }
 
   static async createRazorPayOrder(payload) {
-      const response = await axiosInstance.post("/bookings/createOrder", payload)
+      const response = await axiosInstance.post("/bookings/createOrder", withoutEmptyLockToken(payload))
       return response?.data
     }
 

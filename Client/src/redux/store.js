@@ -9,7 +9,8 @@ const storage = storageModule.default || storageModule;
 
 const persistConfig = {
     key: "root",
-    storage: storage
+    storage: storage,
+    blacklist: ["showSeat"],
 }
 
 // Create saga middleware
